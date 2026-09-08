@@ -27,7 +27,10 @@ export interface Profile {
   role: UserRole
   full_name: string
   phone: string
+  cpf_or_cnpj?: string
   avatar_url?: string | null
+  terms_accepted_at?: string
+  self_declaration_signed?: boolean
   created_at: string
   pix_key?: string
   pix_key_type?: PixKeyType

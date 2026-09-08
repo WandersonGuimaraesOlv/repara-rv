@@ -50,18 +50,20 @@ END $$;
 
 -- 1. Perfis
 CREATE TABLE IF NOT EXISTS profiles (
-  id               UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  role             user_role NOT NULL DEFAULT 'client',
-  full_name        TEXT NOT NULL,
-  phone            TEXT NOT NULL,
-  avatar_url       TEXT,
-  document_number  TEXT, -- CPF ou CNPJ MEI
-  is_verified      BOOLEAN DEFAULT FALSE, -- Validação de antecedentes criminais
-  created_at       TIMESTAMPTZ DEFAULT NOW()
+  id                       UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  role                     user_role NOT NULL DEFAULT 'client',
+  full_name                TEXT NOT NULL,
+  phone                    TEXT NOT NULL,
+  cpf_or_cnpj              TEXT NOT NULL DEFAULT '',
+  avatar_url               TEXT,
+  terms_accepted_at        TIMESTAMPTZ DEFAULT NOW(),
+  self_declaration_signed  BOOLEAN DEFAULT TRUE,
+  created_at               TIMESTAMPTZ DEFAULT NOW()
 );
 
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS document_number TEXT;
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS cpf_or_cnpj TEXT DEFAULT '';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS self_declaration_signed BOOLEAN DEFAULT TRUE;
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 

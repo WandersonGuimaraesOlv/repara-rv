@@ -1,48 +1,42 @@
 # Repara RV — Especificação Técnica e Diretrizes de Engenharia (AI_CONTEXT)
 
-Documento mestre de arquitetura, padrões de engenharia, conformidade jurídica/LGPD e diretrizes de SQA para o desenvolvimento do **Repara RV**.
+Documento mestre de arquitetura, padrões de engenharia, modelo de conformidade ágil e diretrizes de SQA para o desenvolvimento do **Repara RV**.
 
 ---
 
 ## 1. Visão do Produto & Regras de Negócio
-- **Produto:** PWA sob demanda estilo Uber para serviços residenciais em Rio Verde (GO).
-- **Modelo Operacional:** Preço fixo tabelado (exclusivo mão de obra). Chamada instantânea por GPS.
-- **Ciclo do Chamado:** O prestador mais próximo recebe alerta sonoro e tem 30 segundos para aceitar antes de pular para o próximo da fila.
-- **Monetização:** Taxa fixa de intermediação retida via Split automático na API de pagamento Pix (média de R$ 12,00 por serviço finalizado). Sem venda de leads ou recarga prévia de créditos.
+- **Produto:** PWA sob demanda estilo Uber para serviços residenciais rápidos em Rio Verde (GO).
+- **Modelo Operacional:** Preço fixo tabelado (exclusivo mão de obra). Chamada instantânea por geolocalização.
+- **Ciclo do Chamado:** O prestador mais próximo recebe alerta sonoro/vibração e tem até 30 segundos para aceitar antes do repasse automático ao próximo do radar.
+- **Monetização:** Taxa fixa retida via Split automático na API de Pix (média de R$ 12,00 por serviço). Sem venda de leads ou recarga prévia de créditos.
 
 ---
 
-## 2. Stack Tecnológica & Infraestrutura
-- **Front-end / Framework:** Next.js (App Router), React, TypeScript (modo estrito), Tailwind CSS e Shadcn/ui.
-- **Design System:** Inspirado na Triider (fundo limpo `#F8FAFC`, texto `#0F172A`, CTAs vibrantes `#F97316`, cantos arredondados, visual de app nativo mobile-first).
-- **Hospedagem & Runtime:** 100% Cloudflare Workers via `@opennextjs/cloudflare` e `wrangler`.
-  - Configuração obrigatória: `compatibility_flags = ["nodejs_compat"]`.
-  - Chamadas de pagamento via `fetch` REST nativo para evitar incompatibilidades de rede no runtime Edge.
-- **Banco de Dados & Realtime:** Supabase (PostgreSQL 15+, PostGIS para geolocalização e Realtime para escuta de status).
-- **PWA:** `@ducanh2912/next-pwa`, `manifest.json` configurado como `standalone`, assets estáticos servidos diretamente.
+## 2. Onboarding Ágil & Modelo Jurídico Sem Atrito (MVP)
+
+Para maximizar a captação de prestadores sem infligir a legislação brasileira:
+
+* **Cadastro Pessoa Física (CPF):** Dispensa exigência de MEI ou abertura de empresa. Split de Pix liquidado diretamente na conta bancária vinculada ao CPF do profissional.
+* **Autodeclaração em Substituição a Certidões:** Dispensa envio prévio de certidão de antecedentes criminais e comprovante de endereço. O prestador aceita o checkbox vinculante no primeiro acesso:
+  > *"Declaro, sob as penas da lei, ser profissional autônomo capacitado, não possuir antecedentes criminais e assumir responsabilidade civil direta pelos serviços executados."*
+* **SAC Minimalista Conforme Decreto 7.962/13:** Link direto para WhatsApp de suporte e e-mail no rodapé e na tela de acompanhamento de chamados.
+* **Mascaramento de Dados (LGPD):** O prestador no radar enxerga apenas `neighborhood` (bairro) e `approximate_distance_km`. Endereço exato e coordenadas só são liberados após transição para status `accepted`.
+* **Zero Subordinação Trabalhista:** O algoritmo não aplica advertências, suspensões ou rebaixamento de conta para prestadores que recusarem chamados ou ficarem inativos.
 
 ---
 
-## 3. Conformidade Jurídica & Segurança no Código (CDC, LGPD e Risco Trabalhista)
-
-### A. Mascaramento de Endereço (LGPD & Segurança do Cliente)
-O prestador que está no radar **nunca** tem acesso ao endereço completo ou coordenadas exatas antes do aceite.
-- Enquanto o chamado estiver com status `searching`, a API/RLS expõe apenas `neighborhood` (bairro) e `approximate_distance_km`.
-- Apenas após a transição para `accepted` pelo prestador autenticado, os campos `client_address` e `client_location` são descriptografados/liberados.
-
-### B. Proteção contra Vínculo Trabalhista (Zero Subordinação Algorítmica)
-- Proibido aplicar penalidades, taxas de suspensão ou quedas punitivas de score para prestadores que recusarem chamados ou ficarem inativos.
-- O timer de 30 segundos apenas remove a atribuição transitória e dispara para o próximo candidato.
-
-### C. Split de Pagamento Automatizado (Blindagem Fiscal)
-- As requisições de geração de Pix (`/api/pix/create`) devem incluir os metadados de marketplace split:
-  - `fee_amount`: Taxa de intermediação destinada à conta da plataforma (ex: R$ 12,00).
-  - `provider_amount`: Valor líquido destinado à subconta do prestador (ex: R$ 68,00).
-  - `idempotency_key`: Chave única por chamado para evitar cobranças ou repasses em duplicidade.
+## 3. Stack Tecnológica & Infraestrutura
+- **Front-end:** Next.js (App Router), React, TypeScript (`strict: true`), Tailwind CSS e Shadcn/ui.
+- **Design System:** Inspirado na Triider (fundo limpo `#F8FAFC`, tipografia Inter, CTAs vibrantes `#F97316`, cantos arredondados e navegação mobile-first).
+- **Hospedagem:** Cloudflare Workers via `@opennextjs/cloudflare` e `wrangler`.
+  - Configuração: `compatibility_flags = ["nodejs_compat"]`.
+  - Chamadas de API Pix via `fetch` REST nativo para compatibilidade com o runtime Edge.
+- **Banco de Dados & Realtime:** Supabase (PostgreSQL 15+, PostGIS e Supabase Realtime).
+- **PWA:** `@ducanh2912/next-pwa`, `manifest.json` com `display: standalone`.
 
 ---
 
-## 4. Schema do Banco de Dados Atualizado (Supabase)
+## 4. Schema do Banco de Dados (Supabase)
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -59,32 +53,32 @@ CREATE TYPE ride_status AS ENUM (
 );
 CREATE TYPE payment_status AS ENUM ('pending', 'paid', 'refunded');
 
--- Perfis
+-- Perfis (Fluxo Simplificado para PF e MEI)
 CREATE TABLE profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   role user_role NOT NULL DEFAULT 'client',
   full_name TEXT NOT NULL,
   phone TEXT NOT NULL,
-  avatar_url TEXT,
-  document_number TEXT, -- CPF ou CNPJ MEI
-  is_verified BOOLEAN DEFAULT FALSE, -- Validação de antecedentes criminais
+  cpf_or_cnpj TEXT NOT NULL,
+  terms_accepted_at TIMESTAMPTZ DEFAULT NOW(),
+  self_declaration_signed BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Estado do Prestador (Radar / GPS)
+-- Estado Operacional do Prestador (Radar / GPS)
 CREATE TABLE provider_status (
   provider_id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
   is_online BOOLEAN DEFAULT FALSE,
   current_location GEOMETRY(Point, 4326),
   pix_key TEXT NOT NULL,
   pix_key_type TEXT NOT NULL,
-  recipient_gateway_id TEXT, -- ID da subconta no gateway para split
+  recipient_gateway_id TEXT, -- ID do recebedor para split na API
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX idx_provider_location ON provider_status USING GIST(current_location);
 
--- Catálogo de Serviços com Preço Fixo (Mão de Obra)
+-- Catálogo de Serviços Fechados
 CREATE TABLE quick_services (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
@@ -108,9 +102,9 @@ CREATE TABLE service_calls (
   
   status ride_status DEFAULT 'searching',
   
-  -- Localização com mascaramento
-  neighborhood TEXT NOT NULL, -- Visível no radar
-  client_address TEXT NOT NULL, -- Protegido por RLS até o aceite
+  -- Localização
+  neighborhood TEXT NOT NULL, -- Exibido no radar público
+  client_address TEXT NOT NULL, -- Liberado apenas pós-aceite
   client_location GEOMETRY(Point, 4326) NOT NULL,
   
   payment_status payment_status DEFAULT 'pending',
@@ -123,41 +117,16 @@ CREATE TABLE service_calls (
 
 CREATE INDEX idx_service_calls_location ON service_calls USING GIST(client_location);
 
--- Políticas RLS (Segurança de Acesso)
+-- Políticas RLS
 ALTER TABLE service_calls ENABLE ROW LEVEL SECURITY;
 
--- Clientes acessam apenas seus próprios chamados
 CREATE POLICY "Clientes gerenciam seus chamados"
 ON service_calls FOR ALL
 USING (auth.uid() = client_id);
 
--- Prestadores visualizam chamados abertos no radar (com endereço protegido por view/função) ou seus próprios
-CREATE POLICY "Prestadores visualizam chamados aceitos ou abertos"
+CREATE POLICY "Prestadores visualizam chamados abertos ou próprios"
 ON service_calls FOR SELECT
 USING (
   (status = 'searching') OR (provider_id = auth.uid())
 );
 ```
-
----
-
-## 5. Requisitos de Frontend & UX Crítica
-
-* **Alerta do Prestador:** Tocar arquivo de áudio em loop (`/sounds/alert.mp3`) e acionar `navigator.vibrate([200, 100, 200])` ao receber evento de novo chamado via Supabase Realtime.
-* **Timer de Aceite:** Componente de barra regressiva de 30 segundos na tela do prestador. Se expirar, limpa o chamado da tela sem punição.
-* **Deep Link de Navegação:** Botão na tela de chamado aceito apontando para:
-  * Google Maps: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
-  * Waze: `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`
-* **Aviso Obrigatório de Material:** Inserir card visível na confirmação: *"Atenção: Os valores cobrem estritamente a mão de obra. Peças e conectores novos devem ser fornecidos pelo cliente."*
-* **Rodapé Institucional Obrigatório (Decreto 7.962/13):** Exibição de Razão Social, CNPJ, endereço da sede em Rio Verde e link de SAC.
-
----
-
-## 6. SQA & Pipeline de Qualidade (Sommerville & Pressman)
-
-* **TypeScript:** Flag `"strict": true` sem permissão de `any`.
-* **Análise Estática:** ESLint com regras do Next.js e verificação de complexidade ciclomática $\le 10$.
-* **Testes Automatizados:**
-  * Testes unitários para cálculo de split e utilitários de coordenadas (Vitest).
-  * Testes de integração para idempotência do Webhook Pix.
-* **Deploy:** Build automatizado com Wrangler via GitHub Actions / CLI para Cloudflare Workers.
