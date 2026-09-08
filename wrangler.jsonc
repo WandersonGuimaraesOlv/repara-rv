@@ -24,16 +24,6 @@
 		// see https://opennext.js.org/cloudflare/howtos/image
 		"binding": "IMAGES"
 	},
-	"routes": [
-		{
-			"pattern": "repararv.com",
-			"custom_domain": true
-		},
-		{
-			"pattern": "www.repararv.com",
-			"custom_domain": true
-		}
-	],
 	"vars": {
 		"NEXT_PUBLIC_SUPABASE_URL": "https://lvjahufllclmkqcbbrcu.supabase.co",
 		"NEXT_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable__Dm38pztWgjBHD5ZXmv4sQ_GOFOYwhz",
