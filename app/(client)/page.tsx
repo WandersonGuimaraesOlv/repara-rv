@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -79,6 +79,22 @@ export default function TriiderClientHomePage() {
     role?: string
   } | null>(null)
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState<boolean>(false)
+  const profileMenuRef = useRef<HTMLDivElement>(null)
+
+  // Fecha o menu de perfil ao clicar fora (sem precisar de div backdrop bloqueante)
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false)
+      }
+    }
+    if (isProfileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isProfileMenuOpen])
 
   // Carrega usuário autenticado e escuta mudanças de auth
   useEffect(() => {
@@ -148,16 +164,50 @@ export default function TriiderClientHomePage() {
     }
   }, [])
 
+  // Ação para navegar para os pedidos reais do usuário
+  const handleMyOrders = async () => {
+    setIsProfileMenuOpen(false)
+    if (!currentUser) {
+      router.push('/login')
+      return
+    }
+
+    try {
+      const supabase = createClient()
+      const { data: latestCall } = await supabase
+        .from('service_calls')
+        .select('id, status')
+        .eq('client_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (latestCall) {
+        router.push(`/acompanhar/${latestCall.id}`)
+      } else {
+        toast.info('Você não possui chamados em andamento no momento. Escolha um serviço abaixo para chamar um profissional!')
+        const el = document.getElementById('servicos')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' })
+        }
+      }
+    } catch {
+      router.push('/acompanhar/demo-call-101')
+    }
+  }
+
   const handleLogout = async () => {
-    const supabase = createClient()
+    setIsProfileMenuOpen(false)
     try {
       localStorage.removeItem('repara_user')
       document.cookie = 'repara_demo_role=; path=/; max-age=0'
     } catch {}
-    await supabase.auth.signOut()
+    await fetch('/api/auth/signout', { method: 'POST' }).catch(() => {})
+    const supabase = createClient()
+    await supabase.auth.signOut().catch(() => {})
     setCurrentUser(null)
-    setIsProfileMenuOpen(false)
-    toast.info('Você saiu da sua conta.')
+    toast.success('Você saiu da sua conta.')
+    router.replace('/')
     router.refresh()
   }
 
@@ -261,13 +311,14 @@ export default function TriiderClientHomePage() {
 
             {/* Direita: Ações & Perfil */}
             <div className="flex items-center gap-2.5 sm:gap-3">
-              <Link
-                href="/acompanhar/demo-call-101"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              <button
+                type="button"
+                onClick={handleMyOrders}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <ClipboardList size={15} />
                 <span>Meus Pedidos</span>
-              </Link>
+              </button>
 
               {currentUser?.role === 'provider' ? (
                 <Link
@@ -279,7 +330,7 @@ export default function TriiderClientHomePage() {
                 </Link>
               ) : (
                 <Link
-                  href="/painel"
+                  href={currentUser ? "/onboarding?role=provider" : "/login"}
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold text-orange-700 bg-orange-50 hover:bg-orange-100/80 border border-orange-200/60 shadow-sm transition-all"
                 >
                   <Bike size={15} className="text-orange-600" />
@@ -288,7 +339,7 @@ export default function TriiderClientHomePage() {
               )}
 
               {currentUser ? (
-                <div className="relative">
+                <div ref={profileMenuRef} className="relative">
                   <button
                     type="button"
                     id="btn-user-profile-menu"
@@ -306,70 +357,64 @@ export default function TriiderClientHomePage() {
 
                   {/* Dropdown Menu do Usuário */}
                   {isProfileMenuOpen && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setIsProfileMenuOpen(false)}
-                      />
-                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 text-left">
-                        <div className="px-4 py-3 border-b border-slate-100">
-                          <p className="text-xs font-bold text-slate-900 truncate">
-                            {currentUser.full_name || 'Usuário Repara RV'}
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 text-left">
+                      <div className="px-4 py-3 border-b border-slate-100">
+                        <p className="text-xs font-bold text-slate-900 truncate">
+                          {currentUser.full_name || 'Usuário Repara RV'}
+                        </p>
+                        {currentUser.phone && (
+                          <p className="text-[11px] text-slate-500 mt-0.5">
+                            {currentUser.phone}
                           </p>
-                          {currentUser.phone && (
-                            <p className="text-[11px] text-slate-500 mt-0.5">
-                              {currentUser.phone}
-                            </p>
-                          )}
-                          <span className="inline-block mt-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-orange-100 text-orange-700">
-                            {currentUser.role === 'provider' ? 'Prestador Autônomo' : 'Cliente / Morador'}
-                          </span>
-                        </div>
+                        )}
+                        <span className="inline-block mt-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-orange-100 text-orange-700">
+                          {currentUser.role === 'provider' ? 'Prestador Autônomo' : 'Cliente / Morador'}
+                        </span>
+                      </div>
 
-                        <div className="py-1">
-                          {currentUser.role === 'provider' ? (
-                            <Link
-                              href="/painel"
-                              onClick={() => setIsProfileMenuOpen(false)}
-                              className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
-                            >
-                              <Bike size={15} className="text-orange-600" />
-                              <span>Painel do Prestador</span>
-                            </Link>
-                          ) : (
-                            <Link
-                              href="/painel"
-                              onClick={() => setIsProfileMenuOpen(false)}
-                              className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
-                            >
-                              <Bike size={15} className="text-orange-600" />
-                              <span>Quero ser Prestador</span>
-                            </Link>
-                          )}
-
+                      <div className="py-1">
+                        {currentUser.role === 'provider' ? (
                           <Link
-                            href="/acompanhar/demo-call-101"
+                            href="/painel"
                             onClick={() => setIsProfileMenuOpen(false)}
                             className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
                           >
-                            <ClipboardList size={15} className="text-slate-500" />
-                            <span>Meus Pedidos / Chamados</span>
+                            <Bike size={15} className="text-orange-600" />
+                            <span>Painel do Prestador</span>
                           </Link>
-                        </div>
-
-                        <div className="border-t border-slate-100 pt-1">
-                          <button
-                            type="button"
-                            id="btn-logout"
-                            onClick={handleLogout}
-                            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors cursor-pointer text-left"
+                        ) : (
+                          <Link
+                            href="/onboarding?role=provider"
+                            onClick={() => setIsProfileMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
                           >
-                            <LogOut size={15} />
-                            <span>Sair da Conta</span>
-                          </button>
-                        </div>
+                            <Bike size={15} className="text-orange-600" />
+                            <span>Quero ser Prestador</span>
+                          </Link>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={handleMyOrders}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition-colors cursor-pointer text-left"
+                        >
+                          <ClipboardList size={15} className="text-slate-500" />
+                          <span>Meus Pedidos / Chamados</span>
+                        </button>
                       </div>
-                    </>
+
+                      <div className="border-t border-slate-100 pt-1">
+                        <button
+                          type="button"
+                          id="btn-logout"
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors cursor-pointer text-left"
+                        >
+                          <LogOut size={15} />
+                          <span>Sair da Conta</span>
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
               ) : (
@@ -803,16 +848,19 @@ export default function TriiderClientHomePage() {
           <span className="text-[10px] font-bold">Início</span>
         </button>
 
-        <Link
-          href="/acompanhar/demo-call-101"
-          onClick={() => setActiveTab('orders')}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('orders')
+            handleMyOrders()
+          }}
           className={`flex flex-col items-center gap-1 transition-colors ${
             activeTab === 'orders' ? 'text-orange-600' : 'text-slate-400 hover:text-slate-600'
           }`}
         >
           <ClipboardList size={20} />
           <span className="text-[10px] font-bold">Meus Pedidos</span>
-        </Link>
+        </button>
 
         <a
           href="https://wa.me/5564999999999?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20no%20Repara%20RV"
@@ -899,7 +947,7 @@ export default function TriiderClientHomePage() {
                 </Link>
               ) : (
                 <Link
-                  href="/painel"
+                  href="/onboarding?role=provider"
                   onClick={() => setIsProfileMenuOpen(false)}
                   className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-slate-800 font-semibold text-xs border border-slate-200 hover:bg-orange-50"
                 >
@@ -908,14 +956,14 @@ export default function TriiderClientHomePage() {
                 </Link>
               )}
 
-              <Link
-                href="/acompanhar/demo-call-101"
-                onClick={() => setIsProfileMenuOpen(false)}
-                className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-slate-800 font-semibold text-xs border border-slate-200 hover:bg-orange-50"
+              <button
+                type="button"
+                onClick={handleMyOrders}
+                className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-slate-800 font-semibold text-xs border border-slate-200 hover:bg-orange-50 cursor-pointer text-left"
               >
                 <ClipboardList size={18} className="text-slate-600" />
                 <span>Meus Chamados & Histórico</span>
-              </Link>
+              </button>
             </div>
 
             <button

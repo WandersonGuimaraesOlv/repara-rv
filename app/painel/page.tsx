@@ -54,6 +54,12 @@ export default function PainelPage() {
             setTotalToday(calls?.reduce((sum, c) => sum + (c.provider_cut ?? 0), 0) ?? 0)
             return
           }
+
+          if (prof && prof.role === 'client') {
+            toast.info('Cadastre sua chave Pix para começar a receber chamados como prestador!')
+            router.replace('/onboarding?role=provider')
+            return
+          }
         }
       } catch {
         // Fallback para modo demo se Supabase offline

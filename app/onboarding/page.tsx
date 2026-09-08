@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { UserRole } from '@/lib/types'
@@ -20,6 +20,34 @@ export default function OnboardingPage() {
   const [termsAccepted, setTermsAccepted] = useState(true)
   const [selfDeclaration, setSelfDeclaration] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  // Pré-preenchimento para usuários existentes e leitura de ?role=provider
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('role') === 'provider') {
+        setRole('provider')
+      }
+    }
+
+    async function loadUserData() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        if (profile) {
+          if (profile.full_name) setFullName(profile.full_name)
+          if (profile.phone) setPhone(profile.phone)
+          if (profile.cpf_or_cnpj) setCpfOrCnpj(profile.cpf_or_cnpj)
+        }
+      }
+    }
+    loadUserData()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
