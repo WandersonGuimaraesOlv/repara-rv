@@ -50,13 +50,18 @@ END $$;
 
 -- 1. Perfis
 CREATE TABLE IF NOT EXISTS profiles (
-  id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  role        user_role NOT NULL DEFAULT 'client',
-  full_name   TEXT NOT NULL,
-  phone       TEXT NOT NULL,
-  avatar_url  TEXT,
-  created_at  TIMESTAMPTZ DEFAULT NOW()
+  id               UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  role             user_role NOT NULL DEFAULT 'client',
+  full_name        TEXT NOT NULL,
+  phone            TEXT NOT NULL,
+  avatar_url       TEXT,
+  document_number  TEXT, -- CPF ou CNPJ MEI
+  is_verified      BOOLEAN DEFAULT FALSE, -- Validação de antecedentes criminais
+  created_at       TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS document_number TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
@@ -81,13 +86,16 @@ CREATE POLICY "Usuário insere o próprio perfil"
 
 -- 2. Status do Prestador (Radar / GPS)
 CREATE TABLE IF NOT EXISTS provider_status (
-  provider_id       UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
-  is_online         BOOLEAN DEFAULT FALSE,
-  current_location  GEOMETRY(Point, 4326),
-  pix_key           TEXT NOT NULL,
-  pix_key_type      TEXT NOT NULL, -- 'cpf' | 'phone' | 'email' | 'random'
-  updated_at        TIMESTAMPTZ DEFAULT NOW()
+  provider_id           UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
+  is_online             BOOLEAN DEFAULT FALSE,
+  current_location      GEOMETRY(Point, 4326),
+  pix_key               TEXT NOT NULL,
+  pix_key_type          TEXT NOT NULL, -- 'cpf' | 'phone' | 'email' | 'random'
+  recipient_gateway_id  TEXT, -- ID da subconta no gateway para split automático
+  updated_at            TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE provider_status ADD COLUMN IF NOT EXISTS recipient_gateway_id TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_provider_location ON provider_status USING GIST(current_location);
 
@@ -137,6 +145,7 @@ CREATE TABLE IF NOT EXISTS service_calls (
   platform_fee     NUMERIC(10, 2) NOT NULL,
   provider_cut     NUMERIC(10, 2) NOT NULL,
   status           ride_status DEFAULT 'searching',
+  neighborhood     TEXT NOT NULL DEFAULT 'Setor Central',
   client_address   TEXT NOT NULL,
   client_location  GEOMETRY(Point, 4326) NOT NULL,
   cancel_reason    cancel_reason,
@@ -150,6 +159,8 @@ CREATE TABLE IF NOT EXISTS service_calls (
   completed_at     TIMESTAMPTZ,
   cancelled_at     TIMESTAMPTZ
 );
+
+ALTER TABLE service_calls ADD COLUMN IF NOT EXISTS neighborhood TEXT NOT NULL DEFAULT 'Setor Central';
 
 CREATE INDEX IF NOT EXISTS idx_service_calls_location ON service_calls USING GIST(client_location);
 CREATE INDEX IF NOT EXISTS idx_service_calls_status ON service_calls (status);

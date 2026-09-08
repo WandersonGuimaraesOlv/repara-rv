@@ -543,10 +543,13 @@ export default function TriiderClientHomePage() {
                 </span>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                A plataforma sob demanda de serviços residenciais de Rio Verde (GO). Conectando clientes a prestadores qualificados com preço fixo e transparência.
+                A plataforma sob demanda de serviços residenciais de Rio Verde (GO). Conectando moradores a prestadores qualificados com preço fixo e transparência.
               </p>
-              <div className="text-xs text-slate-500">
-                © {new Date().getFullYear()} Repara RV • Todos os direitos reservados.
+              <div className="pt-2 text-[11px] text-slate-500 border-t border-slate-800 space-y-0.5">
+                <p className="font-semibold text-slate-400">Repara RV Tecnologia e Intermediação Ltda</p>
+                <p>CNAE 7490-1/04 • Sede em Rio Verde - GO • CEP 75901-000</p>
+                <p>SAC: sac@repararv.com • Conforme Decreto Federal 7.962/13</p>
+                <p className="pt-1">© {new Date().getFullYear()} Repara RV • Todos os direitos reservados.</p>
               </div>
             </div>
 

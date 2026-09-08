@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-const ACCEPT_TIMEOUT_SECONDS = 45
+const ACCEPT_TIMEOUT_SECONDS = 30
 
 interface UseAcceptTimerOptions {
   onTimeout: () => void
@@ -11,7 +11,7 @@ interface UseAcceptTimerOptions {
 
 /**
  * Hook de countdown para janela de aceite do prestador.
- * Conta 45s regressivos e chama onTimeout ao expirar.
+ * Conta 30s regressivos e chama onTimeout ao expirar sem punição (Zero Subordinação).
  */
 export function useAcceptTimer({ onTimeout, autoStart = false }: UseAcceptTimerOptions) {
   const [secondsLeft, setSecondsLeft] = useState(ACCEPT_TIMEOUT_SECONDS)
