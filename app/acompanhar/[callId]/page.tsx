@@ -6,10 +6,12 @@ import { createClient } from '@/lib/supabase/client'
 import { ServiceCall } from '@/lib/types'
 import { CallStatusTracker } from '@/components/call-status-tracker'
 import { PixPaymentModal } from '@/components/pix-payment-modal'
+import { EmergencySosButton } from '@/components/emergency-sos-button'
 import { formatCurrency, getStatusLabel } from '@/lib/utils'
 import { XCircle, Loader2, Star } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
+
 
 export default function AcompanharPage() {
   const { callId } = useParams<{ callId: string }>()
@@ -155,13 +157,22 @@ export default function AcompanharPage() {
   return (
     <div className="page-container p-4">
       {/* Header */}
-      <header className="py-4 mb-6 flex items-center justify-between">
+      <header className="py-4 mb-6 flex items-center justify-between gap-2">
         <h1 className="font-bold" style={{ color: 'var(--color-text)' }}>
           Acompanhar Chamado
         </h1>
-        <span className="text-xs px-3 py-1 rounded-full font-mono" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-subtle)' }}>
-          #{callId.slice(0, 8).toUpperCase()}
-        </span>
+        <div className="flex items-center gap-2">
+          <EmergencySosButton
+            callId={callId}
+            userRole="client"
+            status={call.status}
+            clientAddress={call.client_address}
+            clientLocation={call.client_location}
+          />
+          <span className="text-xs px-3 py-1 rounded-full font-mono" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-subtle)' }}>
+            #{callId.slice(0, 8).toUpperCase()}
+          </span>
+        </div>
       </header>
 
       {/* Tracker central */}

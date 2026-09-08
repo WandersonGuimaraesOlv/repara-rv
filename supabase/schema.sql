@@ -206,6 +206,44 @@ CREATE POLICY "Avaliações visíveis para os envolvidos"
   USING (TRUE);
 
 -- ============================================================
+-- 6. Tabela de Alertas de Emergência (Central de Segurança / Botão SOS)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS emergency_alerts (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  call_id         UUID NOT NULL REFERENCES service_calls(id) ON DELETE CASCADE,
+  triggered_by    UUID NOT NULL REFERENCES profiles(id),
+  user_role       user_role NOT NULL,
+  latitude        NUMERIC(10, 8),
+  longitude       NUMERIC(11, 8),
+  resolved        BOOLEAN DEFAULT FALSE,
+  resolved_notes  TEXT,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_emergency_alerts_call ON emergency_alerts(call_id);
+CREATE INDEX IF NOT EXISTS idx_emergency_alerts_user ON emergency_alerts(triggered_by);
+CREATE INDEX IF NOT EXISTS idx_emergency_alerts_created ON emergency_alerts(created_at DESC);
+
+ALTER TABLE emergency_alerts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Usuários envolvidos podem acionar emergência" ON emergency_alerts;
+CREATE POLICY "Usuários envolvidos podem acionar emergência"
+  ON emergency_alerts FOR INSERT
+  WITH CHECK ( auth.uid() = triggered_by );
+
+DROP POLICY IF EXISTS "Usuários envolvidos podem visualizar seus alertas" ON emergency_alerts;
+CREATE POLICY "Usuários envolvidos podem visualizar seus alertas"
+  ON emergency_alerts FOR SELECT
+  USING (
+    auth.uid() = triggered_by
+    OR EXISTS (
+      SELECT 1 FROM service_calls sc
+      WHERE sc.id = emergency_alerts.call_id
+        AND (sc.client_id = auth.uid() OR sc.provider_id = auth.uid())
+    )
+  );
+
+-- ============================================================
 -- FUNCTION: Buscar prestador mais próximo disponível
 -- ============================================================
 CREATE OR REPLACE FUNCTION find_nearest_provider(
@@ -243,6 +281,11 @@ END $$;
 
 DO $$ BEGIN
   ALTER PUBLICATION supabase_realtime ADD TABLE provider_status;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER PUBLICATION supabase_realtime ADD TABLE emergency_alerts;
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 

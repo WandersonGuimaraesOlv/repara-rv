@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ServiceCall, CancelReason } from '@/lib/types'
 import { NavigationButtons } from '@/components/navigation-buttons'
+import { EmergencySosButton } from '@/components/emergency-sos-button'
 import { formatCurrency } from '@/lib/utils'
 import { CheckCircle, XCircle, Loader2, ArrowLeft, Wrench, MapPin, DollarSign } from 'lucide-react'
 import { toast } from 'sonner'
@@ -200,9 +201,18 @@ export default function ChamadoProviderPage() {
           <ArrowLeft size={18} style={{ color: 'var(--color-text)' }} />
         </Link>
         <h1 className="font-bold" style={{ color: 'var(--color-text)' }}>Chamado Aceito</h1>
-        <span className="text-xs px-2 py-1 rounded-full ml-auto font-mono" style={{ background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid #10B981' }}>
-          ● Em andamento
-        </span>
+        <div className="ml-auto flex items-center gap-2">
+          <EmergencySosButton
+            callId={callId}
+            userRole="provider"
+            status={call.status}
+            clientAddress={call.client_address}
+            clientLocation={call.client_location}
+          />
+          <span className="text-xs px-2 py-1 rounded-full font-mono" style={{ background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid #10B981' }}>
+            ● Em andamento
+          </span>
+        </div>
       </header>
 
       {/* Card do serviço */}

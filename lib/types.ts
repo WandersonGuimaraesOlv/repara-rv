@@ -130,3 +130,25 @@ export interface PixWebhookPayload {
   action: string
   data: { id: string }
 }
+
+// ─── Alertas de Emergência (Central de Segurança / Botão SOS) ─
+export interface EmergencyAlert {
+  id: string
+  call_id: string
+  triggered_by: string
+  user_role: UserRole
+  latitude?: number | null
+  longitude?: number | null
+  resolved: boolean
+  resolved_notes?: string | null
+  created_at: string
+}
+
+export interface EmergencyNotifyPayload {
+  call_id: string
+  user_role: UserRole
+  latitude?: number | null
+  longitude?: number | null
+  triggered_by?: string
+}
+

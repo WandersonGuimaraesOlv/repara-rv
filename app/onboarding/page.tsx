@@ -37,17 +37,28 @@ export default function OnboardingPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.replace('/login'); return }
 
-    const { error: profileError } = await supabase
+    const profilePayload: Record<string, any> = {
+      id: user.id,
+      role,
+      full_name: fullName.trim(),
+      phone: phone.trim(),
+      cpf_or_cnpj: cpfOrCnpj.trim(),
+      terms_accepted_at: new Date().toISOString(),
+      self_declaration_signed: role === 'provider' ? selfDeclaration : true,
+    }
+
+    let { error: profileError } = await supabase
       .from('profiles')
-      .upsert({
-        id: user.id,
-        role,
-        full_name: fullName.trim(),
-        phone: phone.trim(),
-        cpf_or_cnpj: cpfOrCnpj.trim(),
-        terms_accepted_at: new Date().toISOString(),
-        self_declaration_signed: role === 'provider' ? selfDeclaration : true,
-      })
+      .upsert(profilePayload)
+
+    // Fallback resiliente caso as colunas novas ainda não estejam criadas no Supabase
+    if (profileError && profileError.code === 'PGRST204') {
+      delete profilePayload.cpf_or_cnpj
+      delete profilePayload.terms_accepted_at
+      delete profilePayload.self_declaration_signed
+      const retry = await supabase.from('profiles').upsert(profilePayload)
+      profileError = retry.error
+    }
 
     if (profileError) {
       setLoading(false)

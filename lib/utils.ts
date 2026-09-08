@@ -65,3 +65,46 @@ export function getStatusColor(status: string): string {
   }
   return colors[status] ?? 'text-slate-400'
 }
+
+export function isEmergencySosActive(status: string): boolean {
+  return ['accepted', 'on_the_way', 'in_progress'].includes(status)
+}
+
+export interface FormatEmergencyParams {
+  callerName: string
+  callerRole: 'client' | 'provider' | 'admin'
+  callerPhone: string
+  otherPartyName?: string | null
+  otherPartyRole?: 'client' | 'provider' | 'admin'
+  otherPartyPhone?: string | null
+  serviceName: string
+  address: string
+  latitude?: number | null
+  longitude?: number | null
+  callId: string
+  timestamp?: Date | string
+}
+
+export function formatEmergencyMessage(params: FormatEmergencyParams): string {
+  const dateObj = params.timestamp ? new Date(params.timestamp) : new Date()
+  const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+  const roleLabel = params.callerRole === 'client' ? 'Cliente' : 'Prestador'
+  const otherRoleLabel = params.callerRole === 'client' ? 'Prestador no local' : 'Cliente no local'
+
+  const mapsUrl = params.latitude !== null && params.latitude !== undefined && params.longitude !== null && params.longitude !== undefined
+    ? `https://maps.google.com/?q=${params.latitude},${params.longitude}`
+    : `https://maps.google.com/?q=${encodeURIComponent(params.address + ', Rio Verde - GO')}`
+
+  return [
+    '🚨 ALERTA SOS ACIONADO NO REPARA RV',
+    `Quem acionou: ${roleLabel} ${params.callerName} (${formatPhone(params.callerPhone)})`,
+    `${otherRoleLabel}: ${params.otherPartyName || 'Não informado'} (${params.otherPartyPhone ? formatPhone(params.otherPartyPhone) : 'Não informado'})`,
+    `Serviço: ${params.serviceName}`,
+    `Endereço: ${params.address}`,
+    `Localização: ${mapsUrl}`,
+    `Horário: ${timeStr}`,
+    `Chamado: #${params.callId.slice(0, 8).toUpperCase()}`,
+  ].join('\n')
+}
+

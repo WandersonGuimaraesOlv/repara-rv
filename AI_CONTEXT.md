@@ -23,6 +23,14 @@ Para maximizar a captação de prestadores sem infligir a legislação brasileir
 * **Mascaramento de Dados (LGPD):** O prestador no radar enxerga apenas `neighborhood` (bairro) e `approximate_distance_km`. Endereço exato e coordenadas só são liberados após transição para status `accepted`.
 * **Zero Subordinação Trabalhista:** O algoritmo não aplica advertências, suspensões ou rebaixamento de conta para prestadores que recusarem chamados ou ficarem inativos.
 
+### D. Central de Segurança & Botão SOS
+- **Visibilidade:** Durante os status `accepted`, `on_the_way` e `in_progress`, exibir um ícone discreto de escudo/segurança no topo da tela do cliente e do prestador.
+- **Ação do Botão:**
+  1. Registra o evento na tabela `emergency_alerts` com coordenadas atuais.
+  2. Dispara a rota `/api/emergency/notify` enviando dados completos do chamado para o WhatsApp/Telegram de suporte dos fundadores.
+  3. Redireciona o usuário para `tel:190` via deep link nativo.
+- **Blindagem Jurídica & Confiança:** Cumpre o dever de vigilância e cuidado (CDC) e reduz a barreira de entrada para clientes (especialmente mulheres e idosos) e prestadores em domicílio desconhecido.
+
 ---
 
 ## 3. Stack Tecnológica & Infraestrutura
@@ -129,4 +137,24 @@ ON service_calls FOR SELECT
 USING (
   (status = 'searching') OR (provider_id = auth.uid())
 );
+
+-- Tabela de Alertas de Emergência (Central de Segurança / Botão SOS)
+CREATE TABLE emergency_alerts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  call_id UUID NOT NULL REFERENCES service_calls(id) ON DELETE CASCADE,
+  triggered_by UUID NOT NULL REFERENCES profiles(id),
+  user_role user_role NOT NULL,
+  latitude NUMERIC(10, 8),
+  longitude NUMERIC(11, 8),
+  resolved BOOLEAN DEFAULT FALSE,
+  resolved_notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE emergency_alerts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Usuários envolvidos podem acionar emergência"
+ON emergency_alerts FOR INSERT
+WITH CHECK ( auth.uid() = triggered_by );
 ```
+
