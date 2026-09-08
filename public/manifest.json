@@ -1,0 +1,44 @@
+{
+  "name": "Repara RV",
+  "short_name": "ReparaRV",
+  "description": "Deu problema em casa? O Repara RV resolve. Serviços residenciais com preço fixo em Rio Verde.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F0D1A",
+  "theme_color": "#6366F1",
+  "orientation": "portrait",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icons/screenshot-wide.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Catálogo de Serviços"
+    }
+  ],
+  "categories": ["utilities", "business"],
+  "shortcuts": [
+    {
+      "name": "Chamar Agora",
+      "short_name": "Chamar",
+      "description": "Solicite um serviço agora",
+      "url": "/",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
