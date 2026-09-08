@@ -74,11 +74,22 @@ export default function LoginPage() {
       // 3. Verifica se o usuário já possui perfil cadastrado
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, role, full_name')
+        .select('id, role, full_name, phone')
         .eq('id', data.user!.id)
         .maybeSingle()
 
       setLoading(false)
+
+      if (profile) {
+        try {
+          localStorage.setItem('repara_user', JSON.stringify({
+            id: profile.id,
+            role: profile.role,
+            full_name: profile.full_name,
+            phone: profile.phone || phone,
+          }))
+        } catch {}
+      }
 
       if (json.isNew || !profile) {
         toast.success('Acesso liberado! Vamos completar seu cadastro 🎉')
@@ -218,6 +229,14 @@ export default function LoginPage() {
             id="btn-demo-provider"
             onClick={() => {
               document.cookie = 'repara_demo_role=provider; path=/; max-age=86400'
+              try {
+                localStorage.setItem('repara_user', JSON.stringify({
+                  id: 'demo-provider-1',
+                  full_name: 'Carlos Prestador (Demo)',
+                  role: 'provider',
+                  phone: '64999998888',
+                }))
+              } catch {}
               toast.success('Entrando no Painel do Prestador!')
               router.push('/painel')
             }}
@@ -238,6 +257,14 @@ export default function LoginPage() {
             id="btn-demo-client"
             onClick={() => {
               document.cookie = 'repara_demo_role=client; path=/; max-age=86400'
+              try {
+                localStorage.setItem('repara_user', JSON.stringify({
+                  id: 'demo-client-1',
+                  full_name: 'Cliente Demo',
+                  role: 'client',
+                  phone: '64981155550',
+                }))
+              } catch {}
               toast.success('Entrando como Cliente!')
               router.push('/')
             }}

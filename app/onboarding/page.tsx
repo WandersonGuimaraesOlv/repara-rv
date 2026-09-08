@@ -76,6 +76,14 @@ export default function OnboardingPage() {
     }
 
     setLoading(false)
+    try {
+      localStorage.setItem('repara_user', JSON.stringify({
+        id: user.id,
+        full_name: fullName.trim(),
+        phone: phone.trim(),
+        role,
+      }))
+    } catch {}
     toast.success('Perfil criado! Bem-vindo ao Repara RV 🎉')
     router.replace(role === 'provider' ? '/painel' : '/')
   }

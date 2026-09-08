@@ -27,8 +27,10 @@ import {
   Sparkles,
   Bike,
   PhoneCall,
-  Check
+  Check,
+  LogOut
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { DEFAULT_SERVICES } from '@/lib/catalog'
 import { QuickService } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
@@ -70,6 +72,94 @@ export default function TriiderClientHomePage() {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false)
   const [customAddress, setCustomAddress] = useState<string>('')
   const [activeTab, setActiveTab] = useState<'home' | 'orders' | 'support' | 'profile'>('home')
+  const [currentUser, setCurrentUser] = useState<{
+    id: string
+    full_name?: string
+    phone?: string
+    role?: string
+  } | null>(null)
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState<boolean>(false)
+
+  // Carrega usuário autenticado e escuta mudanças de auth
+  useEffect(() => {
+    const supabase = createClient()
+
+    // 1. Tenta recuperar cache rápido do localStorage para exibição imediata
+    try {
+      const cached = localStorage.getItem('repara_user')
+      if (cached) {
+        setCurrentUser(JSON.parse(cached))
+      }
+    } catch {}
+
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, role, full_name, phone')
+          .eq('id', user.id)
+          .maybeSingle()
+
+        if (profile) {
+          setCurrentUser(profile)
+          try {
+            localStorage.setItem('repara_user', JSON.stringify(profile))
+          } catch {}
+        } else {
+          const fallbackUser = {
+            id: user.id,
+            full_name: user.user_metadata?.full_name || 'Usuário',
+            phone: user.phone || '',
+            role: 'client',
+          }
+          setCurrentUser(fallbackUser)
+        }
+      } else {
+        const cookies = typeof document !== 'undefined' ? document.cookie : ''
+        if (cookies.includes('repara_demo_role=client')) {
+          setCurrentUser({ id: 'demo-client-1', full_name: 'Cliente Demo', role: 'client' })
+        } else if (cookies.includes('repara_demo_role=provider')) {
+          setCurrentUser({ id: 'demo-provider-1', full_name: 'Carlos Prestador', role: 'provider' })
+        } else {
+          setCurrentUser(null)
+          try {
+            localStorage.removeItem('repara_user')
+          } catch {}
+        }
+      }
+    }
+
+    checkAuth()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        setCurrentUser(null)
+        try {
+          localStorage.removeItem('repara_user')
+        } catch {}
+      } else {
+        checkAuth()
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    try {
+      localStorage.removeItem('repara_user')
+      document.cookie = 'repara_demo_role=; path=/; max-age=0'
+    } catch {}
+    await supabase.auth.signOut()
+    setCurrentUser(null)
+    setIsProfileMenuOpen(false)
+    toast.info('Você saiu da sua conta.')
+    router.refresh()
+  }
 
   // Carrega do Supabase em background se disponível
   useEffect(() => {
@@ -179,21 +269,119 @@ export default function TriiderClientHomePage() {
                 <span>Meus Pedidos</span>
               </Link>
 
-              <Link
-                href="/painel"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold text-orange-700 bg-orange-50 hover:bg-orange-100/80 border border-orange-200/60 shadow-sm transition-all"
-              >
-                <Bike size={15} className="text-orange-600" />
-                <span className="hidden sm:inline">Sou</span> Profissional
-              </Link>
+              {currentUser?.role === 'provider' ? (
+                <Link
+                  href="/painel"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-300 shadow-sm transition-all"
+                >
+                  <Bike size={15} className="text-emerald-600" />
+                  <span>Meu Painel</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/painel"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold text-orange-700 bg-orange-50 hover:bg-orange-100/80 border border-orange-200/60 shadow-sm transition-all"
+                >
+                  <Bike size={15} className="text-orange-600" />
+                  <span className="hidden sm:inline">Sou</span> Profissional
+                </Link>
+              )}
 
-              <Link
-                href="/login"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-colors"
-              >
-                <User size={15} className="text-slate-600" />
-                <span className="hidden sm:inline">Entrar</span>
-              </Link>
+              {currentUser ? (
+                <div className="relative">
+                  <button
+                    type="button"
+                    id="btn-user-profile-menu"
+                    onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold text-slate-800 bg-white hover:bg-slate-50 border border-slate-200 shadow-sm transition-all cursor-pointer"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center text-[10px] font-black uppercase shadow-xs">
+                      {currentUser.full_name ? currentUser.full_name.charAt(0) : 'U'}
+                    </div>
+                    <span className="max-w-[120px] sm:max-w-[160px] truncate">
+                      {currentUser.full_name?.split(' ')[0] || 'Minha Conta'}
+                    </span>
+                    <ChevronDown size={14} className={`text-slate-400 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* Dropdown Menu do Usuário */}
+                  {isProfileMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 text-left">
+                        <div className="px-4 py-3 border-b border-slate-100">
+                          <p className="text-xs font-bold text-slate-900 truncate">
+                            {currentUser.full_name || 'Usuário Repara RV'}
+                          </p>
+                          {currentUser.phone && (
+                            <p className="text-[11px] text-slate-500 mt-0.5">
+                              {currentUser.phone}
+                            </p>
+                          )}
+                          <span className="inline-block mt-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-orange-100 text-orange-700">
+                            {currentUser.role === 'provider' ? 'Prestador Autônomo' : 'Cliente / Morador'}
+                          </span>
+                        </div>
+
+                        <div className="py-1">
+                          {currentUser.role === 'provider' ? (
+                            <Link
+                              href="/painel"
+                              onClick={() => setIsProfileMenuOpen(false)}
+                              className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                            >
+                              <Bike size={15} className="text-orange-600" />
+                              <span>Painel do Prestador</span>
+                            </Link>
+                          ) : (
+                            <Link
+                              href="/painel"
+                              onClick={() => setIsProfileMenuOpen(false)}
+                              className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                            >
+                              <Bike size={15} className="text-orange-600" />
+                              <span>Quero ser Prestador</span>
+                            </Link>
+                          )}
+
+                          <Link
+                            href="/acompanhar/demo-call-101"
+                            onClick={() => setIsProfileMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                          >
+                            <ClipboardList size={15} className="text-slate-500" />
+                            <span>Meus Pedidos / Chamados</span>
+                          </Link>
+                        </div>
+
+                        <div className="border-t border-slate-100 pt-1">
+                          <button
+                            type="button"
+                            id="btn-logout"
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors cursor-pointer text-left"
+                          >
+                            <LogOut size={15} />
+                            <span>Sair da Conta</span>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  id="btn-nav-login"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-colors"
+                >
+                  <User size={15} className="text-slate-600" />
+                  <span className="hidden sm:inline">Entrar</span>
+                </Link>
+              )}
             </div>
 
           </div>
@@ -639,17 +827,109 @@ export default function TriiderClientHomePage() {
           <span className="text-[10px] font-bold">Suporte</span>
         </a>
 
-        <Link
-          href="/login"
-          onClick={() => setActiveTab('profile')}
-          className={`flex flex-col items-center gap-1 transition-colors ${
-            activeTab === 'profile' ? 'text-orange-600' : 'text-slate-400 hover:text-slate-600'
-          }`}
-        >
-          <User size={20} />
-          <span className="text-[10px] font-bold">Perfil</span>
-        </Link>
+        {currentUser ? (
+          <button
+            type="button"
+            onClick={() => setIsProfileMenuOpen(true)}
+            className={`flex flex-col items-center gap-1 transition-colors ${
+              isProfileMenuOpen ? 'text-orange-600' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center text-[9px] font-black uppercase">
+              {currentUser.full_name ? currentUser.full_name.charAt(0) : 'U'}
+            </div>
+            <span className="text-[10px] font-bold truncate max-w-[50px]">
+              {currentUser.full_name?.split(' ')[0] || 'Perfil'}
+            </span>
+          </button>
+        ) : (
+          <Link
+            href="/login"
+            onClick={() => setActiveTab('profile')}
+            className={`flex flex-col items-center gap-1 transition-colors ${
+              activeTab === 'profile' ? 'text-orange-600' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <User size={20} />
+            <span className="text-[10px] font-bold">Entrar</span>
+          </Link>
+        )}
       </nav>
+
+      {/* ────────────────────────────────────────────────────────
+          MODAL DE PERFIL NO MOBILE
+          ──────────────────────────────────────────────────────── */}
+      {isProfileMenuOpen && currentUser && (
+        <div className="md:hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end justify-center p-0 animate-in fade-in">
+          <div className="w-full bg-white rounded-t-3xl p-6 shadow-2xl border-t border-slate-200 animate-in slide-in-from-bottom-6">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center text-sm font-black uppercase">
+                  {currentUser.full_name ? currentUser.full_name.charAt(0) : 'U'}
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 truncate">
+                    {currentUser.full_name || 'Minha Conta'}
+                  </h3>
+                  <p className="text-xs text-slate-500">{currentUser.phone || 'Repara RV'}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsProfileMenuOpen(false)}
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-2 mb-4">
+              <span className="inline-block px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-orange-100 text-orange-700 mb-2">
+                {currentUser.role === 'provider' ? 'Prestador Autônomo' : 'Cliente / Morador'}
+              </span>
+
+              {currentUser.role === 'provider' ? (
+                <Link
+                  href="/painel"
+                  onClick={() => setIsProfileMenuOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-slate-800 font-semibold text-xs border border-slate-200 hover:bg-orange-50"
+                >
+                  <Bike size={18} className="text-orange-600" />
+                  <span>Acessar Painel do Prestador</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/painel"
+                  onClick={() => setIsProfileMenuOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-slate-800 font-semibold text-xs border border-slate-200 hover:bg-orange-50"
+                >
+                  <Bike size={18} className="text-orange-600" />
+                  <span>Quero ser Prestador Parceiro</span>
+                </Link>
+              )}
+
+              <Link
+                href="/acompanhar/demo-call-101"
+                onClick={() => setIsProfileMenuOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-slate-800 font-semibold text-xs border border-slate-200 hover:bg-orange-50"
+              >
+                <ClipboardList size={18} className="text-slate-600" />
+                <span>Meus Chamados & Histórico</span>
+              </Link>
+            </div>
+
+            <button
+              type="button"
+              id="btn-mobile-logout"
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 p-3 rounded-xl font-bold text-xs text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors"
+            >
+              <LogOut size={16} />
+              <span>Sair da Conta</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ────────────────────────────────────────────────────────
           MODAL DE SELEÇÃO DE BAIRRO (RIO VERDE - GO)
