@@ -45,3 +45,8 @@ next-env.d.ts
 # temp & cache
 .temp/
 supabase/.temp/
+
+# cloudflare open-next & wrangler
+.open-next/
+.wrangler/
+.dev.vars
