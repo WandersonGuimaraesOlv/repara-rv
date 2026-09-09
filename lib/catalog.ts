@@ -50,6 +50,18 @@ export const DEFAULT_SERVICES: QuickService[] = [
     sort_order: 4,
     is_active: true,
   },
+  {
+    id: '4b58ef09-8b01-49b8-a621-eef671239920',
+    name: 'Troca de Disjuntor / Pane Elétrica',
+    category: 'Elétrica',
+    description: 'Diagnóstico de sobrecarga, substituição de disjuntor defeituoso no quadro geral.',
+    fixed_price: 80.0,
+    platform_fee: 12.0,
+    icon: 'zap',
+    color: '#F59E0B',
+    sort_order: 5,
+    is_active: true,
+  },
 
   // ── Hidráulica ──
   {
@@ -61,7 +73,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
     platform_fee: 12.0,
     icon: 'Droplet',
     color: '#06B6D4',
-    sort_order: 5,
+    sort_order: 6,
     is_active: true,
   },
   {
@@ -73,7 +85,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
     platform_fee: 12.0,
     icon: 'Pipette',
     color: '#06B6D4',
-    sort_order: 6,
+    sort_order: 7,
     is_active: true,
   },
   {
@@ -85,7 +97,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
     platform_fee: 12.0,
     icon: 'Wrench',
     color: '#06B6D4',
-    sort_order: 7,
+    sort_order: 8,
     is_active: true,
   },
   {
@@ -97,7 +109,43 @@ export const DEFAULT_SERVICES: QuickService[] = [
     platform_fee: 12.0,
     icon: 'ShieldCheck',
     color: '#06B6D4',
-    sort_order: 8,
+    sort_order: 9,
+    is_active: true,
+  },
+  {
+    id: '7a1e5052-19e4-4d89-b873-12502ef56291',
+    name: 'Reparo de Válvula de Descarga (Hydra/Docol)',
+    category: 'Hidráulica',
+    description: 'Substituição do cartucho e vedação de válvula de descarga embutida com regulagem.',
+    fixed_price: 80.0,
+    platform_fee: 12.0,
+    icon: 'Droplet',
+    color: '#06B6D4',
+    sort_order: 10,
+    is_active: true,
+  },
+  {
+    id: '3f990145-2e6b-4e12-870e-3fa128cd6109',
+    name: 'Troca / Reparo Torneira com Misturador',
+    category: 'Hidráulica',
+    description: 'Instalação ou conserto de torneira monocomando ou misturador de água quente/fria.',
+    fixed_price: 80.0,
+    platform_fee: 12.0,
+    icon: 'Droplet',
+    color: '#06B6D4',
+    sort_order: 11,
+    is_active: true,
+  },
+  {
+    id: '9d82136e-5a7c-47b2-bdcf-8869c9b13922',
+    name: 'Troca ou Instalação de Vaso Sanitário',
+    category: 'Hidráulica',
+    description: 'Remoção de louça antiga, fixação de novo vaso com anel de cera, bolsa e vedação de silicone.',
+    fixed_price: 120.0,
+    platform_fee: 12.0,
+    icon: 'Wrench',
+    color: '#06B6D4',
+    sort_order: 12,
     is_active: true,
   },
 
@@ -111,7 +159,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
     platform_fee: 12.0,
     icon: 'Tv',
     color: '#8B5CF6',
-    sort_order: 9,
+    sort_order: 13,
     is_active: true,
   },
   {
@@ -123,7 +171,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
     platform_fee: 12.0,
     icon: 'Hammer',
     color: '#8B5CF6',
-    sort_order: 10,
+    sort_order: 14,
     is_active: true,
   },
   {
@@ -135,7 +183,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
     platform_fee: 12.0,
     icon: 'Shirt',
     color: '#8B5CF6',
-    sort_order: 11,
+    sort_order: 15,
     is_active: true,
   },
   {
@@ -147,7 +195,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
     platform_fee: 12.0,
     icon: 'Settings2',
     color: '#8B5CF6',
-    sort_order: 12,
+    sort_order: 16,
     is_active: true,
   },
 
@@ -161,7 +209,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
     platform_fee: 12.0,
     icon: 'Key',
     color: '#EAB308',
-    sort_order: 13,
+    sort_order: 17,
     is_active: true,
   },
   {
@@ -173,7 +221,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
     platform_fee: 12.0,
     icon: 'Lock',
     color: '#EAB308',
-    sort_order: 14,
+    sort_order: 18,
     is_active: true,
   },
 
@@ -187,7 +235,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
     platform_fee: 12.0,
     icon: 'WashingMachine',
     color: '#10B981',
-    sort_order: 15,
+    sort_order: 19,
     is_active: true,
   },
   {
@@ -199,7 +247,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
     platform_fee: 12.0,
     icon: 'Flame',
     color: '#10B981',
-    sort_order: 16,
+    sort_order: 20,
     is_active: true,
   },
 ]
