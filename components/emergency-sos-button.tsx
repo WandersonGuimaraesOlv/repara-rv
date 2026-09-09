@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ShieldAlert, PhoneCall, X, Loader2, AlertTriangle, MapPin } from 'lucide-react'
+import { ShieldAlert, PhoneCall, Loader2, AlertTriangle, MapPin } from 'lucide-react'
 import { isEmergencySosActive } from '@/lib/utils'
 import { toast } from 'sonner'
 
