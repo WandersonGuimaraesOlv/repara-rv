@@ -247,13 +247,14 @@ export default function AcompanharPage() {
         </div>
       )}
 
-      {/* Modal de pagamento Pix */}
+      {/* Modal de pagamento Pix / Cartão */}
       {showPix && (
         <PixPaymentModal
           amount={call.total_price}
           providerCut={call.provider_cut}
           pixQrCode={call.pix_qr_code}
           pixCopyPaste={call.pix_copy_paste}
+          checkoutUrl={call.cancel_note}
           callId={callId}
           onClose={() => setShowPix(false)}
         />

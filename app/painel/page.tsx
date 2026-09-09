@@ -18,6 +18,7 @@ export default function PainelPage() {
   const [pendingCall, setPendingCall] = useState<ServiceCall | null>(null)
   const [togglingOnline, setTogglingOnline] = useState(false)
   const [totalToday, setTotalToday] = useState(0)
+  const [pendingToday, setPendingToday] = useState(0)
 
   const { lat, lng, error: geoError, getPosition } = useGeolocation(true)
 
@@ -50,11 +51,16 @@ export default function PainelPage() {
             const today = new Date().toISOString().split('T')[0]
             const { data: calls } = await supabase
               .from('service_calls')
-              .select('provider_cut')
+              .select('provider_cut, payment_status')
               .eq('provider_id', user.id)
               .eq('status', 'completed')
               .gte('completed_at', today)
-            setTotalToday(calls?.reduce((sum, c) => sum + (c.provider_cut ?? 0), 0) ?? 0)
+
+            const paidCalls = calls?.filter(c => c.payment_status === 'paid') || []
+            const pendingCalls = calls?.filter(c => c.payment_status !== 'paid') || []
+
+            setTotalToday(paidCalls.reduce((sum, c) => sum + (c.provider_cut ?? 0), 0))
+            setPendingToday(pendingCalls.length)
             return
           }
 
@@ -281,7 +287,12 @@ export default function PainelPage() {
         </h2>
         {totalToday > 0 && (
           <p className="text-sm mt-1" style={{ color: 'var(--color-success)' }}>
-            Você ganhou <strong>R$ {totalToday.toFixed(2).replace('.', ',')}</strong> hoje ✨
+            Você recebeu <strong>R$ {totalToday.toFixed(2).replace('.', ',')}</strong> hoje ✨
+          </p>
+        )}
+        {pendingToday > 0 && (
+          <p className="text-xs mt-1.5 font-medium text-amber-500">
+            ⏳ {pendingToday} serviço(s) finalizado(s) — aguardando confirmação do pagamento do cliente via Pix/Cartão
           </p>
         )}
       </section>

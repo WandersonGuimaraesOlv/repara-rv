@@ -90,7 +90,7 @@ export default function ChamadoProviderPage() {
       return
     }
 
-    // Cria cobrança Pix
+    // Cria cobrança Pix e Cartão no Mercado Pago
     try {
       await fetch('/api/pix/create', {
         method: 'POST',
@@ -105,14 +105,18 @@ export default function ChamadoProviderPage() {
       console.error('Erro ao chamar /api/pix/create:', pixErr)
     }
 
-    // Marca como completed
+    // Marca como completed mantendo payment_status pending até o cliente pagar
     await supabase
       .from('service_calls')
-      .update({ status: 'completed' })
+      .update({
+        status: 'completed',
+        payment_status: 'pending',
+        completed_at: new Date().toISOString(),
+      })
       .eq('id', callId)
 
     setCompleting(false)
-    toast.success('Serviço concluído! O cliente receberá o Pix para pagamento.')
+    toast.success('Serviço concluído! O QR Code Pix e opção de Cartão foram gerados para o cliente.')
     router.replace('/painel')
   }
 
