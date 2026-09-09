@@ -19,7 +19,12 @@ export default function PainelPage() {
   const [togglingOnline, setTogglingOnline] = useState(false)
   const [totalToday, setTotalToday] = useState(0)
 
-  const { lat, lng, error: geoError } = useGeolocation(isOnline)
+  const { lat, lng, error: geoError, getPosition } = useGeolocation(true)
+
+  // Dispara pedido de permissão de GPS logo na entrada do painel
+  useEffect(() => {
+    getPosition()
+  }, [getPosition])
 
   // Busca perfil do prestador
   useEffect(() => {
@@ -99,20 +104,48 @@ export default function PainelPage() {
       .then(() => {})
   }, [lat, lng, isOnline, profile])
 
-  // Toggle online/offline
+  // Toggle online/offline com obtenção ativa de GPS e fallback de segurança
   const handleToggleOnline = async () => {
     if (!profile) return
-    if (!isOnline && (!lat || !lng)) {
-      toast.error('Ative o GPS do celular para ficar online')
-      return
-    }
     setTogglingOnline(true)
+
     const newOnline = !isOnline
+    let currentLat = lat
+    let currentLng = lng
+
+    if (newOnline && (!currentLat || !currentLng)) {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          if (typeof window === 'undefined' || !('geolocation' in navigator)) {
+            reject(new Error('GPS indisponível'))
+            return
+          }
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 6000,
+            maximumAge: 30000,
+          })
+        })
+        currentLat = pos.coords.latitude
+        currentLng = pos.coords.longitude
+      } catch (err) {
+        console.warn('GPS não obtido diretamente pelo navegador, usando centro de Rio Verde:', err)
+        // Coordenadas padrão de Rio Verde (GO) - Setor Central (-17.7915, -50.9192)
+        currentLat = -17.7915
+        currentLng = -50.9192
+        toast.info('Localização aproximada definida no Setor Central de Rio Verde.')
+      }
+    }
+
+    const locationPoint = newOnline && currentLat && currentLng
+      ? `SRID=4326;POINT(${currentLng} ${currentLat})`
+      : null
+
     await supabase
       .from('provider_status')
       .update({
         is_online: newOnline,
-        current_location: newOnline && lat && lng ? `SRID=4326;POINT(${lng} ${lat})` : null,
+        current_location: locationPoint,
         updated_at: new Date().toISOString(),
       })
       .eq('provider_id', profile.id)
