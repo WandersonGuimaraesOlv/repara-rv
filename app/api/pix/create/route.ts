@@ -23,14 +23,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Chamado não encontrado' }, { status: 404 })
     }
 
-    // Se já tiver gerado QR Code e Copia e Cola, retorna os existentes
-    if (call.pix_copy_paste && call.pix_qr_code) {
+    const existingCheckout = (call.cancel_metadata as Record<string, unknown>)?.checkout_url as string | undefined || call.cancel_note || null
+
+    // Se já tiver gerado QR Code Pix e URL do Cartão, retorna os existentes de imediato
+    if (call.pix_copy_paste && call.pix_qr_code && existingCheckout) {
       return NextResponse.json({
         success: true,
         amount: call.total_price,
         pix_qr_code: call.pix_qr_code,
         pix_copy_paste: call.pix_copy_paste,
-        checkout_url: call.cancel_note || null,
+        checkout_url: existingCheckout,
         payment_id: call.pix_payment_id,
         payment_status: call.payment_status,
       })
@@ -39,7 +41,12 @@ export async function POST(request: NextRequest) {
     const amount = reqAmount || call.total_price
     const description = reqDesc || `Repara RV — ${call.service?.name ?? 'Serviço residencial'}`
     const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com'
+    
+    // Garante que notification_url e back_urls sejam sempre HTTPS públicos aceitos pelo Mercado Pago
+    const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com'
+    const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost')) 
+      ? rawAppUrl 
+      : 'https://repararv.com'
 
     if (!accessToken) {
       console.error('[API /api/pix/create] MERCADOPAGO_ACCESS_TOKEN não encontrado no ambiente')
@@ -50,95 +57,117 @@ export async function POST(request: NextRequest) {
     const nameParts = clientName.trim().split(' ')
     const firstName = nameParts[0] || 'Cliente'
     const lastName = nameParts.slice(1).join(' ') || 'ReparaRV'
-    const payerEmail = payer_email || 'cliente@repararv.com'
+    const payerEmail = payer_email || 'financeiro@repararv.com'
 
-    // 2. Gera Cobrança Pix Direta no Mercado Pago
-    let pixData: any = null
-    try {
-      const mpPixRes = await fetch('https://api.mercadopago.com/v1/payments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-          'X-Idempotency-Key': `repararv-pix-${call_id}-${Date.now()}`,
-        },
-        body: JSON.stringify({
-          transaction_amount: amount,
-          description,
-          payment_method_id: 'pix',
-          payer: {
-            email: payerEmail,
-            first_name: firstName,
-            last_name: lastName,
+    // 2. Gera Cobrança Pix Direta no Mercado Pago (se ainda não gerado)
+    let qrCode = call.pix_copy_paste || null
+    let qrCodeBase64 = call.pix_qr_code || null
+    let paymentId = call.pix_payment_id || null
+
+    if (!qrCodeBase64 || !qrCode) {
+      try {
+        const mpPixRes = await fetch('https://api.mercadopago.com/v1/payments', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+            'X-Idempotency-Key': `repararv-pix-${call_id}-${Date.now()}`,
           },
-          notification_url: `${appUrl}/api/pix/webhook`,
-        }),
-      })
+          body: JSON.stringify({
+            transaction_amount: amount,
+            description,
+            payment_method_id: 'pix',
+            payer: {
+              email: payerEmail,
+              first_name: firstName,
+              last_name: lastName,
+            },
+            notification_url: `${appUrl}/api/pix/webhook`,
+          }),
+        })
 
-      if (mpPixRes.ok) {
-        pixData = await mpPixRes.json()
-      } else {
-        const pixErr = await mpPixRes.json().catch(() => ({}))
-        console.error('[API /api/pix/create] Erro MP Pix:', pixErr)
+        if (mpPixRes.ok) {
+          const pixData = await mpPixRes.json()
+          qrCode = pixData?.point_of_interaction?.transaction_data?.qr_code || null
+          qrCodeBase64 = pixData?.point_of_interaction?.transaction_data?.qr_code_base64 || null
+          paymentId = pixData?.id ? String(pixData.id) : null
+        } else {
+          const pixErr = await mpPixRes.json().catch(() => ({}))
+          console.error('[API /api/pix/create] Erro MP Pix:', pixErr)
+        }
+      } catch (err) {
+        console.error('[API /api/pix/create] Falha ao chamar MP Pix:', err)
       }
-    } catch (err) {
-      console.error('[API /api/pix/create] Falha ao chamar MP Pix:', err)
     }
 
     // 3. Gera Checkout Preference para Cartão de Crédito e Débito no Mercado Pago
-    let checkoutUrl: string | null = null
-    try {
-      const mpPrefRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          items: [
-            {
-              title: description,
-              quantity: 1,
-              unit_price: amount,
-              currency_id: 'BRL',
-            },
-          ],
-          back_urls: {
-            success: `${appUrl}/acompanhar/${call_id}`,
-            failure: `${appUrl}/acompanhar/${call_id}`,
-            pending: `${appUrl}/acompanhar/${call_id}`,
-          },
-          auto_return: 'approved',
-          external_reference: call_id,
-          statement_descriptor: 'REPARARV',
-        }),
-      })
+    let checkoutUrl: string | null = existingCheckout
 
-      if (mpPrefRes.ok) {
-        const prefData = await mpPrefRes.json()
-        checkoutUrl = prefData.init_point || null
-      } else {
-        const prefErr = await mpPrefRes.json().catch(() => ({}))
-        console.error('[API /api/pix/create] Erro MP Preference:', prefErr)
+    if (!checkoutUrl) {
+      try {
+        const mpPrefRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            items: [
+              {
+                title: description,
+                quantity: 1,
+                unit_price: amount,
+                currency_id: 'BRL',
+              },
+            ],
+            back_urls: {
+              success: `${appUrl}/acompanhar/${call_id}`,
+              failure: `${appUrl}/acompanhar/${call_id}`,
+              pending: `${appUrl}/acompanhar/${call_id}`,
+            },
+            auto_return: 'approved',
+            external_reference: call_id,
+            statement_descriptor: 'REPARARV',
+          }),
+        })
+
+        if (mpPrefRes.ok) {
+          const prefData = await mpPrefRes.json()
+          checkoutUrl = prefData.init_point || null
+        } else {
+          const prefErr = await mpPrefRes.json().catch(() => ({}))
+          console.error('[API /api/pix/create] Erro MP Preference:', prefErr)
+        }
+      } catch (err) {
+        console.error('[API /api/pix/create] Falha ao criar MP Preference:', err)
       }
-    } catch (err) {
-      console.error('[API /api/pix/create] Falha ao criar MP Preference:', err)
     }
 
-    const qrCode = pixData?.point_of_interaction?.transaction_data?.qr_code || null
-    const qrCodeBase64 = pixData?.point_of_interaction?.transaction_data?.qr_code_base64 || null
-    const paymentId = pixData?.id ? String(pixData.id) : null
+    // Se falhou a geração de ambos
+    if (!qrCodeBase64 && !checkoutUrl) {
+      return NextResponse.json(
+        { success: false, error: 'Não foi possível comunicar com o Mercado Pago para gerar a cobrança. Tente novamente em instantes.' },
+        { status: 502 }
+      )
+    }
 
     // 4. Salva os dados no banco de dados do chamado
-    await supabase
-      .from('service_calls')
-      .update({
-        pix_payment_id: paymentId,
-        pix_qr_code: qrCodeBase64,
-        pix_copy_paste: qrCode,
-        cancel_note: checkoutUrl || call.cancel_note,
-      })
-      .eq('id', call_id)
+    const updatePayload: Record<string, unknown> = {}
+    if (paymentId) updatePayload.pix_payment_id = paymentId
+    if (qrCodeBase64) updatePayload.pix_qr_code = qrCodeBase64
+    if (qrCode) updatePayload.pix_copy_paste = qrCode
+    if (checkoutUrl) {
+      updatePayload.cancel_note = checkoutUrl
+      const existingMeta = (call.cancel_metadata as Record<string, unknown>) || {}
+      updatePayload.cancel_metadata = { ...existingMeta, checkout_url: checkoutUrl }
+    }
+
+    if (Object.keys(updatePayload).length > 0) {
+      await supabase
+        .from('service_calls')
+        .update(updatePayload)
+        .eq('id', call_id)
+    }
 
     return NextResponse.json({
       success: true,

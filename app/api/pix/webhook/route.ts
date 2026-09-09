@@ -43,17 +43,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true })
     }
 
-    // Atualiza o chamado correspondente
+    // Atualiza o chamado correspondente (por pix_payment_id ou external_reference do Cartão)
     const supabase = await createServiceClient()
 
-    const { data: call } = await supabase
+    let callIdToUpdate: string | null = null
+
+    // 1. Tenta buscar por pix_payment_id
+    const { data: callByPix } = await supabase
       .from('service_calls')
       .select('id')
       .eq('pix_payment_id', String(paymentId))
-      .single()
+      .maybeSingle()
 
-    if (!call) {
-      console.warn('[Webhook] Chamado não encontrado para payment_id:', paymentId)
+    if (callByPix?.id) {
+      callIdToUpdate = callByPix.id
+    } else if (payment.external_reference) {
+      // 2. Tenta buscar por external_reference (Cartão de Crédito/Débito via Checkout Pro)
+      const { data: callByRef } = await supabase
+        .from('service_calls')
+        .select('id')
+        .eq('id', payment.external_reference)
+        .maybeSingle()
+
+      if (callByRef?.id) {
+        callIdToUpdate = callByRef.id
+      }
+    }
+
+    if (!callIdToUpdate) {
+      console.warn('[Webhook] Chamado não encontrado para payment_id:', paymentId, 'external_reference:', payment.external_reference)
       return NextResponse.json({ received: true })
     }
 
@@ -61,11 +79,12 @@ export async function POST(request: NextRequest) {
       .from('service_calls')
       .update({
         payment_status: 'paid',
+        pix_payment_id: String(paymentId),
         completed_at: new Date().toISOString(),
       })
-      .eq('id', call.id)
+      .eq('id', callIdToUpdate)
 
-    console.log(`[Webhook] Pagamento confirmado para chamado ${call.id}`)
+    console.log(`[Webhook] Pagamento confirmado com sucesso para chamado ${callIdToUpdate}`)
     return NextResponse.json({ received: true })
   } catch (error) {
     console.error('[API] /api/pix/webhook:', error)

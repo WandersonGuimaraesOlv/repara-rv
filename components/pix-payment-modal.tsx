@@ -26,7 +26,8 @@ export function PixPaymentModal({
 }: PixPaymentModalProps) {
   const [activeTab, setActiveTab] = useState<'pix' | 'card'>('pix')
   const [copied, setCopied] = useState(false)
-  const [loading, setLoading] = useState(!initialCopyPaste)
+  const [loading, setLoading] = useState(!initialCopyPaste || !initialCheckoutUrl)
+  const [error, setError] = useState<string | null>(null)
   const [qrCode, setQrCode] = useState<string | null>(initialQrCode || null)
   const [copyPaste, setCopyPaste] = useState<string | null>(initialCopyPaste || null)
   const [cardUrl, setCardUrl] = useState<string | null>(initialCheckoutUrl || null)
@@ -34,33 +35,61 @@ export function PixPaymentModal({
 
   const supabase = createClient()
 
-  // Se o chamado ainda não tem os dados de pagamento gerados, gera automaticamente
+  const generatePayment = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/pix/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ call_id: callId, amount }),
+      })
+      const data = await res.json()
+      if (data.success && (data.pix_qr_code || data.checkout_url)) {
+        if (data.pix_qr_code) setQrCode(data.pix_qr_code)
+        if (data.pix_copy_paste) setCopyPaste(data.pix_copy_paste)
+        if (data.checkout_url) setCardUrl(data.checkout_url)
+        if (data.payment_status === 'paid') setIsPaid(true)
+      } else {
+        setError(data.error || 'Falha ao comunicar com o Mercado Pago. Clique para tentar novamente.')
+      }
+    } catch (err) {
+      console.error('Erro ao gerar pagamento:', err)
+      setError('Falha de conexão com o servidor. Verifique sua internet e tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Gera automaticamente ao abrir se não houver dados
   useEffect(() => {
     let isMounted = true
 
-    async function ensurePayment() {
-      try {
-        const res = await fetch('/api/pix/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ call_id: callId, amount }),
+    if (!initialCopyPaste || !initialQrCode || !initialCheckoutUrl) {
+      fetch('/api/pix/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ call_id: callId, amount }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (!isMounted) return
+          if (data.success && (data.pix_qr_code || data.checkout_url)) {
+            if (data.pix_qr_code) setQrCode(data.pix_qr_code)
+            if (data.pix_copy_paste) setCopyPaste(data.pix_copy_paste)
+            if (data.checkout_url) setCardUrl(data.checkout_url)
+            if (data.payment_status === 'paid') setIsPaid(true)
+          } else {
+            setError(data.error || 'Não foi possível carregar as opções de pagamento.')
+          }
         })
-        const data = await res.json()
-        if (isMounted && data.success) {
-          if (data.pix_qr_code) setQrCode(data.pix_qr_code)
-          if (data.pix_copy_paste) setCopyPaste(data.pix_copy_paste)
-          if (data.checkout_url) setCardUrl(data.checkout_url)
-          if (data.payment_status === 'paid') setIsPaid(true)
-        }
-      } catch (err) {
-        console.error('Erro ao gerar pagamento:', err)
-      } finally {
-        if (isMounted) setLoading(false)
-      }
-    }
-
-    if (!copyPaste || !qrCode || !cardUrl) {
-      ensurePayment()
+        .catch(err => {
+          console.error('Erro ao gerar pagamento inicial:', err)
+          if (isMounted) setError('Erro ao conectar ao Mercado Pago.')
+        })
+        .finally(() => {
+          if (isMounted) setLoading(false)
+        })
     } else {
       setLoading(false)
     }
@@ -68,7 +97,7 @@ export function PixPaymentModal({
     return () => {
       isMounted = false
     }
-  }, [callId, amount, copyPaste, qrCode, cardUrl])
+  }, [callId, amount, initialCopyPaste, initialQrCode, initialCheckoutUrl])
 
   // Monitora se o pagamento foi confirmado em tempo real
   useEffect(() => {
@@ -77,7 +106,7 @@ export function PixPaymentModal({
     const interval = setInterval(async () => {
       const { data } = await supabase
         .from('service_calls')
-        .select('payment_status, cancel_note')
+        .select('payment_status, cancel_note, cancel_metadata')
         .eq('id', callId)
         .maybeSingle()
 
@@ -85,10 +114,11 @@ export function PixPaymentModal({
         setIsPaid(true)
         toast.success('🎉 Pagamento confirmado com sucesso!')
       }
-      if (data?.cancel_note && !cardUrl) {
-        setCardUrl(data.cancel_note)
+      const remoteCheckout = (data?.cancel_metadata as Record<string, unknown>)?.checkout_url as string | undefined || data?.cancel_note
+      if (remoteCheckout && !cardUrl) {
+        setCardUrl(remoteCheckout)
       }
-    }, 3000)
+    }, 2500)
 
     return () => clearInterval(interval)
   }, [callId, isPaid, cardUrl, supabase])
@@ -197,9 +227,22 @@ export function PixPaymentModal({
             {activeTab === 'pix' && (
               <div className="animate-fade-in">
                 {loading ? (
-                  <div className="flex flex-col items-center justify-center py-10">
+                  <div className="flex flex-col items-center justify-center py-8">
                     <Loader2 size={32} className="animate-spin text-orange-600 mb-2" />
                     <p className="text-xs text-slate-500 font-medium">Gerando QR Code oficial no Mercado Pago...</p>
+                  </div>
+                ) : error && !qrCode ? (
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-3 my-2">
+                    <p className="text-xs text-amber-800 font-semibold leading-relaxed">
+                      {error}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={generatePayment}
+                      className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow transition"
+                    >
+                      Tentar Gerar Novamente
+                    </button>
                   </div>
                 ) : (
                   <>
@@ -272,7 +315,7 @@ export function PixPaymentModal({
                     <span>Pagar com Cartão no Mercado Pago</span>
                     <ExternalLink size={16} />
                   </a>
-                ) : (
+                ) : loading ? (
                   <button
                     type="button"
                     disabled
@@ -280,6 +323,15 @@ export function PixPaymentModal({
                   >
                     <Loader2 size={16} className="animate-spin" />
                     <span>Carregando opções de cartão...</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={generatePayment}
+                    className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl font-bold text-sm text-white bg-orange-600 hover:bg-orange-700 transition-colors shadow-md"
+                  >
+                    <span>Gerar Link de Cartão no Mercado Pago</span>
+                    <ExternalLink size={16} />
                   </button>
                 )}
 
