@@ -19,8 +19,8 @@ Tarefas administrativas, fiscais e legais sob responsabilidade dos fundadores pa
 - [ ] **Abrir Conta PJ no Gateway Escolhido (Mercado Pago ou Asaas):**
   - Utilizar a conta jurídica do Repara RV recém-aberta.
   - Solicitar liberação formal do recurso de **Marketplace / Split de Pagamentos**.
-- [ ] **Obter Credenciais de Produção:**
-  - Salvar `ACCESS_TOKEN` de produção e configurar a URL do Webhook HTTPS apontando para o domínio da Cloudflare (`https://repararv.com/api/pix/webhook`).
+- [x] **Obter Credenciais de Produção:**
+  - Salvar `ACCESS_TOKEN` de produção e chave secreta do Webhook (`MERCADOPAGO_ACCESS_TOKEN` e `MERCADOPAGO_WEBHOOK_SECRET` configurados no `.env.local`).
 - [ ] **Definir Fluxo do Prestador:** Definir se o profissional receberá via subconta do gateway ou direto por transferência Pix automática gerada pelo backend.
 
 ---
