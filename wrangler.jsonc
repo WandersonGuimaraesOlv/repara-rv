@@ -2,6 +2,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"main": ".open-next/worker.js",
 	"name": "repara-rv",
+	"account_id": "f9b77b85c77a156f6ec4f5f79fed3f0e",
 	"compatibility_date": "2026-09-08",
 	"compatibility_flags": [
 		"nodejs_compat",
