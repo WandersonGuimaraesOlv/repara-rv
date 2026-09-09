@@ -124,8 +124,15 @@ export type Database = {
           neighborhood: string
           client_address: string
           client_location: unknown
+          arrived_at: string | null
+          cancelled_by: string | null
+          cancelled_by_role: 'client' | 'provider' | 'admin' | null
+          cancellation_reason: string | null
+          cancellation_stage: string | null
           cancel_reason: 'client_request' | 'provider_absent' | 'wrong_address' | 'technical_issue' | 'no_provider_found' | 'other' | null
           cancel_note: string | null
+          cancel_by: string | null
+          cancel_metadata: Json | null
           payment_status: 'pending' | 'paid' | 'refunded' | null
           pix_payment_id: string | null
           pix_qr_code: string | null
@@ -147,8 +154,15 @@ export type Database = {
           neighborhood?: string
           client_address: string
           client_location: unknown
+          arrived_at?: string | null
+          cancelled_by?: string | null
+          cancelled_by_role?: 'client' | 'provider' | 'admin' | null
+          cancellation_reason?: string | null
+          cancellation_stage?: string | null
           cancel_reason?: 'client_request' | 'provider_absent' | 'wrong_address' | 'technical_issue' | 'no_provider_found' | 'other' | null
           cancel_note?: string | null
+          cancel_by?: string | null
+          cancel_metadata?: Json | null
           payment_status?: 'pending' | 'paid' | 'refunded' | null
           pix_payment_id?: string | null
           pix_qr_code?: string | null
@@ -170,8 +184,15 @@ export type Database = {
           neighborhood?: string
           client_address?: string
           client_location?: unknown
+          arrived_at?: string | null
+          cancelled_by?: string | null
+          cancelled_by_role?: 'client' | 'provider' | 'admin' | null
+          cancellation_reason?: string | null
+          cancellation_stage?: string | null
           cancel_reason?: 'client_request' | 'provider_absent' | 'wrong_address' | 'technical_issue' | 'no_provider_found' | 'other' | null
           cancel_note?: string | null
+          cancel_by?: string | null
+          cancel_metadata?: Json | null
           payment_status?: 'pending' | 'paid' | 'refunded' | null
           pix_payment_id?: string | null
           pix_qr_code?: string | null
@@ -180,6 +201,59 @@ export type Database = {
           accepted_at?: string | null
           completed_at?: string | null
           cancelled_at?: string | null
+        }
+      }
+      service_audit_logs: {
+        Row: {
+          id: string
+          call_id: string
+          action: string
+          previous_status: 'searching' | 'accepted' | 'on_the_way' | 'in_progress' | 'completed' | 'cancelled' | 'no_providers_available' | null
+          new_status: 'searching' | 'accepted' | 'on_the_way' | 'in_progress' | 'completed' | 'cancelled' | 'no_providers_available'
+          changed_by: string | null
+          cancellation_reason: string | null
+          cancellation_stage: string | null
+          old_payload: Json | null
+          new_payload: Json | null
+          cancel_reason: 'client_request' | 'provider_absent' | 'wrong_address' | 'technical_issue' | 'no_provider_found' | 'other' | null
+          cancel_note: string | null
+          cancel_by: string | null
+          metadata: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          call_id: string
+          action?: string
+          previous_status?: 'searching' | 'accepted' | 'on_the_way' | 'in_progress' | 'completed' | 'cancelled' | 'no_providers_available' | null
+          new_status: 'searching' | 'accepted' | 'on_the_way' | 'in_progress' | 'completed' | 'cancelled' | 'no_providers_available'
+          changed_by?: string | null
+          cancellation_reason?: string | null
+          cancellation_stage?: string | null
+          old_payload?: Json | null
+          new_payload?: Json | null
+          cancel_reason?: 'client_request' | 'provider_absent' | 'wrong_address' | 'technical_issue' | 'no_provider_found' | 'other' | null
+          cancel_note?: string | null
+          cancel_by?: string | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          call_id?: string
+          action?: string
+          previous_status?: 'searching' | 'accepted' | 'on_the_way' | 'in_progress' | 'completed' | 'cancelled' | 'no_providers_available' | null
+          new_status?: 'searching' | 'accepted' | 'on_the_way' | 'in_progress' | 'completed' | 'cancelled' | 'no_providers_available'
+          changed_by?: string | null
+          cancellation_reason?: string | null
+          cancellation_stage?: string | null
+          old_payload?: Json | null
+          new_payload?: Json | null
+          cancel_reason?: 'client_request' | 'provider_absent' | 'wrong_address' | 'technical_issue' | 'no_provider_found' | 'other' | null
+          cancel_note?: string | null
+          cancel_by?: string | null
+          metadata?: Json | null
+          created_at?: string
         }
       }
       service_ratings: {
