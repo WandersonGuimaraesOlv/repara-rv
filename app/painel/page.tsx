@@ -20,6 +20,7 @@ export default function PainelPage() {
   const [togglingOnline, setTogglingOnline] = useState(false)
   const [totalToday, setTotalToday] = useState(0)
   const [pendingToday, setPendingToday] = useState(0)
+  const [providerPixKey, setProviderPixKey] = useState('')
 
   const { lat, lng, error: geoError, getPosition } = useGeolocation(true)
 
@@ -44,10 +45,13 @@ export default function PainelPage() {
             setProfile(prof as Profile)
             const { data: status } = await supabase
               .from('provider_status')
-              .select('is_online')
+              .select('is_online, pix_key')
               .eq('provider_id', user.id)
               .maybeSingle()
             setIsOnline(status?.is_online ?? false)
+            if (status?.pix_key) {
+              setProviderPixKey(status.pix_key)
+            }
 
             const today = new Date().toISOString().split('T')[0]
             const { data: calls } = await supabase
@@ -257,19 +261,35 @@ export default function PainelPage() {
       <PanelHeader isOnline={isOnline} />
 
 
-      {/* Saudação */}
+      {/* Saudação e Saldo */}
       <section className="mb-6 animate-slide-up">
         <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Olá,</p>
         <h2 className="text-2xl font-black" style={{ color: 'var(--color-text)' }}>
           {firstName} 👋
         </h2>
         {totalToday > 0 && (
-          <p className="text-sm mt-1" style={{ color: 'var(--color-success)' }}>
-            Você recebeu <strong>R$ {totalToday.toFixed(2).replace('.', ',')}</strong> hoje ✨
-          </p>
+          <div className="mt-2.5 p-3.5 bg-emerald-500/10 border border-emerald-500/25 rounded-2xl">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-emerald-400">
+                Ganhos de hoje (liquidado)
+              </span>
+              <span className="text-base font-black text-emerald-300">
+                R$ {totalToday.toFixed(2).replace('.', ',')}
+              </span>
+            </div>
+            <div className="text-[11px] text-slate-300 mt-1.5 leading-snug">
+              ✨ Saldo acumulado na plataforma para repasse via Pix.
+              {providerPixKey && (
+                <div className="mt-1.5 pt-1.5 border-t border-emerald-500/20 flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400">Chave Pix de repasse:</span>
+                  <strong className="font-mono text-emerald-300 font-semibold">{providerPixKey}</strong>
+                </div>
+              )}
+            </div>
+          </div>
         )}
         {pendingToday > 0 && (
-          <p className="text-xs mt-1.5 font-medium text-amber-500">
+          <p className="text-xs mt-2 font-medium text-amber-500">
             ⏳ {pendingToday} serviço(s) finalizado(s) — aguardando confirmação do pagamento do cliente via Pix/Cartão
           </p>
         )}

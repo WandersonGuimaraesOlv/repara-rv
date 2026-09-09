@@ -113,16 +113,32 @@ export default function LoginPage() {
       <div className="w-full max-w-sm sm:max-w-md bg-white rounded-3xl border border-slate-200/80 shadow-xl p-6 sm:p-8 animate-fade-in">
         
         {/* Logo & Marca */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <Link href="/" className="inline-flex items-center group transition-transform hover:scale-[1.02]">
             <Logo variant="full" width={200} height={50} />
           </Link>
           <h1 className="text-xl font-black text-slate-900 tracking-tight mt-4">
-            Entrar ou Criar Conta
+            Acesse sua Conta
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Acesso instantâneo com seu celular e PIN de segurança
+            Acesso com seu celular e PIN de segurança
           </p>
+        </div>
+
+        {/* Abas: Entrar vs Criar Conta */}
+        <div className="flex bg-slate-100 p-1 rounded-2xl mb-6 border border-slate-200/80">
+          <button
+            type="button"
+            className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-white text-slate-900 shadow-sm"
+          >
+            Entrar
+          </button>
+          <Link
+            href="/cadastro"
+            className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all text-slate-500 hover:text-orange-600 hover:bg-white/60 text-center"
+          >
+            Criar Nova Conta
+          </Link>
         </div>
 
         {/* Formulário com Celular + PIN */}
@@ -181,7 +197,10 @@ export default function LoginPage() {
             </div>
 
             <p className="text-[11px] text-slate-400 mt-1.5 leading-snug">
-              💡 <strong>Primeiro acesso?</strong> O PIN digitado será cadastrado como sua senha pessoal.
+              💡 <strong>Primeiro acesso?</strong> Caso ainda não possua conta, você pode{' '}
+              <Link href="/cadastro" className="text-orange-600 font-bold hover:underline">
+                clicar aqui para se cadastrar
+              </Link>.
             </p>
           </div>
 
@@ -196,15 +215,28 @@ export default function LoginPage() {
               <span>Autenticando...</span>
             ) : (
               <>
-                <span>Acessar Repara RV</span>
+                <span>Entrar no Repara RV</span>
                 <ArrowRight size={18} />
               </>
             )}
           </button>
         </form>
 
+        {/* Link explícito para cadastro */}
+        <div className="text-center mt-6 pt-4 border-t border-slate-100">
+          <p className="text-xs text-slate-500">
+            Ainda não possui cadastro?{' '}
+            <Link
+              href="/cadastro"
+              className="font-bold text-orange-600 hover:text-orange-700 hover:underline inline-flex items-center gap-1 ml-1"
+            >
+              Criar conta grátis →
+            </Link>
+          </p>
+        </div>
+
         {/* Rodapé Legal */}
-        <p className="text-[11px] text-center text-slate-400 mt-6 leading-relaxed">
+        <p className="text-[11px] text-center text-slate-400 mt-5 leading-relaxed">
           Seus dados são protegidos conforme a LGPD.<br />
           Repara RV • Rio Verde (GO)
         </p>
@@ -213,3 +245,4 @@ export default function LoginPage() {
     </div>
   )
 }
+

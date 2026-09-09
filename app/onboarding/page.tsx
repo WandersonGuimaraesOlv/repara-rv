@@ -32,22 +32,24 @@ export default function OnboardingPage() {
 
     async function loadUserData() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle()
+      if (!user) {
+        router.replace('/cadastro')
+        return
+      }
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle()
 
-        if (profile) {
-          if (profile.full_name) setFullName(profile.full_name)
-          if (profile.phone) setPhone(profile.phone)
-          if (profile.cpf_or_cnpj) setCpfOrCnpj(profile.cpf_or_cnpj)
-        }
+      if (profile) {
+        if (profile.full_name) setFullName(profile.full_name)
+        if (profile.phone) setPhone(profile.phone)
+        if (profile.cpf_or_cnpj) setCpfOrCnpj(profile.cpf_or_cnpj)
       }
     }
     loadUserData()
-  }, [supabase])
+  }, [supabase, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,7 +65,7 @@ export default function OnboardingPage() {
 
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.replace('/login'); return }
+    if (!user) { router.replace('/cadastro'); return }
 
     const profilePayload: Record<string, any> = {
       id: user.id,

@@ -24,7 +24,8 @@ import {
   X,
   AlertTriangle,
   Check,
-  CreditCard
+  CreditCard,
+  Copy
 } from 'lucide-react'
 import { updateCallPaymentStatusAction } from '@/app/actions/admin-users'
 import { toast } from 'sonner'
@@ -840,14 +841,26 @@ export default function AdminDashboardPage() {
                               {provPhone}
                             </div>
                             {cleanProvPhone && (
-                              <a
-                                href={provWaUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold mt-1 transition-colors"
-                              >
-                                <MessageCircle size={11} /> WhatsApp do Técnico
-                              </a>
+                              <div className="flex flex-col gap-1 mt-1">
+                                <a
+                                  href={provWaUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold transition-colors"
+                                >
+                                  <MessageCircle size={11} /> WhatsApp do Técnico
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(cleanProvPhone)
+                                    toast.success(`Chave Pix copiada: ${cleanProvPhone} (Repassar ${formatCurrency(providerCut)})`)
+                                  }}
+                                  className="inline-flex items-center gap-1 text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold transition-colors cursor-pointer text-left"
+                                >
+                                  <Copy size={11} /> Copiar Pix: {cleanProvPhone}
+                                </button>
+                              </div>
                             )}
                           </td>
 
@@ -891,11 +904,11 @@ export default function AdminDashboardPage() {
                             </div>
                             {isPaid ? (
                               <>
-                                <div className="text-[11px] text-emerald-400 font-semibold mt-0.5">
-                                  Técnico: +{formatCurrency(providerCut)} (Liquidado)
+                                <div className="text-[11px] text-emerald-400 font-bold mt-0.5">
+                                  Técnico: +{formatCurrency(providerCut)} (Repassar via Pix)
                                 </div>
                                 <div className="text-[10px] text-orange-400 font-medium">
-                                  Taxa Repara RV: {formatCurrency(fee)}
+                                  Taxa Repara RV: {formatCurrency(fee)} (Na conta MP)
                                 </div>
                               </>
                             ) : (
