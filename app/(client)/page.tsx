@@ -284,7 +284,7 @@ export default function TriiderClientHomePage() {
   }, [services, searchQuery])
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-orange-100 selection:text-orange-900 w-full max-w-full overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-orange-100 selection:text-orange-900 w-full">
 
       {/* ────────────────────────────────────────────────────────
           1. HEADER RESPONSIVO (DESKTOP + MOBILE)
