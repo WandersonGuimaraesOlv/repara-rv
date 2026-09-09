@@ -8,7 +8,7 @@ import { CallStatusTracker } from '@/components/call-status-tracker'
 import { PixPaymentModal } from '@/components/pix-payment-modal'
 import { EmergencySosButton } from '@/components/emergency-sos-button'
 import { formatCurrency } from '@/lib/utils'
-import { XCircle, Loader2, Star, ArrowLeft } from 'lucide-react'
+import { XCircle, Loader2, Star, ArrowLeft, CheckCircle2, AlertTriangle, CreditCard } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -39,7 +39,7 @@ export default function AcompanharPage() {
 
     if (data) {
       setCall(data as ServiceCall)
-      if (data.status === 'completed') {
+      if (data.status === 'completed' && data.payment_status !== 'paid') {
         setShowPix(true)
       }
     }
@@ -58,8 +58,13 @@ export default function AcompanharPage() {
         payload => {
           fetchCall()
           if (payload.new.status === 'completed') {
-            toast.success('Serviço concluído! Realize o pagamento via Pix 🎉')
-            setShowPix(true)
+            if (payload.new.payment_status !== 'paid') {
+              toast.info('Serviço concluído pelo técnico! Realize o pagamento via Pix.')
+              setShowPix(true)
+            } else {
+              toast.success('🎉 Pagamento confirmado com sucesso!')
+              setShowPix(false)
+            }
           }
           if (payload.new.status === 'accepted' || payload.new.status === 'on_the_way') {
             toast.info('Prestador a caminho! 🚗')
@@ -186,6 +191,37 @@ export default function AcompanharPage() {
           </div>
         </div>
       </div>
+
+      {/* Status de Pagamento (quando concluído) */}
+      {call.status === 'completed' && (
+        call.payment_status === 'paid' ? (
+          <div className="card p-4 mb-4 bg-emerald-500/10 border-emerald-500/30 flex items-center gap-3">
+            <CheckCircle2 size={24} className="text-emerald-400 shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-emerald-300">Pagamento Confirmado!</p>
+              <p className="text-xs text-slate-300">Serviço concluído e quitado via Pix. Obrigado pela preferência!</p>
+            </div>
+          </div>
+        ) : (
+          <div className="card p-4 mb-4 bg-amber-500/10 border-amber-500/30">
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={22} className="text-amber-400 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-bold text-amber-400">Pagamento Pendente</p>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  O técnico finalizou o serviço. Conclua o pagamento de <strong className="text-white">{formatCurrency(call.total_price)}</strong> para obter a quitação.
+                </p>
+                <button
+                  onClick={() => setShowPix(true)}
+                  className="btn-primary w-full mt-3 py-2.5 text-xs font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl shadow-md transition-transform active:scale-95"
+                >
+                  <CreditCard size={15} /> Pagar agora via Pix / Cartão
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      )}
 
       {/* Avaliação (após concluído) */}
       {call.status === 'completed' && (

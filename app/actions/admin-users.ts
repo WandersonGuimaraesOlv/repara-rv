@@ -44,9 +44,12 @@ export interface AdminUserListItem {
     updated_at: string
   } | null
   total_calls_as_client: number
+  unpaid_calls_as_client: number
   total_calls_as_provider: number
   completed_calls_as_provider: number
+  paid_calls_as_provider: number
   total_earned_as_provider: number
+  pending_earnings_as_provider: number
 }
 
 /**
@@ -98,17 +101,23 @@ export async function getAdminUsersListAction(): Promise<{
     // 3. Busca chamados para calcular estatísticas por usuário
     const { data: calls } = await adminDb
       .from('service_calls')
-      .select('id, client_id, provider_id, status, provider_cut, total_price')
+      .select('id, client_id, provider_id, status, payment_status, provider_cut, total_price')
 
     const clientCallsMap = new Map<string, number>()
+    const clientUnpaidMap = new Map<string, number>()
     const providerCallsMap = new Map<string, number>()
     const providerCompletedMap = new Map<string, number>()
+    const providerPaidMap = new Map<string, number>()
     const providerEarningsMap = new Map<string, number>()
+    const providerPendingEarningsMap = new Map<string, number>()
 
     calls?.forEach((c) => {
       // Cliente
       if (c.client_id) {
         clientCallsMap.set(c.client_id, (clientCallsMap.get(c.client_id) || 0) + 1)
+        if (c.status === 'completed' && c.payment_status !== 'paid') {
+          clientUnpaidMap.set(c.client_id, (clientUnpaidMap.get(c.client_id) || 0) + 1)
+        }
       }
 
       // Prestador
@@ -117,7 +126,13 @@ export async function getAdminUsersListAction(): Promise<{
         if (c.status === 'completed') {
           providerCompletedMap.set(c.provider_id, (providerCompletedMap.get(c.provider_id) || 0) + 1)
           const earned = Number(c.provider_cut || (Number(c.total_price) - 12))
-          providerEarningsMap.set(c.provider_id, (providerEarningsMap.get(c.provider_id) || 0) + earned)
+
+          if (c.payment_status === 'paid') {
+            providerPaidMap.set(c.provider_id, (providerPaidMap.get(c.provider_id) || 0) + 1)
+            providerEarningsMap.set(c.provider_id, (providerEarningsMap.get(c.provider_id) || 0) + earned)
+          } else {
+            providerPendingEarningsMap.set(c.provider_id, (providerPendingEarningsMap.get(c.provider_id) || 0) + earned)
+          }
         }
       }
     })
@@ -143,9 +158,12 @@ export async function getAdminUsersListAction(): Promise<{
             }
           : null,
         total_calls_as_client: clientCallsMap.get(p.id) || 0,
+        unpaid_calls_as_client: clientUnpaidMap.get(p.id) || 0,
         total_calls_as_provider: providerCallsMap.get(p.id) || 0,
         completed_calls_as_provider: providerCompletedMap.get(p.id) || 0,
+        paid_calls_as_provider: providerPaidMap.get(p.id) || 0,
         total_earned_as_provider: providerEarningsMap.get(p.id) || 0,
+        pending_earnings_as_provider: providerPendingEarningsMap.get(p.id) || 0,
       }
     })
 
@@ -154,6 +172,35 @@ export async function getAdminUsersListAction(): Promise<{
     const message = err instanceof Error ? err.message : 'Erro inesperado ao consultar usuários.'
     return { success: false, error: message }
   }
+}
+
+/**
+ * Atualiza o status de pagamento de um chamado (pago / pendente / estornado)
+ */
+export async function updateCallPaymentStatusAction(input: {
+  callId: string
+  paymentStatus: 'paid' | 'pending' | 'refunded'
+}) {
+  const authCheck = await requireAdmin()
+  if (!authCheck.authorized) {
+    return { success: false, error: authCheck.error }
+  }
+
+  const adminDb = await createServiceClient()
+  const { data, error } = await adminDb
+    .from('service_calls')
+    .update({ payment_status: input.paymentStatus })
+    .eq('id', input.callId)
+    .select('id, status, payment_status')
+    .single()
+
+  if (error) {
+    return { success: false, error: 'Erro ao atualizar status de pagamento no banco.' }
+  }
+
+  revalidatePath('/admin/dashboard')
+  revalidatePath('/admin/usuarios')
+  return { success: true, data }
 }
 
 /**

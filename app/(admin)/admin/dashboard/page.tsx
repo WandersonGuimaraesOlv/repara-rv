@@ -21,12 +21,18 @@ import {
   Search,
   Wrench,
   Calendar,
-  X
+  X,
+  AlertTriangle,
+  Check,
+  CreditCard
 } from 'lucide-react'
+import { updateCallPaymentStatusAction } from '@/app/actions/admin-users'
+import { toast } from 'sonner'
 
 interface ServiceCallRecord {
   id: string
   status: string
+  payment_status?: 'paid' | 'pending' | 'refunded' | null
   total_price: number
   platform_fee: number
   provider_cut: number
@@ -83,16 +89,43 @@ export default function AdminDashboardPage() {
   const [cancelFilter, setCancelFilter] = useState<'all' | 'arrived' | 'allocated' | 'searching'>('all')
   const [selectedProviderFilter, setSelectedProviderFilter] = useState<string>('')
   const [completedSearchQuery, setCompletedSearchQuery] = useState<string>('')
+  const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'pending'>('all')
+  const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null)
+
+  const handleTogglePaymentStatus = async (callId: string, currentStatus?: string | null) => {
+    const newStatus = currentStatus === 'paid' ? 'pending' : 'paid'
+    setUpdatingPaymentId(callId)
+    try {
+      const res = await updateCallPaymentStatusAction({ callId, paymentStatus: newStatus })
+      if (res.success) {
+        toast.success(
+          newStatus === 'paid'
+            ? 'Pagamento Pix confirmado com sucesso!'
+            : 'Pagamento marcado como pendente.'
+        )
+        setCalls(prev =>
+          prev.map(c => (c.id === callId ? { ...c, payment_status: newStatus } : c))
+        )
+      } else {
+        toast.error(res.error || 'Erro ao atualizar status de pagamento.')
+      }
+    } catch {
+      toast.error('Erro de conexão ao atualizar status de pagamento.')
+    } finally {
+      setUpdatingPaymentId(null)
+    }
+  }
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      // 1. Busca chamados com relacionamentos
+      // 1. Busca chamados com relacionamentos incluindo payment_status
       const { data: callsData, error: callsError } = await supabase
         .from('service_calls')
         .select(`
           id,
           status,
+          payment_status,
           total_price,
           platform_fee,
           provider_cut,
@@ -152,38 +185,69 @@ export default function AdminDashboardPage() {
     fetchData()
   }, [fetchData])
 
-  // Métricas Calculadas
+  // Métricas Calculadas com separação rigorosa de Pago vs Pendente
   const metrics = useMemo(() => {
     const total = calls.length
     const completed = calls.filter(c => c.status === 'completed')
+    const paidCompleted = completed.filter(c => c.payment_status === 'paid')
+    const pendingCompleted = completed.filter(c => c.payment_status !== 'paid')
     const cancelled = calls.filter(c => c.status === 'cancelled' || c.status === 'no_providers_available')
     const inProgress = calls.filter(c => ['accepted', 'on_the_way', 'in_progress'].includes(c.status))
     const searching = calls.filter(c => c.status === 'searching')
 
-    const gmv = completed.reduce((acc, c) => acc + Number(c.total_price || 0), 0)
+    // Volume GMV Liquidado (pago) vs Pendente de Pix
+    const gmvPaid = paidCompleted.reduce((acc, c) => acc + Number(c.total_price || 0), 0)
+    const gmvPending = pendingCompleted.reduce((acc, c) => acc + Number(c.total_price || 0), 0)
+
     // Regra inegociável: platform_fee fixa de R$ 12,00 por serviço concluído
-    const platformRevenue = completed.length * 12.0
-    const providerTotalPayout = completed.reduce((acc, c) => acc + Number(c.provider_cut || (Number(c.total_price) - 12)), 0)
+    const platformRevenueRealized = paidCompleted.length * 12.0
+    const platformRevenuePending = pendingCompleted.length * 12.0
+
+    // Repasse aos técnicos: liquidado vs pendente
+    const providerPayoutRealized = paidCompleted.reduce(
+      (acc, c) => acc + Number(c.provider_cut || (Number(c.total_price) - 12)),
+      0
+    )
+    const providerPayoutPending = pendingCompleted.reduce(
+      (acc, c) => acc + Number(c.provider_cut || (Number(c.total_price) - 12)),
+      0
+    )
     const cancellationRate = total > 0 ? (cancelled.length / total) * 100 : 0
 
     return {
       total,
       completedCount: completed.length,
+      paidCount: paidCompleted.length,
+      pendingPaymentCount: pendingCompleted.length,
       cancelledCount: cancelled.length,
       inProgressCount: inProgress.length,
       searchingCount: searching.length,
-      gmv,
-      platformRevenue,
-      providerTotalPayout,
+      gmvPaid,
+      gmvPending,
+      platformRevenueRealized,
+      platformRevenuePending,
+      providerPayoutRealized,
+      providerPayoutPending,
       cancellationRate,
       sosCount: emergencyAlerts.length,
     }
   }, [calls, emergencyAlerts])
 
-  // Ranking de Prestadores
+  // Ranking de Prestadores com métricas de recebimento
   const providerRanking = useMemo(() => {
     const completed = calls.filter(c => c.status === 'completed' && c.provider)
-    const map: Record<string, { name: string; phone: string; count: number; earnings: number }> = {}
+    const map: Record<
+      string,
+      {
+        name: string
+        phone: string
+        count: number
+        paidCount: number
+        pendingCount: number
+        earningsPaid: number
+        earningsPending: number
+      }
+    > = {}
 
     completed.forEach(c => {
       const provObj = Array.isArray(c.provider) ? c.provider[0] : c.provider
@@ -193,11 +257,21 @@ export default function AdminDashboardPage() {
           name,
           phone: provObj?.phone || '',
           count: 0,
-          earnings: 0,
+          paidCount: 0,
+          pendingCount: 0,
+          earningsPaid: 0,
+          earningsPending: 0,
         }
       }
       map[name].count += 1
-      map[name].earnings += Number(c.provider_cut || (Number(c.total_price) - 12))
+      const cut = Number(c.provider_cut || (Number(c.total_price) - 12))
+      if (c.payment_status === 'paid') {
+        map[name].paidCount += 1
+        map[name].earningsPaid += cut
+      } else {
+        map[name].pendingCount += 1
+        map[name].earningsPending += cut
+      }
     })
 
     return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 10)
@@ -213,7 +287,7 @@ export default function AdminDashboardPage() {
     return Array.from(set).sort()
   }, [calls])
 
-  // Chamados Concluídos Filtrados
+  // Chamados Concluídos Filtrados com Suporte a Status Financeiro (Pago / Pendente)
   const completedCalls = useMemo(() => {
     const base = calls.filter(c => c.status === 'completed')
     return base.filter(c => {
@@ -226,6 +300,14 @@ export default function AdminDashboardPage() {
       const serviceName = serviceObj?.name || ''
       const serviceCategory = serviceObj?.category || ''
       const neighborhood = c.neighborhood || ''
+
+      // Filtro de pagamento
+      if (paymentFilter === 'paid' && c.payment_status !== 'paid') {
+        return false
+      }
+      if (paymentFilter === 'pending' && c.payment_status === 'paid') {
+        return false
+      }
 
       if (selectedProviderFilter && provName.toLowerCase() !== selectedProviderFilter.toLowerCase()) {
         return false
@@ -245,7 +327,7 @@ export default function AdminDashboardPage() {
 
       return true
     })
-  }, [calls, selectedProviderFilter, completedSearchQuery])
+  }, [calls, paymentFilter, selectedProviderFilter, completedSearchQuery])
 
   // Ranking de Bairros Atendidos
   const neighborhoodRanking = useMemo(() => {
@@ -312,24 +394,38 @@ export default function AdminDashboardPage() {
           <div className="text-2xl sm:text-3xl font-black text-white">
             {metrics.completedCount}
           </div>
-          <div className="text-xs text-slate-500 flex items-center gap-1.5">
-            <span className="text-emerald-400 font-semibold">{metrics.inProgressCount}</span> em andamento agora
+          <div className="text-xs text-slate-400 flex flex-wrap items-center gap-1.5">
+            <span className="text-emerald-400 font-semibold">{metrics.paidCount} pagos</span>
+            {metrics.pendingPaymentCount > 0 ? (
+              <span className="text-amber-400 font-semibold">
+                · {metrics.pendingPaymentCount} pendente{metrics.pendingPaymentCount > 1 ? 's' : ''} Pix ⚠️
+              </span>
+            ) : (
+              <span className="text-slate-500">· 100% quitados</span>
+            )}
           </div>
         </div>
 
         {/* Volume Transacionado (GMV) */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">GMV Transacionado</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">GMV Liquidado</span>
             <div className="p-2 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20">
               <DollarSign size={18} />
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-white">
-            {formatCurrency(metrics.gmv)}
+            {formatCurrency(metrics.gmvPaid)}
           </div>
-          <div className="text-xs text-slate-500">
-            Repassado aos técnicos: <strong className="text-slate-300">{formatCurrency(metrics.providerTotalPayout)}</strong>
+          <div className="text-xs text-slate-400 space-y-0.5">
+            {metrics.gmvPending > 0 && (
+              <div className="text-amber-400 font-medium">
+                + {formatCurrency(metrics.gmvPending)} pendente Pix ⚠️
+              </div>
+            )}
+            <div className="text-slate-500">
+              Repassado aos técnicos: <strong className="text-slate-300">{formatCurrency(metrics.providerPayoutRealized)}</strong>
+            </div>
           </div>
         </div>
 
@@ -342,10 +438,17 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-orange-400">
-            {formatCurrency(metrics.platformRevenue)}
+            {formatCurrency(metrics.platformRevenueRealized)}
           </div>
-          <div className="text-xs text-slate-500">
-            Taxa fixa <strong className="text-slate-300">R$ 12,00</strong> / chamado finalizado
+          <div className="text-xs text-slate-400 space-y-0.5">
+            {metrics.platformRevenuePending > 0 && (
+              <div className="text-amber-400 font-medium">
+                + {formatCurrency(metrics.platformRevenuePending)} a receber ({metrics.pendingPaymentCount} pend.)
+              </div>
+            )}
+            <div className="text-slate-500">
+              Taxa fixa <strong className="text-slate-300">R$ 12,00</strong> / serviço liquidado
+            </div>
           </div>
         </div>
 
@@ -390,6 +493,11 @@ export default function AdminDashboardPage() {
         >
           <CheckCircle2 size={15} />
           Serviços Efetuados ({metrics.completedCount})
+          {metrics.pendingPaymentCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-amber-500 text-slate-950 ml-1 animate-pulse">
+              {metrics.pendingPaymentCount} pend.
+            </span>
+          )}
         </button>
 
         <button
@@ -463,17 +571,27 @@ export default function AdminDashboardPage() {
 
                       <div className="text-right">
                         <span className="text-xs font-bold text-emerald-400">
-                          {prov.count} {prov.count === 1 ? 'serviço' : 'serviços'}
+                          {prov.paidCount} {prov.paidCount === 1 ? 'pago' : 'pagos'}
                         </span>
-                        <div className="text-[10px] text-slate-500">
-                          {formatCurrency(prov.earnings)} faturados
+                        {prov.pendingCount > 0 && (
+                          <span className="text-[11px] font-bold text-amber-400 ml-1.5">
+                            ({prov.pendingCount} pendente{prov.pendingCount > 1 ? 's' : ''})
+                          </span>
+                        )}
+                        <div className="text-[10px] text-slate-400">
+                          {formatCurrency(prov.earningsPaid)} recebido
+                          {prov.pendingCount > 0 && (
+                            <span className="text-amber-400/90 block font-medium">
+                              + {formatCurrency(prov.earningsPending)} a receber
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
 
                     <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between">
                       <span className="text-[10px] text-slate-500">
-                        {prov.count} atendimento{prov.count > 1 ? 's' : ''} liquidado{prov.count > 1 ? 's' : ''}
+                        {prov.count} atendimento{prov.count > 1 ? 's' : ''} concluído{prov.count > 1 ? 's' : ''}
                       </span>
                       <button
                         onClick={() => {
@@ -528,27 +646,81 @@ export default function AdminDashboardPage() {
       {activeTab === 'completed' && (
         <div className="space-y-6">
           {/* Header da aba com filtros rápidos */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
-            {/* Chips de Técnicos */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+          <div className="flex flex-col gap-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+            {/* Linha superior: Filtros por status financeiro e busca */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              {/* Filtro por Status Financeiro (Pago vs Pendente Pix) */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+                <span className="text-xs text-slate-400 font-semibold whitespace-nowrap flex items-center gap-1.5 mr-1">
+                  <CreditCard size={13} /> Pagamento:
+                </span>
+                <button
+                  onClick={() => setPaymentFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+                    paymentFilter === 'all'
+                      ? 'bg-slate-100 text-slate-900 shadow-sm'
+                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  Todos ({metrics.completedCount})
+                </button>
+                <button
+                  onClick={() => setPaymentFilter('paid')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+                    paymentFilter === 'paid'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  ✔ Pagos ({metrics.paidCount})
+                </button>
+                <button
+                  onClick={() => setPaymentFilter('pending')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+                    paymentFilter === 'pending'
+                      ? 'bg-amber-500 text-slate-950 shadow-sm'
+                      : metrics.pendingPaymentCount > 0
+                      ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40 hover:bg-amber-500/25'
+                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  ⏳ Aguardando Pix ({metrics.pendingPaymentCount})
+                </button>
+              </div>
+
+              {/* Input de Busca */}
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={15} />
+                <input
+                  type="text"
+                  placeholder="Buscar por serviço, cliente, técnico ou bairro..."
+                  value={completedSearchQuery}
+                  onChange={(e) => setCompletedSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Linha inferior: Chips de Técnicos */}
+            <div className="flex items-center gap-2 overflow-x-auto pt-2 border-t border-slate-800/60 pb-1 md:pb-0">
               <span className="text-xs text-slate-400 font-semibold whitespace-nowrap flex items-center gap-1.5 mr-1">
                 <Filter size={13} /> Filtrar Técnico:
               </span>
               <button
                 onClick={() => setSelectedProviderFilter('')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
                   !selectedProviderFilter
                     ? 'bg-emerald-600 text-white shadow-sm'
                     : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
                 }`}
               >
-                Todos ({metrics.completedCount})
+                Todos
               </button>
               {completedProvidersList.map((provName) => (
                 <button
                   key={provName}
                   onClick={() => setSelectedProviderFilter(provName)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
                     selectedProviderFilter === provName
                       ? 'bg-orange-500 text-white shadow-sm'
                       : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
@@ -557,18 +729,6 @@ export default function AdminDashboardPage() {
                   {provName}
                 </button>
               ))}
-            </div>
-
-            {/* Input de Busca */}
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={15} />
-              <input
-                type="text"
-                placeholder="Buscar por serviço, cliente, técnico ou bairro..."
-                value={completedSearchQuery}
-                onChange={(e) => setCompletedSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
-              />
             </div>
           </div>
 
@@ -596,8 +756,8 @@ export default function AdminDashboardPage() {
                 <CheckCircle2 className="mx-auto mb-3 text-slate-600" size={36} />
                 <p className="text-base font-semibold text-slate-300">Nenhum serviço efetuado encontrado</p>
                 <p className="text-xs text-slate-500 mt-1">
-                  {selectedProviderFilter || completedSearchQuery
-                    ? 'Tente remover o filtro de técnico ou a busca digitada.'
+                  {selectedProviderFilter || completedSearchQuery || paymentFilter !== 'all'
+                    ? 'Tente alterar os filtros de status de pagamento ou limpar a busca.'
                     : 'Ainda não há registros de atendimentos concluídos no sistema.'}
                 </p>
               </div>
@@ -606,12 +766,13 @@ export default function AdminDashboardPage() {
                 <table className="w-full text-left text-sm border-collapse">
                   <thead>
                     <tr className="border-b border-slate-800 bg-slate-950/70 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                      <th className="py-3.5 px-4">Chamado & Conclusão</th>
+                      <th className="py-3.5 px-4">Chamado & Status</th>
                       <th className="py-3.5 px-4">Serviço Efetuado</th>
                       <th className="py-3.5 px-4">Prestador Responsável</th>
                       <th className="py-3.5 px-4">Cliente Atendido</th>
                       <th className="py-3.5 px-4">Localização</th>
                       <th className="py-3.5 px-4 text-right">Divisão Financeira (Split)</th>
+                      <th className="py-3.5 px-4 text-center">Gestão de Pagamento</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/60">
@@ -636,17 +797,24 @@ export default function AdminDashboardPage() {
                       const fee = 12.0 // Regra inegociável R$ 12,00
                       const providerCut = Number(call.provider_cut || (totalPrice - 12))
                       const dateStr = call.completed_at || call.created_at
+                      const isPaid = call.payment_status === 'paid'
 
                       return (
                         <tr key={call.id} className="hover:bg-slate-800/40 transition-colors">
-                          {/* ID do Chamado & Conclusão */}
+                          {/* ID do Chamado & Status do Pagamento */}
                           <td className="py-4 px-4">
                             <div className="font-mono text-xs font-bold text-orange-400">
                               #{call.id.slice(0, 8)}
                             </div>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 mt-1">
-                              <CheckCircle2 size={10} /> Concluído & Pago
-                            </span>
+                            {isPaid ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 mt-1">
+                                <CheckCircle2 size={10} /> Concluído & Pago
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 mt-1">
+                                <AlertTriangle size={10} className="text-amber-400" /> Não Pago / Pendente Pix ⚠️
+                              </span>
+                            )}
                             <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-1">
                               <Calendar size={11} className="text-slate-500" />
                               {new Date(dateStr).toLocaleString('pt-BR')}
@@ -721,12 +889,68 @@ export default function AdminDashboardPage() {
                             <div className="text-xs font-bold text-white">
                               Total: <span className="text-sm font-black">{formatCurrency(totalPrice)}</span>
                             </div>
-                            <div className="text-[11px] text-emerald-400 font-semibold mt-0.5">
-                              Técnico: +{formatCurrency(providerCut)}
-                            </div>
-                            <div className="text-[10px] text-orange-400 font-medium">
-                              Taxa Repara RV: {formatCurrency(fee)}
-                            </div>
+                            {isPaid ? (
+                              <>
+                                <div className="text-[11px] text-emerald-400 font-semibold mt-0.5">
+                                  Técnico: +{formatCurrency(providerCut)} (Liquidado)
+                                </div>
+                                <div className="text-[10px] text-orange-400 font-medium">
+                                  Taxa Repara RV: {formatCurrency(fee)}
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="text-[11px] text-amber-400 font-semibold mt-0.5">
+                                  Técnico: {formatCurrency(providerCut)} (Aguardando Pix)
+                                </div>
+                                <div className="text-[10px] text-amber-400/80 font-medium">
+                                  Taxa Repara RV: {formatCurrency(fee)} (A receber)
+                                </div>
+                              </>
+                            )}
+                          </td>
+
+                          {/* Gestão de Pagamento & Confirmação */}
+                          <td className="py-4 px-4 text-center">
+                            {!isPaid ? (
+                              <div className="flex flex-col items-center gap-1.5">
+                                <button
+                                  onClick={() => handleTogglePaymentStatus(call.id, call.payment_status)}
+                                  disabled={updatingPaymentId === call.id}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500/50 shadow-sm transition-colors disabled:opacity-50 whitespace-nowrap"
+                                >
+                                  {updatingPaymentId === call.id ? (
+                                    <RefreshCw size={12} className="animate-spin" />
+                                  ) : (
+                                    <Check size={12} />
+                                  )}
+                                  Confirmar Pix Manual
+                                </button>
+                                {cleanClientPhone && (
+                                  <a
+                                    href={`https://wa.me/55${cleanClientPhone}?text=Ol%C3%A1%20${encodeURIComponent(clientName)}%2C%20tudo%20bem%3F%20Falo%20da%20administra%C3%A7%C3%A3o%20do%20Repara%20RV.%20Consta%20como%20pendente%20o%20pagamento%20via%20Pix%20do%20servi%C3%A7o%20%23${call.id.slice(0, 8)}%20(${encodeURIComponent(serviceName)})%20no%20valor%20de%20R%24%20${totalPrice.toFixed(2)}.%20Segue%20a%20chave%20Pix%3A%2064993139075.%20Poderia%20nos%20enviar%20o%20comprovante%3F`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] text-amber-400 hover:text-amber-300 font-semibold transition-colors whitespace-nowrap"
+                                  >
+                                    <MessageCircle size={11} /> Cobrar via WhatsApp
+                                  </a>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
+                                  <CheckCircle2 size={12} /> Pix Liquidado
+                                </span>
+                                <button
+                                  onClick={() => handleTogglePaymentStatus(call.id, call.payment_status)}
+                                  disabled={updatingPaymentId === call.id}
+                                  className="text-[10px] text-slate-500 hover:text-slate-400 underline transition-colors disabled:opacity-50"
+                                >
+                                  Desmarcar Pix
+                                </button>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       )

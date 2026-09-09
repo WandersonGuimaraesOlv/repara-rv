@@ -15,7 +15,8 @@ import {
   Phone,
   Calendar,
   Award,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle
 } from 'lucide-react'
 import { getAdminUsersListAction, updateUserRoleAction, AdminUserListItem } from '@/app/actions/admin-users'
 import { formatCurrency } from '@/lib/utils'
@@ -427,19 +428,33 @@ export default function AdminUsersPage() {
                             <div className="text-xs font-bold text-emerald-400 flex items-center gap-1">
                               <Award size={13} />
                               {user.completed_calls_as_provider} {user.completed_calls_as_provider === 1 ? 'concluído' : 'concluídos'}
+                              <span className="text-[10px] text-slate-400 font-normal">
+                                ({user.paid_calls_as_provider} pagos)
+                              </span>
                             </div>
-                            <div className="text-[11px] text-slate-400">
-                              Total repassado: <strong className="text-white">{formatCurrency(user.total_earned_as_provider)}</strong>
+                            <div className="text-[11px] text-slate-300">
+                              Recebido: <strong className="text-white">{formatCurrency(user.total_earned_as_provider)}</strong>
                             </div>
+                            {user.pending_earnings_as_provider > 0 && (
+                              <div className="text-[10px] text-amber-400 font-semibold">
+                                + {formatCurrency(user.pending_earnings_as_provider)} a receber (aguardando Pix)
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <div className="space-y-0.5">
                             <div className="text-xs font-semibold text-slate-200">
                               {user.total_calls_as_client} {user.total_calls_as_client === 1 ? 'chamado feito' : 'chamados feitos'}
                             </div>
-                            <div className="text-[11px] text-slate-500">
-                              Histórico na plataforma
-                            </div>
+                            {user.unpaid_calls_as_client > 0 ? (
+                              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 mt-1 animate-pulse">
+                                <AlertTriangle size={10} /> {user.unpaid_calls_as_client} pendente{user.unpaid_calls_as_client > 1 ? 's' : ''} de Pix
+                              </div>
+                            ) : (
+                              <div className="text-[11px] text-emerald-400/80 flex items-center gap-1">
+                                <CheckCircle2 size={10} /> Em dia
+                              </div>
+                            )}
                           </div>
                         )}
                       </td>
