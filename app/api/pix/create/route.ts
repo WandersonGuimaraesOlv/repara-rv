@@ -53,38 +53,82 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gateway de pagamento em manutenção temporária.' }, { status: 500 })
     }
 
+    // 2. Verifica se o prestador possui subconta conectada via OAuth para Split Automático
+    let activeAccessToken = accessToken
+    let isSplitActive = false
+    const platformFee = Number(call.platform_fee || 12)
+
+    if (call.provider_id) {
+      try {
+        const { data: gatewayAcc } = await supabase
+          .from('provider_gateway_accounts')
+          .select('mp_access_token, mp_user_id')
+          .eq('provider_id', call.provider_id)
+          .maybeSingle()
+
+        if (gatewayAcc?.mp_access_token) {
+          activeAccessToken = gatewayAcc.mp_access_token
+          isSplitActive = true
+          console.log(`[Split Mercado Pago] Ativado para prestador ${call.provider_id} (MP User: ${gatewayAcc.mp_user_id}). Fee: R$ ${platformFee}`)
+        }
+      } catch (err) {
+        console.warn('[Split Mercado Pago] provider_gateway_accounts não disponível, usando token master:', err)
+      }
+    }
+
     const clientName = (call.client as { full_name?: string })?.full_name || 'Cliente Repara RV'
     const nameParts = clientName.trim().split(' ')
     const firstName = nameParts[0] || 'Cliente'
     const lastName = nameParts.slice(1).join(' ') || 'ReparaRV'
     const payerEmail = payer_email || 'financeiro@repararv.com'
 
-    // 2. Gera Cobrança Pix Direta no Mercado Pago (se ainda não gerado)
+    // 3. Gera Cobrança Pix Direta no Mercado Pago (com application_fee se split ativo)
     let qrCode = call.pix_copy_paste || null
     let qrCodeBase64 = call.pix_qr_code || null
     let paymentId = call.pix_payment_id || null
 
     if (!qrCodeBase64 || !qrCode) {
       try {
-        const mpPixRes = await fetch('https://api.mercadopago.com/v1/payments', {
+        const pixPayload: Record<string, any> = {
+          transaction_amount: amount,
+          description,
+          payment_method_id: 'pix',
+          payer: {
+            email: payerEmail,
+            first_name: firstName,
+            last_name: lastName,
+          },
+          notification_url: `${appUrl}/api/pix/webhook`,
+        }
+
+        if (isSplitActive && platformFee > 0 && platformFee < amount) {
+          pixPayload.application_fee = platformFee
+        }
+
+        let mpPixRes = await fetch('https://api.mercadopago.com/v1/payments', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${activeAccessToken}`,
             'X-Idempotency-Key': `repararv-pix-${call_id}-${Date.now()}`,
           },
-          body: JSON.stringify({
-            transaction_amount: amount,
-            description,
-            payment_method_id: 'pix',
-            payer: {
-              email: payerEmail,
-              first_name: firstName,
-              last_name: lastName,
-            },
-            notification_url: `${appUrl}/api/pix/webhook`,
-          }),
+          body: JSON.stringify(pixPayload),
         })
+
+        // Fallback resiliente: se a subconta falhar, tenta com a conta da plataforma
+        if (!mpPixRes.ok && isSplitActive) {
+          console.warn('[Split Pix] Falha com subconta do prestador. Tentando conta master...')
+          delete pixPayload.application_fee
+          mpPixRes = await fetch('https://api.mercadopago.com/v1/payments', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+              'X-Idempotency-Key': `repararv-pix-${call_id}-${Date.now()}-fallback`,
+            },
+            body: JSON.stringify(pixPayload),
+          })
+        }
 
         if (mpPixRes.ok) {
           const pixData = await mpPixRes.json()
@@ -100,36 +144,56 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 3. Gera Checkout Preference para Cartão de Crédito e Débito no Mercado Pago
+    // 4. Gera Checkout Preference para Cartão de Crédito e Débito no Mercado Pago
     let checkoutUrl: string | null = existingCheckout
 
     if (!checkoutUrl) {
       try {
-        const mpPrefRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
+        const prefPayload: Record<string, any> = {
+          items: [
+            {
+              title: description,
+              quantity: 1,
+              unit_price: amount,
+              currency_id: 'BRL',
+            },
+          ],
+          back_urls: {
+            success: `${appUrl}/acompanhar/${call_id}`,
+            failure: `${appUrl}/acompanhar/${call_id}`,
+            pending: `${appUrl}/acompanhar/${call_id}`,
+          },
+          auto_return: 'approved',
+          external_reference: call_id,
+          statement_descriptor: 'REPARARV',
+        }
+
+        if (isSplitActive && platformFee > 0 && platformFee < amount) {
+          prefPayload.marketplace_fee = platformFee
+        }
+
+        let mpPrefRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${activeAccessToken}`,
           },
-          body: JSON.stringify({
-            items: [
-              {
-                title: description,
-                quantity: 1,
-                unit_price: amount,
-                currency_id: 'BRL',
-              },
-            ],
-            back_urls: {
-              success: `${appUrl}/acompanhar/${call_id}`,
-              failure: `${appUrl}/acompanhar/${call_id}`,
-              pending: `${appUrl}/acompanhar/${call_id}`,
-            },
-            auto_return: 'approved',
-            external_reference: call_id,
-            statement_descriptor: 'REPARARV',
-          }),
+          body: JSON.stringify(prefPayload),
         })
+
+        // Fallback resiliente para Cartão: se subconta falhar, tenta com conta master
+        if (!mpPrefRes.ok && isSplitActive) {
+          console.warn('[Split Cartão] Falha com subconta do prestador. Tentando conta master...')
+          delete prefPayload.marketplace_fee
+          mpPrefRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify(prefPayload),
+          })
+        }
 
         if (mpPrefRes.ok) {
           const prefData = await mpPrefRes.json()

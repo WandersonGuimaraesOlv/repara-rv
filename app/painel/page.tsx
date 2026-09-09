@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Profile, ServiceCall } from '@/lib/types'
 import { CallAlertModal } from '@/components/call-alert-modal'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { Power, Loader2, MapPin } from 'lucide-react'
+import { Power, Loader2, MapPin, CreditCard, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { PanelHeader } from '@/components/provider/panel-header'
 
@@ -21,6 +21,8 @@ export default function PainelPage() {
   const [totalToday, setTotalToday] = useState(0)
   const [pendingToday, setPendingToday] = useState(0)
   const [providerPixKey, setProviderPixKey] = useState('')
+  const [recipientGatewayId, setRecipientGatewayId] = useState<string | null>(null)
+  const [connectingMp, setConnectingMp] = useState(false)
 
   const { lat, lng, error: geoError, getPosition } = useGeolocation(true)
 
@@ -45,12 +47,15 @@ export default function PainelPage() {
             setProfile(prof as Profile)
             const { data: status } = await supabase
               .from('provider_status')
-              .select('is_online, pix_key')
+              .select('is_online, pix_key, recipient_gateway_id')
               .eq('provider_id', user.id)
               .maybeSingle()
             setIsOnline(status?.is_online ?? false)
             if (status?.pix_key) {
               setProviderPixKey(status.pix_key)
+            }
+            if (status?.recipient_gateway_id) {
+              setRecipientGatewayId(status.recipient_gateway_id)
             }
 
             const today = new Date().toISOString().split('T')[0]
@@ -83,6 +88,55 @@ export default function PainelPage() {
     }
     load()
   }, [router, supabase])
+
+  // Monitora retorno da autorização do Mercado Pago
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('mp_connected') === 'true') {
+        toast.success('Conta Mercado Pago conectada com sucesso! Split automático ativado ⚡')
+        const url = new URL(window.location.href)
+        url.searchParams.delete('mp_connected')
+        window.history.replaceState({}, '', url.toString())
+      } else if (params.get('mp_error')) {
+        toast.error(`Falha na autorização Mercado Pago: ${params.get('mp_error')}`)
+        const url = new URL(window.location.href)
+        url.searchParams.delete('mp_error')
+        window.history.replaceState({}, '', url.toString())
+      }
+    }
+  }, [])
+
+  const handleConnectMercadoPago = async () => {
+    setConnectingMp(true)
+    try {
+      const res = await fetch('/api/mercadopago/oauth/url')
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        toast.error(data.error || 'Erro ao iniciar conexão com Mercado Pago.')
+        setConnectingMp(false)
+      }
+    } catch {
+      toast.error('Erro de conexão com o servidor.')
+      setConnectingMp(false)
+    }
+  }
+
+  const handleDisconnectMercadoPago = async () => {
+    try {
+      const res = await fetch('/api/mercadopago/oauth/disconnect', { method: 'POST' })
+      if (res.ok) {
+        setRecipientGatewayId(null)
+        toast.success('Conta Mercado Pago desconectada.')
+      } else {
+        toast.error('Erro ao desconectar.')
+      }
+    } catch {
+      toast.error('Falha de conexão.')
+    }
+  }
 
   // Atualiza localização quando muda (GPS watch)
   useEffect(() => {
@@ -292,6 +346,68 @@ export default function PainelPage() {
           <p className="text-xs mt-2 font-medium text-amber-500">
             ⏳ {pendingToday} serviço(s) finalizado(s) — aguardando confirmação do pagamento do cliente via Pix/Cartão
           </p>
+        )}
+      </section>
+
+      {/* Conexão Mercado Pago Split */}
+      <section className="mb-6 p-4 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-sm animate-slide-up">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <CreditCard size={18} className="text-cyan-400" />
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+              Split Automático Mercado Pago
+            </h3>
+          </div>
+          {recipientGatewayId ? (
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              Conectado ✅
+            </span>
+          ) : (
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              Pendente
+            </span>
+          )}
+        </div>
+
+        {recipientGatewayId ? (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
+            <div className="text-xs text-slate-300">
+              <p>Sua subconta do Mercado Pago está ativa (ID: <strong className="font-mono text-cyan-300">{recipientGatewayId}</strong>).</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Seus recebimentos de serviços são depositados automaticamente na sua conta MP.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDisconnectMercadoPago}
+              className="text-[11px] font-bold text-red-400 hover:text-red-300 py-1.5 px-3 rounded-xl border border-red-500/30 hover:bg-red-500/10 transition-colors shrink-0"
+            >
+              Desconectar
+            </button>
+          </div>
+        ) : (
+          <div className="pt-1">
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Vincule sua conta do Mercado Pago para receber sua parte de cada atendimento no exato momento da aprovação, sem depender de repasse manual.
+            </p>
+            <button
+              type="button"
+              onClick={handleConnectMercadoPago}
+              disabled={connectingMp}
+              id="btn-connect-mercadopago"
+              className="mt-3 w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white text-xs font-bold shadow-md shadow-sky-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              {connectingMp ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Conectando ao Mercado Pago...</span>
+                </>
+              ) : (
+                <>
+                  <Zap size={14} className="text-yellow-300" />
+                  <span>Conectar Conta Mercado Pago ⚡</span>
+                </>
+              )}
+            </button>
+          </div>
         )}
       </section>
 

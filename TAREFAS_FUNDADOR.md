@@ -16,12 +16,20 @@ Tarefas administrativas, fiscais e legais sob responsabilidade dos fundadores pa
 ---
 
 ## 2. Gateway de Pagamento & Split de Pix
-- [ ] **Abrir Conta PJ no Gateway Escolhido (Mercado Pago ou Asaas):**
-  - Utilizar a conta jurídica do Repara RV recém-aberta.
-  - Solicitar liberação formal do recurso de **Marketplace / Split de Pagamentos**.
+- [x] **Configuração da Aplicação Marketplace no Mercado Pago:**
+  - Aplicação ID: `3089428759189286`
+  - Conta Master Marketplace: `cricaskrav64@gmail.com` (ID: `509128262` - TECHBRGO)
+- [ ] **Cadastrar Redirect URI no Painel Mercado Pago Developers:**
+  - Acessar: https://www.mercadopago.com.br/developers/panel/app
+  - Entrar na aplicação `3089428759189286` e adicionar a URL de retorno OAuth:
+    `https://repararv.com/api/mercadopago/oauth/callback`
+  - Salvar as configurações.
 - [x] **Obter Credenciais de Produção:**
-  - Salvar `ACCESS_TOKEN` de produção e chave secreta do Webhook (`MERCADOPAGO_ACCESS_TOKEN` e `MERCADOPAGO_WEBHOOK_SECRET` configurados no `.env.local`).
-- [ ] **Definir Fluxo do Prestador:** Definir se o profissional receberá via subconta do gateway ou direto por transferência Pix automática gerada pelo backend.
+  - `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_CLIENT_ID` e `MERCADOPAGO_CLIENT_SECRET` configurados no servidor.
+- [x] **Fluxo de Split Automático do Prestador Concluído:**
+  - Prestadores conectam suas subcontas pelo Painel (`/painel`) com 1 clique via OAuth do Mercado Pago.
+  - Ao pagar Pix ou Cartão, o split é executado em tempo real (`application_fee: R$ 12,00` retido para Repara RV e saldo creditado ao técnico).
+  - Fallback resiliente ativo para quem ainda não conectou o Mercado Pago.
 
 ---
 
