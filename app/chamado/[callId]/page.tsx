@@ -242,7 +242,7 @@ export default function ChamadoProviderPage() {
       )}
 
       {/* Chat em Tempo Real com Alinhamento de Materiais e Peças */}
-      {(call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress') && (
+      {(call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress' || call.status === 'completed') && (
         <CallChat
           callId={callId}
           currentUserId={call.provider_id || ''}
