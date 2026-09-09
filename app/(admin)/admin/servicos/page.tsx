@@ -4,14 +4,21 @@ import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { DEFAULT_SERVICES } from '@/lib/catalog'
 import { QuickService } from '@/lib/types'
-import { updateServiceAction, toggleServiceStatusAction } from '@/app/actions/service-admin'
+import { 
+  updateServiceAction, 
+  toggleServiceStatusAction,
+  createServiceAction,
+  deleteServiceAction
+} from '@/app/actions/service-admin'
 import { 
   Search, 
   X, 
   Edit3, 
   Sliders, 
   AlertCircle,
-  Loader2
+  Loader2,
+  Plus,
+  Trash2
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/utils'
@@ -33,10 +40,25 @@ export default function AdminServicesPage() {
 
   // Estado do Modal de Edição
   const [editingService, setEditingService] = useState<QuickService | null>(null)
+  const [editName, setEditName] = useState<string>('')
+  const [editCategory, setEditCategory] = useState<string>('')
   const [editPrice, setEditPrice] = useState<string>('')
   const [editDescription, setEditDescription] = useState<string>('')
   const [editIsActive, setEditIsActive] = useState<boolean>(true)
   const [isSaving, setIsSaving] = useState<boolean>(false)
+
+  // Estado do Modal de Cadastro
+  const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false)
+  const [createName, setCreateName] = useState<string>('')
+  const [createCategory, setCreateCategory] = useState<string>('Elétrica')
+  const [createCustomCategory, setCreateCustomCategory] = useState<string>('')
+  const [createPrice, setCreatePrice] = useState<string>('')
+  const [createDescription, setCreateDescription] = useState<string>('')
+  const [isCreating, setIsCreating] = useState<boolean>(false)
+
+  // Estado do Modal de Exclusão
+  const [deletingService, setDeletingService] = useState<QuickService | null>(null)
+  const [isDeleting, setIsDeleting] = useState<boolean>(false)
 
   // Carrega serviços do banco com fallback
   useEffect(() => {
@@ -84,12 +106,14 @@ export default function AdminServicesPage() {
   // Abertura do modal de edição
   const handleOpenEdit = (service: QuickService) => {
     setEditingService(service)
+    setEditName(service.name)
+    setEditCategory(service.category)
     setEditPrice(String(service.fixed_price))
     setEditDescription(service.description || '')
     setEditIsActive(service.is_active)
   }
 
-  // Fechamento do modal
+  // Fechamento do modal de edição
   const handleCloseEdit = () => {
     setEditingService(null)
     setIsSaving(false)
@@ -122,7 +146,7 @@ export default function AdminServicesPage() {
     }
   }
 
-  // Submissão da edição de preço
+  // Submissão da edição de serviço
   const handleSaveService = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingService) return
@@ -133,10 +157,17 @@ export default function AdminServicesPage() {
       return
     }
 
+    if (!editName.trim()) {
+      toast.error('O nome do serviço é obrigatório.')
+      return
+    }
+
     setIsSaving(true)
 
     const result = await updateServiceAction({
       id: editingService.id,
+      name: editName.trim(),
+      category: editCategory.trim(),
       fixed_price: priceNum,
       description: editDescription.trim(),
       is_active: editIsActive,
@@ -155,6 +186,8 @@ export default function AdminServicesPage() {
         s.id === editingService.id
           ? {
               ...s,
+              name: editName.trim(),
+              category: editCategory.trim(),
               fixed_price: priceNum,
               description: editDescription.trim(),
               is_active: editIsActive,
@@ -163,14 +196,91 @@ export default function AdminServicesPage() {
       )
     )
 
-    toast.success(`Serviço "${editingService.name}" atualizado com sucesso!`)
+    toast.success(`Serviço "${editName.trim()}" atualizado com sucesso!`)
     handleCloseEdit()
   }
 
-  // Preço digitado no modal para cálculo dinâmico de repasse
+  // Submissão do cadastro de novo serviço
+  const handleCreateService = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const priceNum = parseFloat(createPrice.replace(',', '.'))
+    if (isNaN(priceNum) || priceNum < 20) {
+      toast.error('O preço mínimo para qualquer serviço é de R$ 20,00.')
+      return
+    }
+
+    const finalCategory = createCategory === 'Outra' ? createCustomCategory.trim() : createCategory
+    if (!finalCategory) {
+      toast.error('Informe a categoria do serviço.')
+      return
+    }
+
+    if (!createName.trim()) {
+      toast.error('Informe o nome do serviço.')
+      return
+    }
+
+    setIsCreating(true)
+
+    const result = await createServiceAction({
+      name: createName.trim(),
+      category: finalCategory,
+      description: createDescription.trim(),
+      fixed_price: priceNum,
+      is_active: true,
+    })
+
+    setIsCreating(false)
+
+    if (!result.success || !result.data) {
+      toast.error(result.error || 'Não foi possível cadastrar o serviço.')
+      return
+    }
+
+    setServices(prev => [...prev, result.data as QuickService])
+    toast.success(`Serviço "${createName.trim()}" cadastrado com sucesso!`)
+    setIsCreateOpen(false)
+    setCreateName('')
+    setCreatePrice('')
+    setCreateDescription('')
+    setCreateCustomCategory('')
+  }
+
+  // Confirmação de exclusão do serviço
+  const handleConfirmDelete = async () => {
+    if (!deletingService) return
+
+    setIsDeleting(true)
+    const result = await deleteServiceAction({ id: deletingService.id })
+    setIsDeleting(false)
+
+    if (!result.success) {
+      toast.error(result.error || 'Não foi possível excluir o serviço.')
+      return
+    }
+
+    if (result.deactivatedOnly) {
+      toast.info(result.message)
+      setServices(prev =>
+        prev.map(s => (s.id === deletingService.id ? { ...s, is_active: false } : s))
+      )
+    } else {
+      toast.success(result.message || 'Serviço excluído do catálogo com sucesso!')
+      setServices(prev => prev.filter(s => s.id !== deletingService.id))
+    }
+
+    setDeletingService(null)
+  }
+
+  // Preço digitado no modal de edição para cálculo dinâmico de repasse
   const parsedModalPrice = parseFloat(editPrice.replace(',', '.')) || 0
   const modalPlatformFee = 12.0
   const modalProviderCut = Math.max(0, parsedModalPrice - modalPlatformFee)
+
+  // Preço digitado no modal de criação
+  const parsedCreatePrice = parseFloat(createPrice.replace(',', '.')) || 0
+  const createProviderCut = Math.max(0, parsedCreatePrice - modalPlatformFee)
 
   return (
     <div className="space-y-8">
@@ -182,9 +292,18 @@ export default function AdminServicesPage() {
             Gestão de Catálogo de Serviços
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Configure preços fixos, ative/desative serviços e confira a divisão de split de cada mão de obra.
+            Cadastre novos serviços, edite preços, configure visibilidade e gerencie o catálogo da Repara RV.
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setIsCreateOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md transition-all self-start sm:self-auto cursor-pointer"
+        >
+          <Plus size={16} />
+          Cadastrar Novo Serviço
+        </button>
       </div>
 
       {/* Cards de Métricas */}
@@ -351,16 +470,28 @@ export default function AdminServicesPage() {
                         </button>
                       </td>
 
-                      {/* Botão de Edição */}
+                      {/* Ações: Editar e Excluir */}
                       <td className="py-3 px-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEdit(service)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-orange-500 hover:text-white transition-colors border border-slate-700"
-                        >
-                          <Edit3 size={13} />
-                          Editar
-                        </button>
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(service)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-orange-500 hover:text-white transition-colors border border-slate-700"
+                            title="Editar dados e preço"
+                          >
+                            <Edit3 size={13} />
+                            Editar
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setDeletingService(service)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-400 bg-red-500/10 hover:bg-red-500 hover:text-white transition-colors border border-red-500/30"
+                            title="Excluir serviço"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -371,7 +502,7 @@ export default function AdminServicesPage() {
         )}
       </div>
 
-      {/* Modal de Edição de Preço e Dados do Serviço */}
+      {/* Modal de Edição de Serviço */}
       {editingService && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-scale-up">
@@ -379,10 +510,10 @@ export default function AdminServicesPage() {
             <div className="flex items-start justify-between border-b border-slate-800 pb-4">
               <div>
                 <span className="text-xs font-semibold text-orange-400 uppercase tracking-wider">
-                  {editingService.category}
+                  Editar Serviço
                 </span>
                 <h3 className="text-lg font-bold text-white mt-0.5">
-                  Editar: {editingService.name}
+                  {editingService.name}
                 </h3>
               </div>
               <button
@@ -396,6 +527,39 @@ export default function AdminServicesPage() {
 
             {/* Formulário */}
             <form onSubmit={handleSaveService} className="space-y-4">
+              {/* Nome do Serviço */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
+                  Nome do Serviço
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  required
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              {/* Categoria */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
+                  Categoria
+                </label>
+                <select
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-orange-500"
+                >
+                  <option value="Elétrica">Elétrica</option>
+                  <option value="Hidráulica">Hidráulica</option>
+                  <option value="Montagem">Montagem</option>
+                  <option value="Chaveiro">Chaveiro</option>
+                  <option value="Instalação">Instalação</option>
+                  <option value="Geral">Geral</option>
+                </select>
+              </div>
+
               {/* Input de Preço Fixo */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
@@ -413,7 +577,7 @@ export default function AdminServicesPage() {
                     value={editPrice}
                     onChange={(e) => setEditPrice(e.target.value)}
                     required
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-base font-bold text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm font-bold text-white focus:outline-none focus:border-orange-500"
                   />
                 </div>
               </div>
@@ -440,7 +604,7 @@ export default function AdminServicesPage() {
                   Descrição dos Serviços Inclusos
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
@@ -451,7 +615,7 @@ export default function AdminServicesPage() {
               {/* Status Ativo/Inativo */}
               <div className="flex items-center justify-between p-3 bg-slate-950 rounded-xl border border-slate-800">
                 <div>
-                  <div className="text-xs font-bold text-white">Disponibilidade no Aplicativo</div>
+                  <div className="text-xs font-bold text-white">Disponibilidade no Catálogo</div>
                   <div className="text-xs text-slate-400">
                     {editIsActive ? 'Visível para todos os clientes' : 'Oculto temporariamente'}
                   </div>
@@ -497,6 +661,207 @@ export default function AdminServicesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Cadastro de Novo Serviço */}
+      {isCreateOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-scale-up">
+            {/* Header Modal */}
+            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+              <div>
+                <span className="text-xs font-semibold text-orange-400 uppercase tracking-wider">
+                  Novo Item de Mão de Obra
+                </span>
+                <h3 className="text-lg font-bold text-white mt-0.5">
+                  Cadastrar Novo Serviço
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Formulário de Cadastro */}
+            <form onSubmit={handleCreateService} className="space-y-4">
+              {/* Nome do Serviço */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
+                  Nome do Serviço *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: Instalação de Torneira Gourmet"
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value)}
+                  required
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              {/* Categoria */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
+                  Categoria *
+                </label>
+                <select
+                  value={createCategory}
+                  onChange={(e) => setCreateCategory(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-orange-500"
+                >
+                  <option value="Elétrica">Elétrica</option>
+                  <option value="Hidráulica">Hidráulica</option>
+                  <option value="Montagem">Montagem</option>
+                  <option value="Chaveiro">Chaveiro</option>
+                  <option value="Instalação">Instalação</option>
+                  <option value="Geral">Geral</option>
+                  <option value="Outra">Outra (Digitar personalizada)...</option>
+                </select>
+
+                {createCategory === 'Outra' && (
+                  <input
+                    type="text"
+                    placeholder="Digite o nome da nova categoria..."
+                    value={createCustomCategory}
+                    onChange={(e) => setCreateCustomCategory(e.target.value)}
+                    required
+                    className="w-full mt-2 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  />
+                )}
+              </div>
+
+              {/* Preço Fixo */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
+                  Preço Fixo ao Cliente (R$) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
+                    R$
+                  </span>
+                  <input
+                    type="number"
+                    step="0.50"
+                    min="20"
+                    max="2000"
+                    placeholder="60,00"
+                    value={createPrice}
+                    onChange={(e) => setCreatePrice(e.target.value)}
+                    required
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm font-bold text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+              </div>
+
+              {/* Breakdown de Split Dinâmico */}
+              <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2">
+                <div className="flex justify-between text-xs text-slate-400">
+                  <span>Preço ao Cliente:</span>
+                  <span className="font-semibold text-white">{formatCurrency(parsedCreatePrice)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-orange-400">
+                  <span>Taxa Retida Repara RV (Fixa):</span>
+                  <span className="font-semibold">- {formatCurrency(modalPlatformFee)}</span>
+                </div>
+                <div className="border-t border-slate-800 pt-2 flex justify-between text-sm font-bold text-emerald-400">
+                  <span>Repasse Líquido ao Prestador:</span>
+                  <span>{formatCurrency(createProviderCut)}</span>
+                </div>
+              </div>
+
+              {/* Descrição */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1.5">
+                  Descrição dos Serviços Inclusos (Opcional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={createDescription}
+                  onChange={(e) => setCreateDescription(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  placeholder="Ex: Instalação e teste de funcionamento em ponto existente..."
+                />
+              </div>
+
+              {/* Ações */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(false)}
+                  disabled={isCreating}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreating}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 transition-colors shadow-md disabled:opacity-50"
+                >
+                  {isCreating ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" />
+                      Cadastrando...
+                    </>
+                  ) : (
+                    'Salvar e Publicar no Catálogo'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      {deletingService && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-scale-up">
+            <div className="flex items-center gap-3 text-red-400">
+              <div className="p-3 bg-red-500/10 rounded-xl border border-red-500/20">
+                <Trash2 size={22} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Excluir Serviço?</h3>
+                <p className="text-xs text-slate-400">{deletingService.name}</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Tem certeza que deseja remover este serviço? Se este serviço possuir atendimentos registrados no histórico, ele será automaticamente <strong>desativado</strong> para preservar os registros contábeis. Caso contrário, será excluído definitivamente.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDeletingService(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 transition-colors shadow-md disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  'Confirmar Exclusão'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

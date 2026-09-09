@@ -1,7 +1,12 @@
 'use server'
 
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { updateServiceSchema, toggleServiceStatusSchema } from '@/lib/validations/service-admin'
+import { 
+  updateServiceSchema, 
+  toggleServiceStatusSchema,
+  createServiceSchema,
+  deleteServiceSchema 
+} from '@/lib/validations/service-admin'
 import { revalidatePath } from 'next/cache'
 
 /**
@@ -42,7 +47,7 @@ export async function updateServiceAction(input: unknown) {
   if (!parsed.success) {
     return {
       success: false,
-      error: 'Dados inválidos fornecidos para o serviço.',
+      error: parsed.error.issues[0]?.message || 'Dados inválidos fornecidos para o serviço.',
       issues: parsed.error.format(),
     }
   }
@@ -50,10 +55,10 @@ export async function updateServiceAction(input: unknown) {
   const { id, name, category, description, fixed_price, is_active } = parsed.data
   const adminDb = await createServiceClient()
 
+  // Observação: a tabela quick_services não possui coluna updated_at no banco
   const updatePayload: Record<string, unknown> = {
     fixed_price,
     platform_fee: 12.0, // Regra inegociável da plataforma
-    updated_at: new Date().toISOString(),
   }
 
   if (name !== undefined) updatePayload.name = name
@@ -69,7 +74,8 @@ export async function updateServiceAction(input: unknown) {
     .single()
 
   if (error) {
-    return { success: false, error: 'Erro ao atualizar dados do serviço no banco de dados.' }
+    console.error('[updateServiceAction error]', error)
+    return { success: false, error: `Erro ao atualizar dados do serviço no banco de dados: ${error.message}` }
   }
 
   // Revalidação de cache instantânea para a Home e catálogo público
@@ -78,6 +84,130 @@ export async function updateServiceAction(input: unknown) {
   revalidatePath('/chamar')
 
   return { success: true, data }
+}
+
+/**
+ * Cadastra um novo serviço no catálogo do Repara RV.
+ */
+export async function createServiceAction(input: unknown) {
+  const authCheck = await requireAdminAuth()
+  if (!authCheck.authorized) {
+    return { success: false, error: authCheck.error }
+  }
+
+  const parsed = createServiceSchema.safeParse(input)
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: parsed.error.issues[0]?.message || 'Dados inválidos para criação do serviço.',
+    }
+  }
+
+  const { name, category, description, fixed_price, icon, color, is_active } = parsed.data
+  const adminDb = await createServiceClient()
+
+  // Determina o próximo sort_order
+  const { data: existingServices } = await adminDb
+    .from('quick_services')
+    .select('sort_order')
+    .order('sort_order', { ascending: false })
+    .limit(1)
+
+  const nextSortOrder = ((existingServices?.[0]?.sort_order as number) ?? 0) + 1
+
+  const { data, error } = await adminDb
+    .from('quick_services')
+    .insert({
+      name,
+      category,
+      description: description || null,
+      fixed_price,
+      platform_fee: 12.0, // Regra inegociável
+      icon: icon || 'Wrench',
+      color: color || '#F97316',
+      sort_order: nextSortOrder,
+      is_active: is_active ?? true,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('[createServiceAction error]', error)
+    return { success: false, error: `Erro ao cadastrar novo serviço: ${error.message}` }
+  }
+
+  revalidatePath('/')
+  revalidatePath('/admin/servicos')
+  revalidatePath('/chamar')
+
+  return { success: true, data }
+}
+
+/**
+ * Exclui ou desativa com segurança um serviço do catálogo.
+ */
+export async function deleteServiceAction(input: unknown) {
+  const authCheck = await requireAdminAuth()
+  if (!authCheck.authorized) {
+    return { success: false, error: authCheck.error }
+  }
+
+  const parsed = deleteServiceSchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: 'ID do serviço inválido.' }
+  }
+
+  const { id } = parsed.data
+  const adminDb = await createServiceClient()
+
+  // 1. Verifica se existem atendimentos vinculados a este serviço
+  const { count, error: countError } = await adminDb
+    .from('service_calls')
+    .select('id', { count: 'exact', head: true })
+    .eq('service_id', id)
+
+  if (countError) {
+    return { success: false, error: 'Erro ao verificar dependências do serviço.' }
+  }
+
+  if (count && count > 0) {
+    // Possui histórico operacional: desativa do catálogo para preservar integridade referencial
+    const { error: deactivateError } = await adminDb
+      .from('quick_services')
+      .update({ is_active: false })
+      .eq('id', id)
+
+    if (deactivateError) {
+      return { success: false, error: 'Falha ao desativar serviço com histórico.' }
+    }
+
+    revalidatePath('/')
+    revalidatePath('/admin/servicos')
+    revalidatePath('/chamar')
+
+    return {
+      success: true,
+      deactivatedOnly: true,
+      message: `O serviço possui ${count} chamado(s) no histórico. Para proteger a integridade dos relatórios contábeis, ele foi desativado do catálogo em vez de apagado.`,
+    }
+  }
+
+  // 2. Sem atendimentos: exclusão física permanente
+  const { error: deleteError } = await adminDb
+    .from('quick_services')
+    .delete()
+    .eq('id', id)
+
+  if (deleteError) {
+    console.error('[deleteServiceAction error]', deleteError)
+    return { success: false, error: `Erro ao excluir serviço do catálogo: ${deleteError.message}` }
+  }
+
+  revalidatePath('/')
+  revalidatePath('/admin/servicos')
+  revalidatePath('/chamar')
+
+  return { success: true, deleted: true, message: 'Serviço excluído permanentemente do catálogo com sucesso.' }
 }
 
 /**
@@ -113,3 +243,4 @@ export async function toggleServiceStatusAction(input: unknown) {
 
   return { success: true, data }
 }
+
