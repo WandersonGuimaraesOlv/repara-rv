@@ -10,10 +10,8 @@ import {
   ChevronDown,
   Zap,
   Droplets,
+  Droplet,
   Hammer,
-  Armchair,
-  Paintbrush,
-  AlertTriangle,
   ShieldCheck,
   CheckCircle2,
   Lock,
@@ -28,7 +26,19 @@ import {
   Bike,
   PhoneCall,
   Check,
-  LogOut
+  LogOut,
+  ShowerHead,
+  Plug,
+  Fan,
+  Lightbulb,
+  Pipette,
+  Tv,
+  Shirt,
+  Settings2,
+  Key,
+  WashingMachine,
+  Flame,
+  AlertCircle
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { DEFAULT_SERVICES } from '@/lib/catalog'
@@ -56,11 +66,36 @@ const CATEGORIES = [
   { id: 'all', name: 'Todos', icon: Sparkles, color: '#0F172A' },
   { id: 'Elétrica', name: 'Elétrica', icon: Zap, color: '#F59E0B' },
   { id: 'Hidráulica', name: 'Hidráulica', icon: Droplets, color: '#06B6D4' },
-  { id: 'Pequenos Reparos', name: 'Reparos & Alvenaria', icon: Hammer, color: '#F97316' },
-  { id: 'Montagem', name: 'Montagem de Móveis', icon: Armchair, color: '#8B5CF6' },
-  { id: 'Pintura', name: 'Pintura', icon: Paintbrush, color: '#EC4899' },
-  { id: 'Emergência', name: 'Emergência 24h', icon: AlertTriangle, color: '#EF4444' },
+  { id: 'Montagem', name: 'Montagem', icon: Hammer, color: '#8B5CF6' },
+  { id: 'Chaveiro', name: 'Chaveiro', icon: Key, color: '#EAB308' },
+  { id: 'Instalação', name: 'Instalação', icon: WashingMachine, color: '#10B981' },
 ]
+
+const SERVICE_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
+  ShowerHead,
+  Plug,
+  Fan,
+  Lightbulb,
+  Droplet,
+  Pipette,
+  Wrench,
+  ShieldCheck,
+  Tv,
+  Hammer,
+  Shirt,
+  Settings2,
+  Key,
+  Lock,
+  WashingMachine,
+  Flame,
+  // Fallbacks
+  zap: Zap,
+  droplets: Droplet,
+  wrench: Wrench,
+  hammer: Hammer,
+  key: Key,
+  lock: Lock,
+}
 
 export default function TriiderClientHomePage() {
   const router = useRouter()
@@ -234,8 +269,7 @@ export default function TriiderClientHomePage() {
     return services.filter(service => {
       const matchesCategory =
         selectedCategory === 'all' ||
-        service.category.toLowerCase().includes(selectedCategory.toLowerCase()) ||
-        (selectedCategory === 'Pequenos Reparos' && service.category.includes('Montagem'))
+        service.category.toLowerCase() === selectedCategory.toLowerCase()
 
       const cleanQuery = searchQuery.trim().toLowerCase()
       const matchesQuery =
@@ -532,7 +566,7 @@ export default function TriiderClientHomePage() {
             {/* Tags de Pesquisas Frequentes */}
             <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs">
               <span className="text-slate-400 font-semibold mr-1">Populares:</span>
-              {['Chuveiro', 'Torneira', 'Tomada', 'Ventilador', 'Fechadura', 'Pintura'].map(tag => (
+              {['Chuveiro', 'Torneira', 'Tomada', 'Ventilador', 'Fechadura', 'Máquina de Lavar', 'Varal', 'Silicone'].map(tag => (
                 <button
                   key={tag}
                   type="button"
@@ -572,8 +606,8 @@ export default function TriiderClientHomePage() {
           )}
         </div>
 
-        {/* Grid Responsivo de Categorias (3 colunas mobile -> 7 colunas desktop) */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3 sm:gap-4">
+        {/* Grid Responsivo de Categorias (2 colunas mobile -> 3 tablet -> 6 desktop) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4">
           {CATEGORIES.map(cat => {
             const Icon = cat.icon
             const isSelected = selectedCategory === cat.id
@@ -642,55 +676,69 @@ export default function TriiderClientHomePage() {
         ) : (
           /* Grid Responsivo: 1 coluna no mobile, 2 no tablet, 3 ou 4 no desktop */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {filteredServices.map(service => (
-              <div
-                key={service.id}
-                className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-sm hover:shadow-xl hover:border-orange-300 transition-all flex flex-col justify-between group hover:-translate-y-1"
-              >
-                <div>
-                  {/* Tags de Categoria e Tempo */}
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold uppercase tracking-wider">
-                      {service.category}
-                    </span>
-                    <span className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                      <Clock size={12} />
-                      Até 40 min
-                    </span>
-                  </div>
-
-                  {/* Nome e Descrição */}
-                  <h3 className="text-base font-bold text-slate-900 group-hover:text-orange-600 transition-colors leading-snug mb-1.5">
-                    {service.name}
-                  </h3>
-                  {service.description && (
-                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                      {service.description}
-                    </p>
-                  )}
-                </div>
-
-                {/* Preço e Botão de Ação */}
-                <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
+            {filteredServices.map(service => {
+              const ServiceIcon = (service.icon && SERVICE_ICONS[service.icon]) || Wrench
+              return (
+                <div
+                  key={service.id}
+                  className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-sm hover:shadow-xl hover:border-orange-300 transition-all flex flex-col justify-between group hover:-translate-y-1"
+                >
                   <div>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
-                      Mão de Obra
-                    </span>
-                    <span className="text-xl font-black text-slate-900 tracking-tight">
-                      {formatCurrency(service.fixed_price)}
-                    </span>
+                    {/* Header do Card: Ícone do Serviço, Categoria e Badge Até 40 min */}
+                    <div className="flex items-center justify-between gap-2 mb-3.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-orange-50 text-orange-600 group-hover:scale-110 transition-transform shadow-xs">
+                          <ServiceIcon size={17} />
+                        </div>
+                        <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold uppercase tracking-wider">
+                          {service.category}
+                        </span>
+                      </div>
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80 shadow-xs">
+                        <Clock size={12} className="text-emerald-600" />
+                        Até 40 min
+                      </span>
+                    </div>
+
+                    {/* Nome e Descrição */}
+                    <h3 className="text-base font-bold text-slate-900 group-hover:text-orange-600 transition-colors leading-snug mb-1.5">
+                      {service.name}
+                    </h3>
+                    {service.description && (
+                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-3">
+                        {service.description}
+                      </p>
+                    )}
+
+                    {/* Aviso Obrigatório: Peças e Materiais Não Inclusos */}
+                    <div className="text-[10px] font-semibold text-amber-800 bg-amber-50/90 border border-amber-200/70 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 mt-2">
+                      <AlertCircle size={13} className="text-amber-600 shrink-0" />
+                      <span>Peças e materiais não inclusos</span>
+                    </div>
                   </div>
 
-                  <Link
-                    href={`/chamar/${service.id}`}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-orange-600/20 group-hover:shadow-orange-600/30 transition-all"
-                  >
-                    <span>Chamar</span>
-                    <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-                  </Link>
+                  {/* Preço e Botão de Ação */}
+                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Mão de Obra
+                      </span>
+                      <span className="text-xl font-black text-slate-900 tracking-tight">
+                        {formatCurrency(service.fixed_price)}
+                      </span>
+                    </div>
+
+                    <Link
+                      href={`/chamar/${service.id}`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-orange-600/20 group-hover:shadow-orange-600/30 transition-all"
+                    >
+                      <span>Chamar</span>
+                      <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </section>

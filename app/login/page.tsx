@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Wrench, Phone, Lock, ArrowRight, Eye, EyeOff, ShieldCheck, Sparkles } from 'lucide-react'
+import { Wrench, Phone, Lock, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function LoginPage() {
@@ -211,75 +211,6 @@ export default function LoginPage() {
             )}
           </button>
         </form>
-
-        {/* Divisor */}
-        <div className="relative my-6 text-center">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
-          </div>
-          <span className="relative px-3 text-[11px] font-bold uppercase tracking-wider bg-white text-slate-400">
-            ou teste rápido em 1 clique
-          </span>
-        </div>
-
-        {/* Atalhos Rápidos para Demonstração */}
-        <div className="space-y-2.5">
-          <button
-            type="button"
-            id="btn-demo-provider"
-            onClick={() => {
-              document.cookie = 'repara_demo_role=provider; path=/; max-age=86400'
-              try {
-                localStorage.setItem('repara_user', JSON.stringify({
-                  id: 'demo-provider-1',
-                  full_name: 'Carlos Prestador (Demo)',
-                  role: 'provider',
-                  phone: '64999998888',
-                }))
-              } catch {}
-              toast.success('Entrando no Painel do Prestador!')
-              router.push('/painel')
-            }}
-            className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-indigo-50/70 hover:bg-indigo-100/70 border border-indigo-200 text-left transition-all group"
-          >
-            <div>
-              <div className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
-                <Sparkles size={13} className="text-indigo-600" />
-                <span>Simular: Prestador (Moto)</span>
-              </div>
-              <div className="text-[11px] text-indigo-700/70">Radar, alerta sonoro e rota no Waze</div>
-            </div>
-            <ArrowRight size={16} className="text-indigo-600 group-hover:translate-x-0.5 transition-transform" />
-          </button>
-
-          <button
-            type="button"
-            id="btn-demo-client"
-            onClick={() => {
-              document.cookie = 'repara_demo_role=client; path=/; max-age=86400'
-              try {
-                localStorage.setItem('repara_user', JSON.stringify({
-                  id: 'demo-client-1',
-                  full_name: 'Cliente Demo',
-                  role: 'client',
-                  phone: '64981155550',
-                }))
-              } catch {}
-              toast.success('Entrando como Cliente!')
-              router.push('/')
-            }}
-            className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-orange-50/70 hover:bg-orange-100/70 border border-orange-200 text-left transition-all group"
-          >
-            <div>
-              <div className="text-xs font-bold text-orange-950 flex items-center gap-1.5">
-                <Sparkles size={13} className="text-orange-600" />
-                <span>Simular: Cliente / Morador</span>
-              </div>
-              <div className="text-[11px] text-orange-700/70">Catálogo com preço fixo e chamada rápida</div>
-            </div>
-            <ArrowRight size={16} className="text-orange-600 group-hover:translate-x-0.5 transition-transform" />
-          </button>
-        </div>
 
         {/* Rodapé Legal */}
         <p className="text-[11px] text-center text-slate-400 mt-6 leading-relaxed">
