@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Wrench, Phone, Lock, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { Phone, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
+import { Logo } from '@/components/logo'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -113,18 +114,8 @@ export default function LoginPage() {
         
         {/* Logo & Marca */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 group">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
-              <Wrench size={24} className="text-white" />
-            </div>
-            <div className="text-left">
-              <span className="text-2xl font-black tracking-tight leading-none text-slate-900">
-                Repara<span className="text-orange-600">RV</span>
-              </span>
-              <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">
-                Rio Verde • GO
-              </span>
-            </div>
+          <Link href="/" className="inline-flex items-center group transition-transform hover:scale-[1.02]">
+            <Logo variant="full" width={200} height={50} />
           </Link>
           <h1 className="text-xl font-black text-slate-900 tracking-tight mt-4">
             Entrar ou Criar Conta

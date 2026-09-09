@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" width="100%" height="100%">
+  <defs>
+    <!-- Gradiente Laranja Vibrante -->
+    <linearGradient id="reparaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FB923C" />
+      <stop offset="100%" stop-color="#EA580C" />
+    </linearGradient>
+    
+    <!-- Sombra sutil para o ícone -->
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#EA580C" flood-opacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- GRUPO DO ÍCONE (Pin GPS + Chave de Boca / Casa) -->
+  <g transform="translate(15, 10)">
+    <!-- Base / Pin de Localização -->
+    <path d="M50 5 C28 5 10 23 10 45 C10 70 45 98 50 102 C55 98 90 70 90 45 C90 23 72 5 50 5 Z" 
+          fill="url(#reparaGrad)" 
+          filter="url(#softShadow)" />
+
+    <!-- Centro Negativo: Silhueta estilizada de chave/casa -->
+    <!-- Círculo superior da chave -->
+    <circle cx="50" cy="40" r="17" fill="#0F172A" />
+    <!-- Miolo hexagonal/chave -->
+    <circle cx="50" cy="40" r="8" fill="url(#reparaGrad)" />
+    <!-- Haste descendente / fenda -->
+    <rect x="47" y="46" width="6" height="18" rx="3" fill="#0F172A" />
+    <!-- Ponto de brilho/raio interno -->
+    <path d="M50 28 L53 37 L48 37 L51 46 L45 39 L49 39 Z" fill="#FFFFFF" opacity="0.9" />
+  </g>
+
+  <!-- TIPOGRAFIA DO NOME -->
+  <g transform="translate(130, 75)" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif">
+    <!-- "Repara" em Grafite Tecnológico -->
+    <text x="0" y="0" font-size="52" font-weight="700" fill="#0F172A" letter-spacing="-1.5">
+      Repara
+    </text>
+    
+    <!-- "RV" em Laranja Destaque -->
+    <text x="185" y="0" font-size="54" font-weight="900" fill="url(#reparaGrad)" letter-spacing="-1">
+      RV
+    </text>
+    
+    <!-- Tagline inferior discreta -->
+    <text x="3" y="24" font-size="13" font-weight="600" fill="#64748B" letter-spacing="3.5">
+      SERVIÇOS RESIDENCIAIS
+    </text>
+  </g>
+</svg>

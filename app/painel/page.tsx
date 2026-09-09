@@ -6,8 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Profile, ServiceCall } from '@/lib/types'
 import { CallAlertModal } from '@/components/call-alert-modal'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { Power, Wifi, WifiOff, Wrench, Loader2, MapPin } from 'lucide-react'
+import { Power, Wifi, WifiOff, Loader2, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
+import { Logo } from '@/components/logo'
 
 export default function PainelPage() {
   const router = useRouter()
@@ -254,19 +255,11 @@ export default function PainelPage() {
     <div className="page-container p-4">
       {/* Header */}
       <header className="py-4 mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, var(--color-brand), var(--color-brand-dark))' }}
-          >
-            <Wrench size={16} color="white" />
-          </div>
-          <div>
-            <h1 className="text-base font-black" style={{ color: 'var(--color-text)' }}>
-              Repara<span style={{ color: 'var(--color-cta)' }}>RV</span>
-            </h1>
-            <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Painel do Prestador</p>
-          </div>
+        <div className="flex items-center gap-2.5">
+          <Logo variant="compact" width={30} height={33} />
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 uppercase tracking-wider border border-slate-200">
+            Painel Prestador
+          </span>
         </div>
         <div
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"

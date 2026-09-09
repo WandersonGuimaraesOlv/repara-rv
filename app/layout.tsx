@@ -3,7 +3,7 @@ import './globals.css'
 import { Toaster } from 'sonner'
 
 export const viewport: Viewport = {
-  themeColor: '#6366F1',
+  themeColor: '#EA580C',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -39,8 +39,12 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: '/icons/icon-192.png',
-    apple: '/icons/icon-192.png',
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: '/icon.svg',
+    shortcut: '/icon.svg',
   },
 }
 

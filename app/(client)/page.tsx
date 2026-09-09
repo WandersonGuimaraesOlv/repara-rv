@@ -24,8 +24,6 @@ import {
   X,
   Sparkles,
   Bike,
-  PhoneCall,
-  Check,
   LogOut,
   ShowerHead,
   Plug,
@@ -45,6 +43,7 @@ import { DEFAULT_SERVICES } from '@/lib/catalog'
 import { QuickService } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { Logo } from '@/components/logo'
 
 const RIO_VERDE_NEIGHBORHOODS = [
   'Setor Central',
@@ -296,18 +295,9 @@ export default function TriiderClientHomePage() {
             
             {/* Esquerda: Logo + Seletor de Bairro */}
             <div className="flex items-center gap-4 sm:gap-6">
-              <Link href="/" className="flex items-center gap-2.5 group">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
-                  <Wrench size={20} className="text-white" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xl font-black tracking-tight leading-none text-slate-900">
-                    Repara<span className="text-orange-600">RV</span>
-                  </span>
-                  <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase leading-tight mt-0.5">
-                    Rio Verde • GO
-                  </span>
-                </div>
+              <Link href="/" className="flex items-center group transition-transform hover:opacity-95">
+                <Logo variant="full" width={168} height={42} className="hidden sm:block" />
+                <Logo variant="compact" className="sm:hidden" />
               </Link>
 
               {/* Seletor de Localização (Desktop & Tablet) */}
@@ -808,14 +798,9 @@ export default function TriiderClientHomePage() {
             
             {/* Coluna 1: Marca & Descrição */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center">
-                  <Wrench size={16} className="text-white" />
-                </div>
-                <span className="text-lg font-black text-white">
-                  Repara<span className="text-orange-500">RV</span>
-                </span>
-              </div>
+              <Link href="/" className="inline-block transition-opacity hover:opacity-90">
+                <Logo variant="full" width={180} height={45} inverted />
+              </Link>
               <p className="text-xs text-slate-400 leading-relaxed">
                 A plataforma sob demanda de serviços residenciais de Rio Verde (GO). Conectando moradores a prestadores qualificados com preço fixo e transparência.
               </p>

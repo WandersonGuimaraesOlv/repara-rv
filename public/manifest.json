@@ -4,8 +4,8 @@
   "description": "Deu problema em casa? O Repara RV resolve. Serviços residenciais com preço fixo em Rio Verde.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0F0D1A",
-  "theme_color": "#6366F1",
+  "background_color": "#0F172A",
+  "theme_color": "#EA580C",
   "orientation": "portrait",
   "lang": "pt-BR",
   "icons": [
