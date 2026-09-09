@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { UserRole } from '@/lib/types'
-import { User, Wrench, ChevronRight, ShieldCheck, CheckSquare, Square, Lock } from 'lucide-react'
+import { User, Wrench, ChevronRight, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function OnboardingPage() {
@@ -47,7 +47,7 @@ export default function OnboardingPage() {
       }
     }
     loadUserData()
-  }, [])
+  }, [supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -1,7 +1,7 @@
 'use client'
 
 import { RideStatus } from '@/lib/types'
-import { getStatusColor, getStatusLabel } from '@/lib/utils'
+import { getStatusLabel } from '@/lib/utils'
 import {
   Search, CheckCircle, Car, Wrench, Star, XCircle, AlertCircle
 } from 'lucide-react'

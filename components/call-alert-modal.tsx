@@ -19,7 +19,6 @@ interface CallAlertModalProps {
 }
 
 export function CallAlertModal({
-  call,
   serviceName,
   clientAddress,
   totalPrice,

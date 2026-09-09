@@ -102,7 +102,7 @@ export default function LoginPage() {
         toast.success(`Bem-vindo de volta, ${profile.full_name || 'Cliente'}! 🏠`)
         router.replace('/')
       }
-    } catch (err: any) {
+    } catch {
       setLoading(false)
       toast.error('Falha na conexão. Tente novamente.')
     }

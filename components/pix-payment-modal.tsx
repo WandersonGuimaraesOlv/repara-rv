@@ -18,7 +18,6 @@ interface PixPaymentModalProps {
 
 export function PixPaymentModal({
   amount,
-  providerCut,
   pixQrCode: initialQrCode,
   pixCopyPaste: initialCopyPaste,
   checkoutUrl: initialCheckoutUrl,
