@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { formatCurrency, getStatusLabel } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import { 
   BarChart3, 
   TrendingUp, 
@@ -13,12 +13,9 @@ import {
   RefreshCw, 
   MapPin, 
   User, 
-  Clock, 
   Filter, 
-  ChevronRight,
   Activity,
   Award,
-  AlertTriangle,
   History
 } from 'lucide-react'
 
