@@ -184,3 +184,8 @@ repara-rv/
 
 **Comando de Início de Sessão**: Ao abrir qualquer nova sessão com uma IA de código, utilize a instrução:
 *"Leia atentamente os arquivos AI_GUARDRAILS.md e AI_CONTEXT.md na raiz antes de sugerir ou modificar qualquer linha de código."*
+
+---
+
+## 6. Checklist de Validação Obrigatório (Pré-Deploy)
+Antes de qualquer deploy ou encerramento de tarefa, siga o documento [CHECKLIST_DE_VALIDACAO.md](./CHECKLIST_DE_VALIDACAO.md) e certifique-se de que o comando `npm run validate` executou com sucesso (0 erros).
