@@ -152,3 +152,14 @@ export interface EmergencyNotifyPayload {
   triggered_by?: string
 }
 
+// ─── Mensagens do Chamado (Chat em Tempo Real) ─────────────
+export interface CallMessage {
+  id: string
+  call_id: string
+  sender_id: string
+  sender_role: UserRole
+  message: string
+  created_at: string
+}
+
+

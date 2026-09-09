@@ -6,9 +6,9 @@ import { createClient } from '@/lib/supabase/client'
 import { Profile, ServiceCall } from '@/lib/types'
 import { CallAlertModal } from '@/components/call-alert-modal'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { Power, Wifi, WifiOff, Loader2, MapPin } from 'lucide-react'
+import { Power, Loader2, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
-import { Logo } from '@/components/logo'
+import { PanelHeader } from '@/components/provider/panel-header'
 
 export default function PainelPage() {
   const router = useRouter()
@@ -253,24 +253,9 @@ export default function PainelPage() {
 
   return (
     <div className="page-container p-4">
-      {/* Header */}
-      <header className="py-4 mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <Logo variant="compact" width={30} height={33} />
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 uppercase tracking-wider border border-slate-200">
-            Painel Prestador
-          </span>
-        </div>
-        <div
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-          style={{ background: isOnline ? 'rgba(16,185,129,0.15)' : 'var(--color-surface)', border: `1px solid ${isOnline ? '#10B981' : 'var(--color-border)'}` }}
-        >
-          {isOnline ? <Wifi size={14} style={{ color: '#10B981' }} /> : <WifiOff size={14} style={{ color: 'var(--color-text-subtle)' }} />}
-          <span className="text-xs font-semibold" style={{ color: isOnline ? '#10B981' : 'var(--color-text-subtle)' }}>
-            {isOnline ? 'Online' : 'Offline'}
-          </span>
-        </div>
-      </header>
+      {/* Header com Navegação Segura e Status */}
+      <PanelHeader isOnline={isOnline} />
+
 
       {/* Saudação */}
       <section className="mb-6 animate-slide-up">

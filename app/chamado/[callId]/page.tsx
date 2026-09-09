@@ -10,6 +10,7 @@ import { formatCurrency } from '@/lib/utils'
 import { CheckCircle, XCircle, Loader2, ArrowLeft, Wrench, MapPin, DollarSign } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { CallChat } from '@/components/chat/call-chat'
 
 const CANCEL_REASONS: { value: CancelReason; label: string }[] = [
   { value: 'provider_absent', label: 'Cliente ausente após 10 min' },
@@ -240,7 +241,17 @@ export default function ChamadoProviderPage() {
         </div>
       )}
 
+      {/* Chat em Tempo Real com Alinhamento de Materiais e Peças */}
+      {(call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress') && (
+        <CallChat
+          callId={callId}
+          currentUserId={call.provider_id || ''}
+          userRole="provider"
+        />
+      )}
+
       {/* Ação de concluir */}
+
       {!showCancel && (
         <div className="space-y-3 mt-4 animate-slide-up" style={{ animationDelay: '160ms' }}>
           <button

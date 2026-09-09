@@ -11,6 +11,7 @@ import { formatCurrency } from '@/lib/utils'
 import { XCircle, Loader2, Star, ArrowLeft, CheckCircle2, AlertTriangle, CreditCard } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { CallChat } from '@/components/chat/call-chat'
 
 export default function AcompanharPage() {
   const { callId } = useParams<{ callId: string }>()
@@ -192,7 +193,17 @@ export default function AcompanharPage() {
         </div>
       </div>
 
+      {/* Chat em Tempo Real com Alinhamento de Materiais e Peças */}
+      {(call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress') && (
+        <CallChat
+          callId={callId}
+          currentUserId={call.client_id}
+          userRole="client"
+        />
+      )}
+
       {/* Status de Pagamento (quando concluído) */}
+
       {call.status === 'completed' && (
         call.payment_status === 'paid' ? (
           <div className="card p-4 mb-4 bg-emerald-500/10 border-emerald-500/30 flex items-center gap-3">
