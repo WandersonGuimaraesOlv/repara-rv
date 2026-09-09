@@ -262,7 +262,7 @@ export default function ChamarPage() {
             </span>
           </label>
 
-          <div className="sticky-bottom -mx-4">
+          <div className="sticky-bottom w-full">
             <button
               type="submit"
               id="btn-request-service"

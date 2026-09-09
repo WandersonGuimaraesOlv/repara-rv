@@ -284,20 +284,20 @@ export default function TriiderClientHomePage() {
   }, [services, searchQuery])
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-orange-100 selection:text-orange-900">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-orange-100 selection:text-orange-900 w-full max-w-full overflow-x-hidden">
 
       {/* ────────────────────────────────────────────────────────
           1. HEADER RESPONSIVO (DESKTOP + MOBILE)
           ──────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20 gap-4">
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all w-full max-w-full">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
             
             {/* Esquerda: Logo + Seletor de Bairro */}
-            <div className="flex items-center gap-4 sm:gap-6">
-              <Link href="/" className="flex items-center group transition-transform hover:opacity-95">
+            <div className="flex items-center gap-2 sm:gap-6 min-w-0 shrink-0">
+              <Link href="/" className="flex items-center group transition-transform hover:opacity-95 shrink-0">
                 <Logo variant="full" width={168} height={42} className="hidden sm:block" />
-                <Logo variant="compact" className="sm:hidden" />
+                <Logo variant="compact" className="sm:hidden shrink-0" />
               </Link>
 
               {/* Seletor de Localização (Desktop & Tablet) */}
@@ -327,7 +327,7 @@ export default function TriiderClientHomePage() {
             </nav>
 
             {/* Direita: Ações & Perfil */}
-            <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               <button
                 type="button"
                 onClick={handleMyOrders}
@@ -340,36 +340,37 @@ export default function TriiderClientHomePage() {
               {currentUser?.role === 'provider' ? (
                 <Link
                   href="/painel"
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-300 shadow-sm transition-all"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-300 shadow-sm transition-all shrink-0"
                 >
-                  <Bike size={15} className="text-emerald-600" />
-                  <span>Meu Painel</span>
+                  <Bike size={14} className="text-emerald-600 shrink-0" />
+                  <span>Painel</span>
                 </Link>
               ) : (
                 <Link
                   href={currentUser ? "/onboarding?role=provider" : "/login"}
-                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-bold text-orange-700 bg-orange-50 hover:bg-orange-100/80 border border-orange-200/60 shadow-sm transition-all"
+                  className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold text-orange-700 bg-orange-50 hover:bg-orange-100/80 border border-orange-200/60 shadow-sm transition-all shrink-0"
                 >
-                  <Bike size={15} className="text-orange-600" />
-                  <span className="hidden sm:inline">Sou</span> Profissional
+                  <Bike size={14} className="text-orange-600 shrink-0" />
+                  <span className="hidden sm:inline">Sou Profissional</span>
+                  <span className="sm:hidden">Prestador</span>
                 </Link>
               )}
 
               {currentUser ? (
-                <div ref={profileMenuRef} className="relative">
+                <div ref={profileMenuRef} className="relative shrink-0">
                   <button
                     type="button"
                     id="btn-user-profile-menu"
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold text-slate-800 bg-white hover:bg-slate-50 border border-slate-200 shadow-sm transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 rounded-full text-xs font-bold text-slate-800 bg-white hover:bg-slate-50 border border-slate-200 shadow-sm transition-all cursor-pointer shrink-0"
                   >
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center text-[10px] font-black uppercase shadow-xs">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center text-[10px] font-black uppercase shadow-xs shrink-0">
                       {currentUser.full_name ? currentUser.full_name.charAt(0) : 'U'}
                     </div>
-                    <span className="max-w-[120px] sm:max-w-[160px] truncate">
+                    <span className="max-w-[70px] sm:max-w-[160px] truncate">
                       {currentUser.full_name?.split(' ')[0] || 'Minha Conta'}
                     </span>
-                    <ChevronDown size={14} className={`text-slate-400 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={13} className={`text-slate-400 shrink-0 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   {/* Dropdown Menu do Usuário */}
@@ -449,20 +450,20 @@ export default function TriiderClientHomePage() {
           </div>
 
           {/* Seletor de Bairro para Mobile (linha dedicada) */}
-          <div className="md:hidden pb-3 pt-1 border-t border-slate-100 flex items-center justify-between text-xs">
+          <div className="md:hidden pb-3 pt-1 border-t border-slate-100 flex items-center justify-between text-xs w-full min-w-0">
             <button
               type="button"
               onClick={() => setIsAddressModalOpen(true)}
-              className="flex items-center gap-1.5 text-left text-slate-600 hover:text-slate-900 group w-full"
+              className="flex items-center gap-1.5 text-left text-slate-600 hover:text-slate-900 group w-full min-w-0"
             >
               <MapPin size={14} className="text-orange-600 shrink-0 group-hover:scale-110 transition-transform" />
-              <div className="truncate flex-1">
+              <div className="truncate flex-1 min-w-0">
                 <span className="text-slate-400 font-medium">Você está em: </span>
                 <strong className="text-slate-900 font-bold underline underline-offset-2 decoration-orange-300">
                   {selectedNeighborhood}, Rio Verde
                 </strong>
               </div>
-              <ChevronDown size={14} className="text-slate-400 shrink-0" />
+              <ChevronDown size={14} className="text-slate-400 shrink-0 ml-1" />
             </button>
           </div>
 
@@ -862,7 +863,7 @@ export default function TriiderClientHomePage() {
       {/* ────────────────────────────────────────────────────────
           7. BARRA DE NAVEGAÇÃO INFERIOR (SOMENTE MOBILE: md:hidden)
           ──────────────────────────────────────────────────────── */}
-      <nav className="md:hidden sticky bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-6 py-2.5 flex items-center justify-between shadow-lg shadow-slate-900/5">
+      <nav className="md:hidden sticky bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2 flex items-center justify-around shadow-lg shadow-slate-900/5 w-full max-w-full" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
         <button
           type="button"
           onClick={() => setActiveTab('home')}
