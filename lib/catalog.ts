@@ -3,7 +3,7 @@ import { QuickService } from './types'
 export const DEFAULT_SERVICES: QuickService[] = [
   // ── Elétrica ──
   {
-    id: '1',
+    id: '8b5c4095-e56f-4066-80c4-37f359ee47c2',
     name: 'Troca de Chuveiro / Resistência',
     category: 'Elétrica',
     description: 'Substituição de chuveiro ou resistência elétrica com teste de funcionamento e vedação.',
@@ -15,7 +15,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
   {
-    id: '2',
+    id: '88b9104b-be4f-4b44-a6cf-5eff3748b60b',
     name: 'Troca de Tomada / Interruptor / Lâmpada',
     category: 'Elétrica',
     description: 'Instalação ou substituição de tomadas, interruptores e lâmpadas residenciais.',
@@ -27,7 +27,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
   {
-    id: '3',
+    id: '2a09df38-84b4-4853-bdff-338e27981930',
     name: 'Instalação de Ventilador de Teto',
     category: 'Elétrica',
     description: 'Montagem e instalação elétrica de ventilador de teto com suporte e balanceamento.',
@@ -39,7 +39,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
   {
-    id: '4',
+    id: 'c6663a89-bab1-465f-937e-a4b366350cc7',
     name: 'Instalação de Plafon / Painel LED',
     category: 'Elétrica',
     description: 'Fixação e ligação elétrica de luminárias de sobrepor ou embutir tipo plafon / LED.',
@@ -53,7 +53,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
 
   // ── Hidráulica ──
   {
-    id: '5',
+    id: '1e6d94df-5e8d-49ec-9c1b-6d30f99b9529',
     name: 'Troca de Torneira / Sifão de Pia',
     category: 'Hidráulica',
     description: 'Substituição de torneira, flexível ou sifão de pia com fita veda-rosca e teste de estanqueidade.',
@@ -65,10 +65,10 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
   {
-    id: '6',
+    id: 'f1698097-5802-4a0f-b529-5003490c2855',
     name: 'Desentupimento de Ralo / Vaso Sanitário',
     category: 'Hidráulica',
-    description: 'Desobstrução mecânica ágil de ralos de banheiro, pias e vasos sanitários.',
+    description: 'Desobstrução rápida de encanamento de ralo, pia ou vaso sanitário com equipamento manual.',
     fixed_price: 100.0,
     platform_fee: 12.0,
     icon: 'Pipette',
@@ -77,10 +77,10 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
   {
-    id: '7',
+    id: '4cf805b2-09f3-4ecb-8623-11a687e0ae39',
     name: 'Reparo de Caixa Acoplada',
     category: 'Hidráulica',
-    description: 'Regulagem ou troca de mecanismo de entrada/saída e boia da caixa acoplada.',
+    description: 'Ajuste ou troca de mecanismo de entrada/saída, boia e vedação de caixa acoplada.',
     fixed_price: 70.0,
     platform_fee: 12.0,
     icon: 'Wrench',
@@ -89,10 +89,10 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
   {
-    id: '8',
+    id: '5ed20888-b613-47e6-8ae7-83020a3c0914',
     name: 'Vedação de Box / Pia com Silicone',
     category: 'Hidráulica',
-    description: 'Aplicação e acabamento profissional de silicone antifungo em box de banheiro ou pias.',
+    description: 'Aplicação de silicone antifungo para vedação perfeita contra infiltração em pias e box.',
     fixed_price: 60.0,
     platform_fee: 12.0,
     icon: 'ShieldCheck',
@@ -101,12 +101,12 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
 
-  // ── Montagem & Fixação ──
+  // ── Montagem e Fixação ──
   {
-    id: '9',
+    id: 'db0b0819-8a5a-49bc-8faa-a393c2b65cc4',
     name: 'Fixação de Suporte de TV / Cortina / Quadro',
     category: 'Montagem',
-    description: 'Instalação com nível de bolha de suportes de TV, varões de cortina, espelhos e prateleiras.',
+    description: 'Perfuração precisa em alvenaria e fixação segura de suporte de TV, varão de cortina ou nichos.',
     fixed_price: 70.0,
     platform_fee: 12.0,
     icon: 'Tv',
@@ -115,10 +115,10 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
   {
-    id: '10',
+    id: '966fea9b-d7eb-483f-9309-c971d64d2b77',
     name: 'Montagem / Desmontagem Móvel Pequeno',
     category: 'Montagem',
-    description: 'Montagem ou desmontagem rápida de móveis avulsos, criados-mudos, estantes e berços.',
+    description: 'Montagem de móveis avulsos como mesas de cabeceira, cadeiras de escritório, sapateiras e mesas.',
     fixed_price: 90.0,
     platform_fee: 12.0,
     icon: 'Hammer',
@@ -127,10 +127,10 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
   {
-    id: '11',
+    id: 'fb25cfbe-3e7c-4107-bcbe-f40124e09599',
     name: 'Instalação de Varal de Teto / Parede',
     category: 'Montagem',
-    description: 'Furação e fixação com buchas adequadas para varais retráteis ou de roldana.',
+    description: 'Fixação firme e alinhamento de varal articulado ou de teto com cordas e roldanas.',
     fixed_price: 80.0,
     platform_fee: 12.0,
     icon: 'Shirt',
@@ -139,10 +139,10 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
   {
-    id: '12',
+    id: 'bc59db09-9149-4eb8-a57c-659f195ff8d5',
     name: 'Regulagem de Dobradiças e Gavetas',
     category: 'Montagem',
-    description: 'Alinhamento e ajuste de portas de armários, corrediças e gavetas emperradas.',
+    description: 'Alinhamento de portas de armários desreguladas, troca de puxadores e ajuste de trilhos de gaveta.',
     fixed_price: 60.0,
     platform_fee: 12.0,
     icon: 'Settings2',
@@ -151,12 +151,12 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
 
-  // ── Chaveiro & Segurança ──
+  // ── Chaveiro ──
   {
-    id: '13',
+    id: '15dc3813-d19e-4c09-9dc9-7690a3141a1b',
     name: 'Abertura de Porta (Bateu-Fechou)',
     category: 'Chaveiro',
-    description: 'Abertura técnica emergencial de portas residenciais trancadas sem chave.',
+    description: 'Abertura rápida e sem danos de portas residenciais trancadas acidentalmente.',
     fixed_price: 100.0,
     platform_fee: 12.0,
     icon: 'Key',
@@ -165,10 +165,10 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
   {
-    id: '14',
+    id: 'd8505766-6373-460c-acd2-34bfb0372b46',
     name: 'Troca de Fechadura / Miolo de Porta',
     category: 'Chaveiro',
-    description: 'Substituição completa de fechadura de sobrepor/embutir ou troca do cilindro (miolo).',
+    description: 'Substituição completa de fechadura de sobrepor ou miolo de cilindro para nova chave.',
     fixed_price: 80.0,
     platform_fee: 12.0,
     icon: 'Lock',
@@ -177,12 +177,12 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
 
-  // ── Instalação & Eletro ──
+  // ── Instalação & Eletrodomésticos ──
   {
-    id: '15',
+    id: '65943f94-fdd6-48a1-a3d0-ffbb6dd88def',
     name: 'Instalação de Máquina de Lavar',
     category: 'Instalação',
-    description: 'Conexão hidráulica de entrada e saída, nivelamento dos pés e teste operacional.',
+    description: 'Conexão hidráulica (entrada/saída de água), nivelamento dos pés e teste de centrifugação.',
     fixed_price: 70.0,
     platform_fee: 12.0,
     icon: 'WashingMachine',
@@ -191,10 +191,10 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
   {
-    id: '16',
+    id: '53102e50-835e-4132-a4f3-02929e52e44b',
     name: 'Troca de Mangueira e Registro de Gás',
     category: 'Instalação',
-    description: 'Substituição preventiva ou corretiva de mangueira metálica/flexível e válvula de botijão.',
+    description: 'Troca preventiva de mangueira trançada e regulador de pressão de gás com teste de espuma de sabão.',
     fixed_price: 50.0,
     platform_fee: 12.0,
     icon: 'Flame',

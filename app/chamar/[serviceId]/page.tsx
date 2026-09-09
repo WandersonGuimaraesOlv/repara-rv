@@ -9,7 +9,6 @@ import { useGeolocation } from '@/hooks/useGeolocation'
 import { MapPin, Loader2, AlertTriangle, CheckCircle, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
-
 import { DEFAULT_SERVICES } from '@/lib/catalog'
 
 export default function ChamarPage() {
@@ -24,49 +23,88 @@ export default function ChamarPage() {
 
   const { lat, lng, error: geoError, loading: geoLoading, getPosition } = useGeolocation()
 
+  // Limpa cookies residuais de teste antigo se existirem
   useEffect(() => {
-    supabase
-      .from('quick_services')
-      .select('*')
-      .eq('id', serviceId)
-      .single()
-      .then(
-        ({ data }) => {
-          if (data) {
-            setService(data as QuickService)
-          } else {
+    if (typeof document !== 'undefined') {
+      document.cookie = 'repara_demo_role=; path=/; max-age=0'
+    }
+  }, [])
+
+  useEffect(() => {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(serviceId)
+
+    if (isUuid) {
+      supabase
+        .from('quick_services')
+        .select('*')
+        .eq('id', serviceId)
+        .single()
+        .then(
+          ({ data }) => {
+            if (data) {
+              setService(data as QuickService)
+            } else {
+              const fallback = DEFAULT_SERVICES.find(s => s.id === serviceId) ?? DEFAULT_SERVICES[0]
+              setService(fallback)
+            }
+          },
+          () => {
             const fallback = DEFAULT_SERVICES.find(s => s.id === serviceId) ?? DEFAULT_SERVICES[0]
             setService(fallback)
           }
-        },
-        () => {
-          const fallback = DEFAULT_SERVICES.find(s => s.id === serviceId) ?? DEFAULT_SERVICES[0]
-          setService(fallback)
-        }
-      )
-  }, [serviceId])
+        )
+    } else {
+      const fallback = DEFAULT_SERVICES.find(s => s.id === serviceId) ?? DEFAULT_SERVICES[0]
+      setService(fallback)
+    }
+  }, [serviceId, supabase])
 
   useEffect(() => {
     getPosition()
-  }, [])
+  }, [getPosition])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!confirmed) { toast.error('Confirme que leu o aviso sobre peças e materiais'); return }
-    if (!address.trim()) { toast.error('Digite o endereço completo'); return }
+    if (!confirmed) {
+      toast.error('Confirme que leu o aviso sobre peças e materiais')
+      return
+    }
+    if (!address.trim()) {
+      toast.error('Digite o endereço completo com rua e número')
+      return
+    }
     if (!service) return
 
     setLoading(true)
 
     try {
+      // Verifica se o usuário cliente está autenticado
+      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!user) {
+        setLoading(false)
+        toast.info('Acesse com seu celular para chamar o prestador.')
+        router.push(`/login?redirect=/chamar/${service.id}`)
+        return
+      }
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch('/api/calls/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
-          service_id: serviceId,
+          service_id: service.id,
+          client_id: user.id,
           client_address: address.trim(),
-          client_lat: lat ?? -17.8014,
-          client_lng: lng ?? -50.9264,
+          client_lat: lat ?? -17.7915,
+          client_lng: lng ?? -50.9192,
         }),
       })
 
@@ -74,22 +112,16 @@ export default function ChamarPage() {
       setLoading(false)
 
       if (!response.ok) {
-        // Se estiver em modo teste ou sem autenticação cloud ativa, prossegue para acompanhamento simulado
-        const isDemo = typeof document !== 'undefined' && document.cookie.includes('repara_demo_role=client')
-        if (isDemo || response.status === 401) {
-          toast.success('Chamado criado! Buscando prestadores em Rio Verde 🚗')
-          router.replace('/acompanhar/demo-call-client-101')
-          return
-        }
-        toast.error(result.error ?? 'Erro ao criar chamado. Tente novamente.')
+        toast.error(result.error ?? 'Erro ao solicitar prestador. Tente novamente.')
         return
       }
 
+      toast.success('Chamado criado! Conectando com prestador em Rio Verde 🚗')
       router.replace(`/acompanhar/${result.call_id}`)
-    } catch {
+    } catch (err) {
       setLoading(false)
-      toast.success('Chamado criado em modo de demonstração! 🚗')
-      router.replace('/acompanhar/demo-call-client-101')
+      console.error('Erro ao chamar prestador:', err)
+      toast.error('Erro de conexão ao enviar chamado. Tente novamente.')
     }
   }
 
@@ -141,7 +173,7 @@ export default function ChamarPage() {
               className="rounded-xl p-3 text-center"
               style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}
             >
-              <p className="text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>Prestador recebe</p>
+              <p className="text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>Mão de obra</p>
               <p className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>
                 {formatCurrency(providerCut)}
               </p>
@@ -193,7 +225,7 @@ export default function ChamarPage() {
               id="input-address"
               value={address}
               onChange={e => setAddress(e.target.value)}
-              placeholder="Ex: Rua das Flores, 123, Setor Leste, Rio Verde - GO"
+              placeholder="Ex: Rua das Flores, 123, Setor Central, Rio Verde - GO"
               className="input resize-none"
               rows={3}
               required

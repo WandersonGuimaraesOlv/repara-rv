@@ -1,17 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ServiceCall } from '@/lib/types'
 import { CallStatusTracker } from '@/components/call-status-tracker'
 import { PixPaymentModal } from '@/components/pix-payment-modal'
 import { EmergencySosButton } from '@/components/emergency-sos-button'
-import { formatCurrency, getStatusLabel } from '@/lib/utils'
-import { XCircle, Loader2, Star } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
+import { XCircle, Loader2, Star, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
-
 
 export default function AcompanharPage() {
   const { callId } = useParams<{ callId: string }>()
@@ -25,66 +24,39 @@ export default function AcompanharPage() {
   const [rating, setRating] = useState(0)
   const [rated, setRated] = useState(false)
 
-  useEffect(() => {
-    if (callId.startsWith('demo-')) {
-      setCall({
-        id: callId,
-        client_id: 'demo-client-1',
-        provider_id: 'demo-provider-rv',
-        service_id: '1',
-        service: {
-          id: '1',
-          name: 'Troca de Chuveiro / Resistência',
-          category: 'Elétrica',
-          description: 'Substituição de chuveiro ou resistência',
-          fixed_price: 70,
-          platform_fee: 10,
-          icon: 'zap',
-          color: '#6366F1',
-          sort_order: 1,
-          is_active: true,
-          created_at: new Date().toISOString(),
-        },
-        provider: {
-          id: 'demo-provider-rv',
-          phone: '64999998888',
-          full_name: 'Carlos Eletricista (Rio Verde)',
-          role: 'provider',
-          is_active: true,
-          created_at: new Date().toISOString(),
-        },
-        total_price: 70,
-        platform_fee: 10,
-        provider_cut: 60,
-        status: 'searching',
-        client_address: 'Rua das Flores, 142 - Bairro Popular, Rio Verde (GO)',
-        client_location: { type: 'Point', coordinates: [-50.9264, -17.8014] } as unknown as any,
-        created_at: new Date().toISOString(),
-      })
-      setLoading(false)
-      return
-    }
-
-    // Busca inicial
-    supabase
+  // Função para buscar o estado atual do chamado oficial no banco
+  const fetchCall = useCallback(async () => {
+    if (!callId) return
+    const { data, error } = await supabase
       .from('service_calls')
       .select('*, service:quick_services(*), provider:profiles!provider_id(*)')
       .eq('id', callId)
-      .single()
-      .then(({ data }) => {
-        setCall(data as ServiceCall)
-        setLoading(false)
-        if (data?.status === 'completed') setShowPix(true)
-      })
+      .maybeSingle()
 
-    // Realtime
+    if (error) {
+      console.error('Erro ao buscar chamado:', error)
+    }
+
+    if (data) {
+      setCall(data as ServiceCall)
+      if (data.status === 'completed') {
+        setShowPix(true)
+      }
+    }
+    setLoading(false)
+  }, [callId, supabase])
+
+  useEffect(() => {
+    fetchCall()
+
+    // Realtime do Supabase
     const channel = supabase
-      .channel(`call-${callId}`)
+      .channel(`call-realtime-${callId}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'service_calls', filter: `id=eq.${callId}` },
         payload => {
-          setCall(prev => ({ ...prev, ...payload.new } as ServiceCall))
+          fetchCall()
           if (payload.new.status === 'completed') {
             toast.success('Serviço concluído! Realize o pagamento via Pix 🎉')
             setShowPix(true)
@@ -99,33 +71,38 @@ export default function AcompanharPage() {
       )
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
-  }, [callId])
+    // Polling ativo a cada 3s como redundância para garantir atualização no celular
+    const pollInterval = setInterval(() => {
+      fetchCall()
+    }, 3000)
+
+    return () => {
+      supabase.removeChannel(channel)
+      clearInterval(pollInterval)
+    }
+  }, [callId, fetchCall, supabase])
 
   const handleCancel = async () => {
     if (!call || call.status !== 'searching') return
     setCancelling(true)
 
-    if (callId.startsWith('demo-')) {
-      setTimeout(() => {
-        setCancelling(false)
-        toast.info('Chamado cancelado com sucesso.')
+    try {
+      const response = await fetch('/api/calls/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ call_id: callId, reason: 'client_request' }),
+      })
+      setCancelling(false)
+      if (response.ok) {
+        toast.info('Chamado cancelado.')
         router.replace('/')
-      }, 500)
-      return
-    }
-
-    const response = await fetch('/api/calls/cancel', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ call_id: callId, reason: 'client_request' }),
-    })
-    setCancelling(false)
-    if (response.ok) {
-      toast.info('Chamado cancelado.')
-      router.replace('/')
-    } else {
-      toast.error('Erro ao cancelar. Tente novamente.')
+      } else {
+        const json = await response.json().catch(() => ({}))
+        toast.error(json.error || 'Erro ao cancelar chamado.')
+      }
+    } catch {
+      setCancelling(false)
+      toast.error('Erro de conexão ao cancelar chamado.')
     }
   }
 
@@ -148,8 +125,11 @@ export default function AcompanharPage() {
   if (!call) {
     return (
       <div className="page-container items-center justify-center p-6 text-center">
-        <p style={{ color: 'var(--color-text-muted)' }}>Chamado não encontrado.</p>
-        <Link href="/" className="btn-primary mt-4">Voltar ao início</Link>
+        <p className="text-base font-semibold text-slate-800 mb-2">Chamado não encontrado</p>
+        <p className="text-xs text-slate-500 mb-6">Este chamado não existe ou já foi finalizado.</p>
+        <Link href="/" className="btn-primary">
+          <ArrowLeft size={16} /> Voltar ao início
+        </Link>
       </div>
     )
   }
@@ -158,7 +138,7 @@ export default function AcompanharPage() {
     <div className="page-container p-4">
       {/* Header */}
       <header className="py-4 mb-6 flex items-center justify-between gap-2">
-        <h1 className="font-bold" style={{ color: 'var(--color-text)' }}>
+        <h1 className="font-bold text-slate-900">
           Acompanhar Chamado
         </h1>
         <div className="flex items-center gap-2">
@@ -169,7 +149,7 @@ export default function AcompanharPage() {
             clientAddress={call.client_address}
             clientLocation={call.client_location}
           />
-          <span className="text-xs px-3 py-1 rounded-full font-mono" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-subtle)' }}>
+          <span className="text-xs px-3 py-1 rounded-full font-mono bg-slate-100 border border-slate-200 text-slate-600 font-semibold">
             #{callId.slice(0, 8).toUpperCase()}
           </span>
         </div>
@@ -200,7 +180,7 @@ export default function AcompanharPage() {
           </div>
           <div className="text-right">
             <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Total</p>
-            <p className="font-bold" style={{ color: 'var(--color-cta)' }}>
+            <p className="font-bold text-lg" style={{ color: 'var(--color-cta)' }}>
               {formatCurrency(call.total_price)}
             </p>
           </div>
@@ -234,55 +214,6 @@ export default function AcompanharPage() {
             ))}
           </div>
           {rated && <p className="text-xs mt-2" style={{ color: 'var(--color-success)' }}>Avaliação enviada! Obrigado ⭐</p>}
-        </div>
-      )}
-
-      {/* Painel de Simulação (Modo Demonstração) */}
-      {callId.startsWith('demo-') && (
-        <div
-          className="card p-3 mb-4 text-center space-y-2 animate-slide-up"
-          style={{ background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.3)' }}
-        >
-          <p className="text-xs font-bold text-indigo-400">🧪 Simular Etapas do Chamado</p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {call.status === 'searching' && (
-              <button
-                type="button"
-                id="btn-demo-accept"
-                onClick={() => {
-                  setCall(prev => prev ? { ...prev, status: 'accepted' } : null)
-                  toast.success('🚗 Carlos Eletricista aceitou seu chamado e está a caminho!')
-                }}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-500"
-              >
-                Simular Prestador Aceitando
-              </button>
-            )}
-            {(call.status === 'accepted' || call.status === 'on_the_way') && (
-              <button
-                type="button"
-                id="btn-demo-complete"
-                onClick={() => {
-                  setCall(prev => prev ? { ...prev, status: 'completed' } : null)
-                  setShowPix(true)
-                  toast.success('🎉 Serviço finalizado! Abrindo QR Code Pix.')
-                }}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500"
-              >
-                Simular Serviço Concluído
-              </button>
-            )}
-            {call.status === 'completed' && (
-              <button
-                type="button"
-                id="btn-demo-open-pix"
-                onClick={() => setShowPix(true)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-600 text-white hover:bg-orange-500"
-              >
-                Ver QR Code Pix
-              </button>
-            )}
-          </div>
         </div>
       )}
 

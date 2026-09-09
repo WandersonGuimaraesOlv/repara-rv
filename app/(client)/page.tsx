@@ -167,17 +167,10 @@ export default function TriiderClientHomePage() {
           setCurrentUser(fallbackUser)
         }
       } else {
-        const cookies = typeof document !== 'undefined' ? document.cookie : ''
-        if (cookies.includes('repara_demo_role=client')) {
-          setCurrentUser({ id: 'demo-client-1', full_name: 'Cliente Demo', role: 'client' })
-        } else if (cookies.includes('repara_demo_role=provider')) {
-          setCurrentUser({ id: 'demo-provider-1', full_name: 'Carlos Prestador', role: 'provider' })
-        } else {
-          setCurrentUser(null)
-          try {
-            localStorage.removeItem('repara_user')
-          } catch {}
-        }
+        setCurrentUser(null)
+        try {
+          localStorage.removeItem('repara_user')
+        } catch {}
       }
     }
 
@@ -227,7 +220,7 @@ export default function TriiderClientHomePage() {
         }
       }
     } catch {
-      router.push('/acompanhar/demo-call-101')
+      toast.error('Erro ao consultar chamados. Tente novamente.')
     }
   }
 

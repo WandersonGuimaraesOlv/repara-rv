@@ -12,55 +12,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'call_id é obrigatório' }, { status: 400 })
     }
 
-    // Modo Demonstração
-    if (call_id.startsWith('demo-')) {
-      const isClient = user_role !== 'provider'
-      const message = formatEmergencyMessage({
-        callerName: isClient ? 'Dona Maria (Cliente Demo)' : 'Carlos Eletricista (Prestador Demo)',
-        callerRole: user_role || 'client',
-        callerPhone: isClient ? '64991234567' : '64999998888',
-        otherPartyName: isClient ? 'Carlos Eletricista (Rio Verde)' : 'Dona Maria (Bairro Popular)',
-        otherPartyRole: isClient ? 'provider' : 'client',
-        otherPartyPhone: isClient ? '64999998888' : '64991234567',
-        serviceName: 'Troca de Chuveiro / Resistência',
-        address: 'Rua das Flores, 142 - Bairro Popular, Rio Verde (GO)',
-        latitude: latitude ?? -17.8014,
-        longitude: longitude ?? -50.9264,
-        callId: call_id,
-      })
-
-      console.warn('🚨 [EMERGENCY SOS DISPATCHED - MODO DEMO]\n' + message)
-
-      // Webhook externo opcional (WhatsApp / Telegram)
-      if (process.env.EMERGENCY_WEBHOOK_URL) {
-        try {
-          await fetch(process.env.EMERGENCY_WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              event: 'emergency_sos',
-              demo: true,
-              call_id,
-              user_role,
-              text: message,
-              latitude: latitude ?? -17.8014,
-              longitude: longitude ?? -50.9264,
-              created_at: new Date().toISOString(),
-            }),
-          })
-        } catch (webhookErr) {
-          console.error('[SOS Webhook Error (Demo)]', webhookErr)
-        }
-      }
-
-      return NextResponse.json({
-        success: true,
-        alert_id: `demo-alert-${Date.now()}`,
-        message,
-      })
-    }
-
-    // Modo Produção / Supabase
+    // Produção / Supabase
     const supabase = await createServiceClient()
 
     const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }))

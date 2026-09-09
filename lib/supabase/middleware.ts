@@ -25,12 +25,6 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Suporte a Modo de Demonstração / Teste
-  const demoRole = request.cookies.get('repara_demo_role')?.value
-  if (demoRole) {
-    return supabaseResponse
-  }
-
   const { data: { user } } = await supabase.auth.getUser()
 
   // Rotas protegidas — redireciona para login se não autenticado

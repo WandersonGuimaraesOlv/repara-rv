@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ServiceCall, CancelReason } from '@/lib/types'
@@ -31,65 +31,34 @@ export default function ChamadoProviderPage() {
   const [cancelNote, setCancelNote] = useState('')
   const [cancelling, setCancelling] = useState(false)
 
-  useEffect(() => {
-    if (callId.startsWith('demo-')) {
-      setCall({
-        id: callId,
-        client_id: 'demo-client-1',
-        provider_id: 'demo-provider-rv',
-        service_id: '1',
-        service: {
-          id: '1',
-          name: 'Troca de Chuveiro / Resistência',
-          category: 'Elétrica',
-          description: 'Substituição de chuveiro',
-          fixed_price: 70,
-          platform_fee: 10,
-          icon: 'zap',
-          color: '#6366F1',
-          sort_order: 1,
-          is_active: true,
-          created_at: new Date().toISOString(),
-        },
-        client: {
-          id: 'demo-client-1',
-          phone: '64991234567',
-          full_name: 'Dona Maria (Bairro Popular)',
-          role: 'client',
-          is_active: true,
-          created_at: new Date().toISOString(),
-        },
-        total_price: 70,
-        platform_fee: 10,
-        provider_cut: 60,
-        status: 'on_the_way',
-        client_address: 'Rua das Flores, 142 - Bairro Popular, Rio Verde (GO)',
-        client_location: { type: 'Point', coordinates: [-50.9264, -17.8014] } as unknown as any,
-        created_at: new Date().toISOString(),
-      })
-      setLoading(false)
-      return
-    }
-
-    supabase
+  const loadCall = useCallback(async () => {
+    if (!callId) return
+    const { data, error } = await supabase
       .from('service_calls')
       .select('*, service:quick_services(*), client:profiles!client_id(*)')
       .eq('id', callId)
-      .single()
-      .then(({ data }) => {
-        setCall(data as ServiceCall)
-        setLoading(false)
-        // Marca como "on_the_way" ao abrir a tela
-        if (data?.status === 'accepted') {
-          supabase
-            .from('service_calls')
-            .update({ status: 'on_the_way' })
-            .eq('id', callId)
-            .then(() => {})
-        }
-      })
+      .maybeSingle()
 
-    // Realtime
+    if (error) {
+      console.error('Erro ao buscar chamado:', error)
+    }
+
+    if (data) {
+      setCall(data as ServiceCall)
+      if (data.status === 'accepted') {
+        await supabase
+          .from('service_calls')
+          .update({ status: 'on_the_way' })
+          .eq('id', callId)
+      }
+    }
+    setLoading(false)
+  }, [callId, supabase])
+
+  useEffect(() => {
+    loadCall()
+
+    // Realtime do Supabase
     const channel = supabase
       .channel(`provider-call-${callId}`)
       .on(
@@ -99,20 +68,13 @@ export default function ChamadoProviderPage() {
       )
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
-  }, [callId])
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [callId, loadCall, supabase])
 
   const handleComplete = async () => {
     setCompleting(true)
-
-    if (callId.startsWith('demo-')) {
-      setTimeout(() => {
-        setCompleting(false)
-        toast.success('Serviço concluído! O cliente receberá o Pix para pagamento 🎉')
-        router.replace('/painel')
-      }, 700)
-      return
-    }
 
     const { error } = await supabase
       .from('service_calls')
@@ -124,20 +86,24 @@ export default function ChamadoProviderPage() {
 
     if (error) {
       setCompleting(false)
-      toast.error('Erro ao marcar serviço. Tente novamente.')
+      toast.error('Erro ao atualizar chamado. Tente novamente.')
       return
     }
 
     // Cria cobrança Pix
-    await fetch('/api/pix/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        call_id: callId,
-        amount: call?.total_price,
-        description: `Repara RV - ${(call?.service as { name?: string })?.name ?? 'Serviço'}`,
-      }),
-    })
+    try {
+      await fetch('/api/pix/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          call_id: callId,
+          amount: call?.total_price,
+          description: `Repara RV - ${(call?.service as { name?: string })?.name ?? 'Serviço'}`,
+        }),
+      })
+    } catch (pixErr) {
+      console.error('Erro ao chamar /api/pix/create:', pixErr)
+    }
 
     // Marca como completed
     await supabase
@@ -153,30 +119,27 @@ export default function ChamadoProviderPage() {
   const handleCancel = async () => {
     setCancelling(true)
 
-    if (callId.startsWith('demo-')) {
-      setTimeout(() => {
-        setCancelling(false)
+    try {
+      const response = await fetch('/api/calls/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          call_id: callId,
+          reason: cancelReason,
+          note: cancelNote,
+        }),
+      })
+      setCancelling(false)
+      if (response.ok) {
         toast.success('Chamado cancelado.')
         router.replace('/painel')
-      }, 500)
-      return
-    }
-
-    const response = await fetch('/api/calls/cancel', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        call_id: callId,
-        reason: cancelReason,
-        note: cancelNote,
-      }),
-    })
-    setCancelling(false)
-    if (response.ok) {
-      toast.success('Chamado cancelado.')
-      router.replace('/painel')
-    } else {
-      toast.error('Erro ao cancelar. Tente novamente.')
+      } else {
+        const json = await response.json().catch(() => ({}))
+        toast.error(json.error || 'Erro ao cancelar. Tente novamente.')
+      }
+    } catch {
+      setCancelling(false)
+      toast.error('Erro de conexão ao cancelar.')
     }
   }
 
@@ -188,7 +151,16 @@ export default function ChamadoProviderPage() {
     )
   }
 
-  if (!call) return null
+  if (!call) {
+    return (
+      <div className="page-container items-center justify-center p-6 text-center">
+        <p className="text-base font-semibold text-slate-800 mb-2">Chamado não encontrado</p>
+        <Link href="/painel" className="btn-primary">
+          <ArrowLeft size={16} /> Voltar ao Painel
+        </Link>
+      </div>
+    )
+  }
 
   const lat = call.client_location?.coordinates?.[1]
   const lng = call.client_location?.coordinates?.[0]
@@ -226,7 +198,7 @@ export default function ChamadoProviderPage() {
               {(call.service as { name?: string })?.name ?? 'Serviço'}
             </p>
             <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              Cliente: {(call.client as { full_name?: string })?.full_name ?? '—'}
+              Cliente: {(call.client as { full_name?: string })?.full_name ?? 'Cliente'}
             </p>
           </div>
         </div>

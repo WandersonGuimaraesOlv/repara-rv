@@ -26,11 +26,9 @@ export default function PainelPage() {
     getPosition()
   }, [getPosition])
 
-  // Busca perfil do prestador
+  // Busca perfil oficial do prestador
   useEffect(() => {
     const load = async () => {
-      const isDemo = typeof document !== 'undefined' && document.cookie.includes('repara_demo_role=provider')
-
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
@@ -46,7 +44,7 @@ export default function PainelPage() {
               .from('provider_status')
               .select('is_online')
               .eq('provider_id', user.id)
-              .single()
+              .maybeSingle()
             setIsOnline(status?.is_online ?? false)
 
             const today = new Date().toISOString().split('T')[0]
@@ -66,30 +64,14 @@ export default function PainelPage() {
             return
           }
         }
-      } catch {
-        // Fallback para modo demo se Supabase offline
-      }
-
-      if (isDemo) {
-        setProfile({
-          id: 'demo-provider-rv',
-          phone: '64999998888',
-          full_name: 'Carlos Eletricista (Rio Verde)',
-          role: 'provider',
-          pix_key: '64999998888',
-          pix_key_type: 'phone',
-          is_active: true,
-          created_at: new Date().toISOString(),
-        })
-        setIsOnline(true)
-        setTotalToday(140.0)
-        return
+      } catch (err) {
+        console.error('Erro ao carregar perfil do prestador:', err)
       }
 
       router.replace('/login')
     }
     load()
-  }, [])
+  }, [router, supabase])
 
   // Atualiza localização quando muda (GPS watch)
   useEffect(() => {
@@ -102,7 +84,7 @@ export default function PainelPage() {
       })
       .eq('provider_id', profile.id)
       .then(() => {})
-  }, [lat, lng, isOnline, profile])
+  }, [lat, lng, isOnline, profile, supabase])
 
   // Toggle online/offline com obtenção ativa de GPS e fallback de segurança
   const handleToggleOnline = async () => {
@@ -130,7 +112,6 @@ export default function PainelPage() {
         currentLng = pos.coords.longitude
       } catch (err) {
         console.warn('GPS não obtido diretamente pelo navegador, usando centro de Rio Verde:', err)
-        // Coordenadas padrão de Rio Verde (GO) - Setor Central (-17.7915, -50.9192)
         currentLat = -17.7915
         currentLng = -50.9192
         toast.info('Localização aproximada definida no Setor Central de Rio Verde.')
@@ -155,11 +136,11 @@ export default function PainelPage() {
     toast.success(newOnline ? '✅ Você está online! Aguardando chamados.' : '🔴 Você está offline.')
   }
 
-  // Supabase Realtime — escuta novos chamados searching para este prestador
+  // Supabase Realtime + Polling — escuta novos chamados searching para este prestador
   useEffect(() => {
     if (!profile || !isOnline) return
 
-    // 1. Busca inicial se já houver chamado searching aguardando
+    // 1. Busca ativa e polling de 3 segundos para garantir alerta em tempo real
     const checkActiveCalls = async () => {
       const { data: calls } = await supabase
         .from('service_calls')
@@ -171,11 +152,15 @@ export default function PainelPage() {
 
       if (calls && calls.length > 0) {
         setPendingCall(calls[0] as ServiceCall)
+      } else if (!calls || calls.length === 0) {
+        setPendingCall(prev => (prev?.status === 'searching' ? null : prev))
       }
     }
-    checkActiveCalls()
 
-    // 2. Escuta tanto INSERT quanto UPDATE em tempo real
+    checkActiveCalls()
+    const pollInterval = setInterval(checkActiveCalls, 3000)
+
+    // 2. Realtime WebSocket do Supabase
     const channel = supabase
       .channel(`provider-calls-${profile.id}`)
       .on(
@@ -194,7 +179,7 @@ export default function PainelPage() {
                 .from('quick_services')
                 .select('*')
                 .eq('id', callData.service_id)
-                .single()
+                .maybeSingle()
               callData.service = srv as any
             }
             setPendingCall(callData)
@@ -205,49 +190,46 @@ export default function PainelPage() {
       )
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
-  }, [profile, isOnline])
+    return () => {
+      supabase.removeChannel(channel)
+      clearInterval(pollInterval)
+    }
+  }, [profile, isOnline, supabase])
 
   const handleAcceptCall = useCallback(async () => {
     if (!pendingCall) return
     const callId = pendingCall.id
     setPendingCall(null)
 
-    if (!callId.startsWith('demo-')) {
-      await supabase
-        .from('service_calls')
-        .update({
-          status: 'accepted',
-          accepted_at: new Date().toISOString(),
-        })
-        .eq('id', callId)
-    }
+    await supabase
+      .from('service_calls')
+      .update({
+        status: 'accepted',
+        accepted_at: new Date().toISOString(),
+      })
+      .eq('id', callId)
 
     router.push(`/chamado/${callId}`)
   }, [pendingCall, router, supabase])
 
   const handleRejectCall = useCallback(async () => {
     if (!pendingCall) return
-    if (!pendingCall.id.startsWith('demo-')) {
-      await fetch('/api/calls/skip-provider', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ call_id: pendingCall.id, rejected_provider_id: profile?.id }),
-      })
-    }
+    await fetch('/api/calls/skip-provider', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ call_id: pendingCall.id, rejected_provider_id: profile?.id }),
+    })
     setPendingCall(null)
     toast.info('Chamado recusado. Buscando próximo prestador...')
   }, [pendingCall, profile])
 
   const handleTimeoutCall = useCallback(async () => {
     if (!pendingCall) return
-    if (!pendingCall.id.startsWith('demo-')) {
-      await fetch('/api/calls/skip-provider', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ call_id: pendingCall.id, rejected_provider_id: profile?.id }),
-      })
-    }
+    await fetch('/api/calls/skip-provider', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ call_id: pendingCall.id, rejected_provider_id: profile?.id }),
+    })
     setPendingCall(null)
     toast.warning('Tempo esgotado! Chamado foi para o próximo prestador.')
   }, [pendingCall, profile])
@@ -259,6 +241,8 @@ export default function PainelPage() {
       </div>
     )
   }
+
+  const firstName = profile.full_name?.split(' ')[0] || 'Profissional'
 
   return (
     <div className="page-container p-4">
@@ -293,7 +277,7 @@ export default function PainelPage() {
       <section className="mb-6 animate-slide-up">
         <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Olá,</p>
         <h2 className="text-2xl font-black" style={{ color: 'var(--color-text)' }}>
-          {profile.full_name.split(' ')[0]} 👋
+          {firstName} 👋
         </h2>
         {totalToday > 0 && (
           <p className="text-sm mt-1" style={{ color: 'var(--color-success)' }}>
