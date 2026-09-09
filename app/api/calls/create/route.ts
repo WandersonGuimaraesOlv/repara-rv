@@ -47,10 +47,10 @@ export async function POST(request: NextRequest) {
         total_price: service.fixed_price,
         platform_fee: service.platform_fee,
         provider_cut: service.fixed_price - service.platform_fee,
-        status: nearestProvider ? 'accepted' : 'no_providers_available',
+        status: nearestProvider ? 'searching' : 'no_providers_available',
         client_address,
         client_location: `SRID=4326;POINT(${client_lng} ${client_lat})`,
-        accepted_at: nearestProvider ? new Date().toISOString() : null,
+        accepted_at: null,
       })
       .select()
       .single()

@@ -155,36 +155,52 @@ export default function PainelPage() {
     toast.success(newOnline ? '✅ Você está online! Aguardando chamados.' : '🔴 Você está offline.')
   }
 
-  // Supabase Realtime — escuta novos chamados searching
+  // Supabase Realtime — escuta novos chamados searching para este prestador
   useEffect(() => {
     if (!profile || !isOnline) return
 
+    // 1. Busca inicial se já houver chamado searching aguardando
+    const checkActiveCalls = async () => {
+      const { data: calls } = await supabase
+        .from('service_calls')
+        .select('*, service:quick_services(*)')
+        .eq('provider_id', profile.id)
+        .eq('status', 'searching')
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (calls && calls.length > 0) {
+        setPendingCall(calls[0] as ServiceCall)
+      }
+    }
+    checkActiveCalls()
+
+    // 2. Escuta tanto INSERT quanto UPDATE em tempo real
     const channel = supabase
-      .channel('new-calls')
+      .channel(`provider-calls-${profile.id}`)
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'service_calls',
           filter: `provider_id=eq.${profile.id}`,
         },
-        payload => {
-          if (payload.new.status === 'accepted' || payload.new.status === 'searching') {
-            setPendingCall(payload.new as ServiceCall)
+        async payload => {
+          const callData = payload.new as ServiceCall
+          if (callData && callData.status === 'searching') {
+            if (!callData.service && callData.service_id) {
+              const { data: srv } = await supabase
+                .from('quick_services')
+                .select('*')
+                .eq('id', callData.service_id)
+                .single()
+              callData.service = srv as any
+            }
+            setPendingCall(callData)
+          } else if (callData && callData.status !== 'searching') {
+            setPendingCall(null)
           }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'service_calls',
-        },
-        payload => {
-          // Chamado "searching" recém-criado — server decide quem recebe via API
-          // O alerta chega quando provider_id é setado para este prestador
         }
       )
       .subscribe()
@@ -194,9 +210,21 @@ export default function PainelPage() {
 
   const handleAcceptCall = useCallback(async () => {
     if (!pendingCall) return
-    router.push(`/chamado/${pendingCall.id}`)
+    const callId = pendingCall.id
     setPendingCall(null)
-  }, [pendingCall, router])
+
+    if (!callId.startsWith('demo-')) {
+      await supabase
+        .from('service_calls')
+        .update({
+          status: 'accepted',
+          accepted_at: new Date().toISOString(),
+        })
+        .eq('id', callId)
+    }
+
+    router.push(`/chamado/${callId}`)
+  }, [pendingCall, router, supabase])
 
   const handleRejectCall = useCallback(async () => {
     if (!pendingCall) return
@@ -223,37 +251,6 @@ export default function PainelPage() {
     setPendingCall(null)
     toast.warning('Tempo esgotado! Chamado foi para o próximo prestador.')
   }, [pendingCall, profile])
-
-  const handleSimulateCall = useCallback(() => {
-    setIsOnline(true)
-    setPendingCall({
-      id: 'demo-call-101',
-      client_id: 'demo-client-1',
-      provider_id: profile?.id ?? 'demo-provider-rv',
-      service_id: '1',
-      service: {
-        id: '1',
-        name: 'Troca de Chuveiro / Resistência',
-        category: 'Elétrica',
-        description: 'Substituição de chuveiro',
-        fixed_price: 70,
-        platform_fee: 10,
-        icon: 'zap',
-        color: '#6366F1',
-        sort_order: 1,
-        is_active: true,
-        created_at: new Date().toISOString(),
-      },
-      total_price: 70,
-      platform_fee: 10,
-      provider_cut: 60,
-      status: 'searching',
-      client_address: 'Rua das Flores, 142 - Bairro Popular, Rio Verde (GO)',
-      client_location: { type: 'Point', coordinates: [-50.9264, -17.8014] },
-      created_at: new Date().toISOString(),
-    })
-    toast.info('🔔 Alerta de corrida iniciado! Som, vibração e timer de 45s ativos.')
-  }, [profile])
 
   if (!profile) {
     return (
@@ -362,23 +359,6 @@ export default function PainelPage() {
             </p>
           </div>
         )}
-
-        {/* Botão de teste e demonstração rápida */}
-        <div className="w-full max-w-xs mt-6">
-          <button
-            type="button"
-            id="btn-simulate-call"
-            onClick={handleSimulateCall}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-bold transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{
-              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(249, 115, 22, 0.15))',
-              border: '1px solid rgba(239, 68, 68, 0.4)',
-              color: '#F87171',
-            }}
-          >
-            <span>🚨 Simular Chamado (Som + Vibração + 45s)</span>
-          </button>
-        </div>
       </div>
 
       {/* Instruções */}
@@ -393,7 +373,7 @@ export default function PainelPage() {
           <div className="space-y-3">
             {[
               ['1', 'Fique online para aparecer no radar dos clientes'],
-              ['2', 'Quando um chamado chegar, você terá 45 segundos para aceitar'],
+              ['2', 'Quando um chamado chegar, você terá até 30 segundos para aceitar'],
               ['3', 'Após aceitar, abra o Waze ou Maps para ir ao local'],
               ['4', 'O cliente paga via Pix ao final — você recebe direto na conta'],
             ].map(([n, text]) => (
@@ -411,11 +391,11 @@ export default function PainelPage() {
         </div>
       )}
 
-      {/* Modal de alerta de chamado */}
-      {pendingCall && pendingCall.service && (
+      {/* Modal de alerta de chamado com som, vibração e timer */}
+      {pendingCall && (
         <CallAlertModal
           call={pendingCall}
-          serviceName={(pendingCall.service as { name?: string })?.name ?? 'Serviço'}
+          serviceName={(pendingCall.service as { name?: string })?.name ?? 'Serviço Solicitado'}
           clientAddress={pendingCall.client_address}
           totalPrice={pendingCall.total_price}
           providerCut={pendingCall.provider_cut}
