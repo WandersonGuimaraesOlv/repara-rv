@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ServiceCall } from '@/lib/types'
@@ -24,6 +24,7 @@ export default function AcompanharPage() {
   const [cancelling, setCancelling] = useState(false)
   const [rating, setRating] = useState(0)
   const [rated, setRated] = useState(false)
+  const hasAutoOpenedPixRef = useRef(false)
 
   // Função para buscar o estado atual do chamado oficial no banco
   const fetchCall = useCallback(async () => {
@@ -40,7 +41,8 @@ export default function AcompanharPage() {
 
     if (data) {
       setCall(data as ServiceCall)
-      if (data.status === 'completed' && data.payment_status !== 'paid') {
+      if (data.status === 'completed' && data.payment_status !== 'paid' && !hasAutoOpenedPixRef.current) {
+        hasAutoOpenedPixRef.current = true
         setShowPix(true)
       }
     }
