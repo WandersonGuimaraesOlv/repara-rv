@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Logo } from '@/components/logo'
-import { Wrench, BarChart3, ArrowLeft, Shield, LogOut } from 'lucide-react'
+import { Wrench, BarChart3, Users, ArrowLeft, Shield, LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
@@ -32,6 +32,7 @@ export function AdminHeader({ userName }: AdminHeaderProps) {
   const navLinks = [
     { href: '/admin/servicos', label: 'Catálogo de Serviços', icon: Wrench },
     { href: '/admin/dashboard', label: 'Dashboard & Métricas', icon: BarChart3 },
+    { href: '/admin/usuarios', label: 'Usuários Cadastrados', icon: Users },
   ]
 
   return (

@@ -16,7 +16,12 @@ import {
   Filter, 
   Activity,
   Award,
-  History
+  History,
+  MessageCircle,
+  Search,
+  Wrench,
+  Calendar,
+  X
 } from 'lucide-react'
 
 interface ServiceCallRecord {
@@ -54,7 +59,7 @@ interface AuditLogRecord {
   cancellation_reason?: string | null
   cancellation_stage?: string | null
   created_at: string
-  metadata?: any
+  metadata?: Record<string, unknown> | null
 }
 
 interface EmergencyAlertRecord {
@@ -74,8 +79,10 @@ export default function AdminDashboardPage() {
   const [auditLogs, setAuditLogs] = useState<AuditLogRecord[]>([])
   const [emergencyAlerts, setEmergencyAlerts] = useState<EmergencyAlertRecord[]>([])
   const [loading, setLoading] = useState<boolean>(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'cancellations' | 'audit' | 'sos'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'completed' | 'cancellations' | 'audit' | 'sos'>('overview')
   const [cancelFilter, setCancelFilter] = useState<'all' | 'arrived' | 'allocated' | 'searching'>('all')
+  const [selectedProviderFilter, setSelectedProviderFilter] = useState<string>('')
+  const [completedSearchQuery, setCompletedSearchQuery] = useState<string>('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -110,7 +117,7 @@ export default function AdminDashboardPage() {
         .order('created_at', { ascending: false })
 
       if (!callsError && callsData) {
-        setCalls(callsData as any[])
+        setCalls(callsData as unknown as ServiceCallRecord[])
       }
 
       // 2. Busca histórico imutável de auditoria
@@ -121,7 +128,7 @@ export default function AdminDashboardPage() {
         .limit(50)
 
       if (!auditError && auditData) {
-        setAuditLogs(auditData as any[])
+        setAuditLogs(auditData as unknown as AuditLogRecord[])
       }
 
       // 3. Busca incidentes do botão SOS
@@ -132,7 +139,7 @@ export default function AdminDashboardPage() {
         .limit(20)
 
       if (!alertError && alertData) {
-        setEmergencyAlerts(alertData as any[])
+        setEmergencyAlerts(alertData as unknown as EmergencyAlertRecord[])
       }
     } catch (err) {
       console.error('[Dashboard fetch error]', err)
@@ -179,11 +186,12 @@ export default function AdminDashboardPage() {
     const map: Record<string, { name: string; phone: string; count: number; earnings: number }> = {}
 
     completed.forEach(c => {
-      const name = c.provider?.full_name || 'Profissional'
+      const provObj = Array.isArray(c.provider) ? c.provider[0] : c.provider
+      const name = provObj?.full_name || 'Profissional'
       if (!map[name]) {
         map[name] = {
           name,
-          phone: c.provider?.phone || '',
+          phone: provObj?.phone || '',
           count: 0,
           earnings: 0,
         }
@@ -192,8 +200,52 @@ export default function AdminDashboardPage() {
       map[name].earnings += Number(c.provider_cut || (Number(c.total_price) - 12))
     })
 
-    return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 5)
+    return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 10)
   }, [calls])
+
+  // Lista de técnicos com chamados concluídos (para filtro em chips)
+  const completedProvidersList = useMemo(() => {
+    const set = new Set<string>()
+    calls.filter(c => c.status === 'completed').forEach(c => {
+      const provObj = Array.isArray(c.provider) ? c.provider[0] : c.provider
+      if (provObj?.full_name) set.add(provObj.full_name)
+    })
+    return Array.from(set).sort()
+  }, [calls])
+
+  // Chamados Concluídos Filtrados
+  const completedCalls = useMemo(() => {
+    const base = calls.filter(c => c.status === 'completed')
+    return base.filter(c => {
+      const provObj = Array.isArray(c.provider) ? c.provider[0] : c.provider
+      const clientObj = Array.isArray(c.client) ? c.client[0] : c.client
+      const serviceObj = Array.isArray(c.service) ? c.service[0] : c.service
+
+      const provName = provObj?.full_name || ''
+      const clientName = clientObj?.full_name || ''
+      const serviceName = serviceObj?.name || ''
+      const serviceCategory = serviceObj?.category || ''
+      const neighborhood = c.neighborhood || ''
+
+      if (selectedProviderFilter && provName.toLowerCase() !== selectedProviderFilter.toLowerCase()) {
+        return false
+      }
+
+      if (completedSearchQuery.trim()) {
+        const q = completedSearchQuery.toLowerCase()
+        const match =
+          provName.toLowerCase().includes(q) ||
+          clientName.toLowerCase().includes(q) ||
+          serviceName.toLowerCase().includes(q) ||
+          serviceCategory.toLowerCase().includes(q) ||
+          neighborhood.toLowerCase().includes(q) ||
+          c.id.toLowerCase().includes(q)
+        if (!match) return false
+      }
+
+      return true
+    })
+  }, [calls, selectedProviderFilter, completedSearchQuery])
 
   // Ranking de Bairros Atendidos
   const neighborhoodRanking = useMemo(() => {
@@ -329,6 +381,18 @@ export default function AdminDashboardPage() {
         </button>
 
         <button
+          onClick={() => setActiveTab('completed')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+            activeTab === 'completed'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+          }`}
+        >
+          <CheckCircle2 size={15} />
+          Serviços Efetuados ({metrics.completedCount})
+        </button>
+
+        <button
           onClick={() => setActiveTab('cancellations')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
             activeTab === 'cancellations'
@@ -384,25 +448,42 @@ export default function AdminDashboardPage() {
                 {providerRanking.map((prov, index) => (
                   <div
                     key={prov.name}
-                    className="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800/80"
+                    className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 rounded-full bg-slate-800 text-orange-400 font-bold text-xs flex items-center justify-center">
-                        #{index + 1}
-                      </span>
-                      <div>
-                        <div className="text-xs font-bold text-white">{prov.name}</div>
-                        <div className="text-[11px] text-slate-400">{prov.phone}</div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-full bg-slate-800 text-orange-400 font-bold text-xs flex items-center justify-center">
+                          #{index + 1}
+                        </span>
+                        <div>
+                          <div className="text-xs font-bold text-white">{prov.name}</div>
+                          <div className="text-[11px] text-slate-400">{prov.phone}</div>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-xs font-bold text-emerald-400">
+                          {prov.count} {prov.count === 1 ? 'serviço' : 'serviços'}
+                        </span>
+                        <div className="text-[10px] text-slate-500">
+                          {formatCurrency(prov.earnings)} faturados
+                        </div>
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <span className="text-xs font-bold text-emerald-400">
-                        {prov.count} {prov.count === 1 ? 'serviço' : 'serviços'}
+                    <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-500">
+                        {prov.count} atendimento{prov.count > 1 ? 's' : ''} liquidado{prov.count > 1 ? 's' : ''}
                       </span>
-                      <div className="text-[10px] text-slate-500">
-                        {formatCurrency(prov.earnings)} faturados
-                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedProviderFilter(prov.name)
+                          setActiveTab('completed')
+                        }}
+                        className="text-xs font-semibold text-orange-400 hover:text-orange-300 inline-flex items-center gap-1 transition-colors"
+                      >
+                        Ver serviços efetuados ➔
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -437,6 +518,221 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ABA: SERVIÇOS CONCLUÍDOS / HISTÓRICO DE SERVIÇOS EFETUADOS */}
+      {activeTab === 'completed' && (
+        <div className="space-y-6">
+          {/* Header da aba com filtros rápidos */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+            {/* Chips de Técnicos */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+              <span className="text-xs text-slate-400 font-semibold whitespace-nowrap flex items-center gap-1.5 mr-1">
+                <Filter size={13} /> Filtrar Técnico:
+              </span>
+              <button
+                onClick={() => setSelectedProviderFilter('')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+                  !selectedProviderFilter
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                Todos ({metrics.completedCount})
+              </button>
+              {completedProvidersList.map((provName) => (
+                <button
+                  key={provName}
+                  onClick={() => setSelectedProviderFilter(provName)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+                    selectedProviderFilter === provName
+                      ? 'bg-orange-500 text-white shadow-sm'
+                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  {provName}
+                </button>
+              ))}
+            </div>
+
+            {/* Input de Busca */}
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={15} />
+              <input
+                type="text"
+                placeholder="Buscar por serviço, cliente, técnico ou bairro..."
+                value={completedSearchQuery}
+                onChange={(e) => setCompletedSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Tag de filtro ativo se selecionado */}
+          {selectedProviderFilter && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">Filtrando atendimentos executados por:</span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/40">
+                {selectedProviderFilter}
+                <button
+                  onClick={() => setSelectedProviderFilter('')}
+                  className="hover:text-white ml-1"
+                  title="Remover filtro"
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            </div>
+          )}
+
+          {/* Cards ou Tabela de Chamados Concluídos */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+            {completedCalls.length === 0 ? (
+              <div className="p-16 text-center text-slate-400">
+                <CheckCircle2 className="mx-auto mb-3 text-slate-600" size={36} />
+                <p className="text-base font-semibold text-slate-300">Nenhum serviço efetuado encontrado</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {selectedProviderFilter || completedSearchQuery
+                    ? 'Tente remover o filtro de técnico ou a busca digitada.'
+                    : 'Ainda não há registros de atendimentos concluídos no sistema.'}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-800 bg-slate-950/70 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      <th className="py-3.5 px-4">Chamado & Conclusão</th>
+                      <th className="py-3.5 px-4">Serviço Efetuado</th>
+                      <th className="py-3.5 px-4">Prestador Responsável</th>
+                      <th className="py-3.5 px-4">Cliente Atendido</th>
+                      <th className="py-3.5 px-4">Localização</th>
+                      <th className="py-3.5 px-4 text-right">Divisão Financeira (Split)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60">
+                    {completedCalls.map((call) => {
+                      const provObj = Array.isArray(call.provider) ? call.provider[0] : call.provider
+                      const clientObj = Array.isArray(call.client) ? call.client[0] : call.client
+                      const serviceObj = Array.isArray(call.service) ? call.service[0] : call.service
+
+                      const provName = provObj?.full_name || 'Profissional'
+                      const provPhone = provObj?.phone || ''
+                      const clientName = clientObj?.full_name || 'Cliente'
+                      const clientPhone = clientObj?.phone || ''
+                      const serviceName = serviceObj?.name || 'Serviço sob demanda'
+                      const serviceCategory = serviceObj?.category || 'Geral'
+
+                      const cleanProvPhone = provPhone.replace(/\D/g, '')
+                      const cleanClientPhone = clientPhone.replace(/\D/g, '')
+                      const provWaUrl = `https://wa.me/55${cleanProvPhone}?text=Ol%C3%A1%20${encodeURIComponent(provName)}%2C%20referente%20ao%20servi%C3%A7o%20conclu%C3%ADdo%20%23${call.id.slice(0, 8)}.`
+                      const clientWaUrl = `https://wa.me/55${cleanClientPhone}?text=Ol%C3%A1%20${encodeURIComponent(clientName)}%2C%20falo%20da%20administra%C3%A7%C3%A3o%20do%20Repara%20RV.`
+
+                      const totalPrice = Number(call.total_price || 0)
+                      const fee = 12.0 // Regra inegociável R$ 12,00
+                      const providerCut = Number(call.provider_cut || (totalPrice - 12))
+                      const dateStr = call.completed_at || call.created_at
+
+                      return (
+                        <tr key={call.id} className="hover:bg-slate-800/40 transition-colors">
+                          {/* ID do Chamado & Conclusão */}
+                          <td className="py-4 px-4">
+                            <div className="font-mono text-xs font-bold text-orange-400">
+                              #{call.id.slice(0, 8)}
+                            </div>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 mt-1">
+                              <CheckCircle2 size={10} /> Concluído & Pago
+                            </span>
+                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-1">
+                              <Calendar size={11} className="text-slate-500" />
+                              {new Date(dateStr).toLocaleString('pt-BR')}
+                            </div>
+                          </td>
+
+                          {/* Serviço Efetuado & Categoria */}
+                          <td className="py-4 px-4">
+                            <div className="font-bold text-white text-xs sm:text-sm">
+                              {serviceName}
+                            </div>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 mt-1">
+                              <Wrench size={10} /> {serviceCategory}
+                            </span>
+                          </td>
+
+                          {/* Prestador */}
+                          <td className="py-4 px-4">
+                            <div className="font-semibold text-white text-xs">
+                              {provName}
+                            </div>
+                            <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                              {provPhone}
+                            </div>
+                            {cleanProvPhone && (
+                              <a
+                                href={provWaUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold mt-1 transition-colors"
+                              >
+                                <MessageCircle size={11} /> WhatsApp do Técnico
+                              </a>
+                            )}
+                          </td>
+
+                          {/* Cliente */}
+                          <td className="py-4 px-4">
+                            <div className="font-semibold text-white text-xs">
+                              {clientName}
+                            </div>
+                            <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                              {clientPhone}
+                            </div>
+                            {cleanClientPhone && (
+                              <a
+                                href={clientWaUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 font-semibold mt-1 transition-colors"
+                              >
+                                <MessageCircle size={11} /> WhatsApp do Cliente
+                              </a>
+                            )}
+                          </td>
+
+                          {/* Localização */}
+                          <td className="py-4 px-4 max-w-[200px]">
+                            <div className="text-xs font-semibold text-white flex items-center gap-1">
+                              <MapPin size={12} className="text-cyan-400 shrink-0" />
+                              <span className="truncate">{call.neighborhood || 'Setor Central'}</span>
+                            </div>
+                            {call.client_address && (
+                              <div className="text-[11px] text-slate-400 line-clamp-2 mt-0.5">
+                                {call.client_address}
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Divisão Financeira (Split) */}
+                          <td className="py-4 px-4 text-right">
+                            <div className="text-xs font-bold text-white">
+                              Total: <span className="text-sm font-black">{formatCurrency(totalPrice)}</span>
+                            </div>
+                            <div className="text-[11px] text-emerald-400 font-semibold mt-0.5">
+                              Técnico: +{formatCurrency(providerCut)}
+                            </div>
+                            <div className="text-[10px] text-orange-400 font-medium">
+                              Taxa Repara RV: {formatCurrency(fee)}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
