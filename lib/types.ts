@@ -69,6 +69,7 @@ export interface QuickService {
   created_at?: string
   included?: string[]
   not_included?: string[]
+  duration_est?: string | null
 }
 
 // ─── Chamado de Serviço ────────────────────────────────────

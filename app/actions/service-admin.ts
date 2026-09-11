@@ -52,26 +52,49 @@ export async function updateServiceAction(input: unknown) {
     }
   }
 
-  const { id, name, category, description, fixed_price, is_active } = parsed.data
+  const { id, name, category, description, fixed_price, platform_fee, is_active, included, not_included, duration_est } = parsed.data
   const adminDb = await createServiceClient()
 
-  // Observação: a tabela quick_services não possui coluna updated_at no banco
+  const fee = platform_fee ?? 12.0
+  if (fee >= fixed_price) {
+    return { success: false, error: 'A taxa da plataforma não pode ser maior ou igual ao preço total do serviço.' }
+  }
+
   const updatePayload: Record<string, unknown> = {
     fixed_price,
-    platform_fee: 12.0, // Regra inegociável da plataforma
+    platform_fee: fee,
   }
 
   if (name !== undefined) updatePayload.name = name
   if (category !== undefined) updatePayload.category = category
   if (description !== undefined) updatePayload.description = description
   if (is_active !== undefined) updatePayload.is_active = is_active
+  if (included !== undefined) updatePayload.included = included
+  if (not_included !== undefined) updatePayload.not_included = not_included
+  if (duration_est !== undefined) updatePayload.duration_est = duration_est
 
-  const { data, error } = await adminDb
+  let { data, error } = await adminDb
     .from('quick_services')
     .update(updatePayload)
     .eq('id', id)
     .select()
     .single()
+
+  // Fallback defensivo imediato: se as novas colunas ainda não foram migradas no Supabase
+  if (error && (error.code === '42703' || (error as any).code === 'PGRST204' || error.message?.includes('included') || error.message?.includes('not_included') || error.message?.includes('duration_est'))) {
+    console.warn('[updateServiceAction] Colunas de escopo ausentes no Supabase. Re-tentando sem colunas extras...')
+    delete updatePayload.included
+    delete updatePayload.not_included
+    delete updatePayload.duration_est
+    const retry = await adminDb
+      .from('quick_services')
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+      .single()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     console.error('[updateServiceAction error]', error)
@@ -103,8 +126,13 @@ export async function createServiceAction(input: unknown) {
     }
   }
 
-  const { name, category, description, fixed_price, icon, color, is_active } = parsed.data
+  const { name, category, description, fixed_price, platform_fee, icon, color, is_active, included, not_included, duration_est } = parsed.data
   const adminDb = await createServiceClient()
+
+  const fee = platform_fee ?? 12.0
+  if (fee >= fixed_price) {
+    return { success: false, error: 'A taxa da plataforma não pode ser maior ou igual ao preço total do serviço.' }
+  }
 
   // Determina o próximo sort_order
   const { data: existingServices } = await adminDb
@@ -115,21 +143,41 @@ export async function createServiceAction(input: unknown) {
 
   const nextSortOrder = ((existingServices?.[0]?.sort_order as number) ?? 0) + 1
 
-  const { data, error } = await adminDb
+  const insertPayload: Record<string, unknown> = {
+    name,
+    category,
+    description: description || null,
+    fixed_price,
+    platform_fee: fee,
+    icon: icon || 'Wrench',
+    color: color || '#F97316',
+    sort_order: nextSortOrder,
+    is_active: is_active ?? true,
+    included: included ?? [],
+    not_included: not_included ?? [],
+    duration_est: duration_est || '40 min',
+  }
+
+  let { data, error } = await adminDb
     .from('quick_services')
-    .insert({
-      name,
-      category,
-      description: description || null,
-      fixed_price,
-      platform_fee: 12.0, // Regra inegociável
-      icon: icon || 'Wrench',
-      color: color || '#F97316',
-      sort_order: nextSortOrder,
-      is_active: is_active ?? true,
-    })
+    .insert(insertPayload)
     .select()
     .single()
+
+  // Fallback defensivo imediato
+  if (error && (error.code === '42703' || (error as any).code === 'PGRST204' || error.message?.includes('included') || error.message?.includes('not_included') || error.message?.includes('duration_est'))) {
+    console.warn('[createServiceAction] Colunas de escopo ausentes no Supabase. Re-tentando insert básico...')
+    delete insertPayload.included
+    delete insertPayload.not_included
+    delete insertPayload.duration_est
+    const retry = await adminDb
+      .from('quick_services')
+      .insert(insertPayload)
+      .select()
+      .single()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     console.error('[createServiceAction error]', error)
