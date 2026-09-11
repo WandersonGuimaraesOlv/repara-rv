@@ -40,11 +40,13 @@ export async function POST(request: NextRequest) {
 
     const notificationPayloads = (providers || []).map(prov => {
       const firstName = prov.full_name?.split(' ')[0] || 'Profissional'
-      const message = `Fala, ${firstName}! ⚡ Tem um cliente aguardando atendimento para ${serviceName} no ${neighborhood} (Ganhos líquidos: ${providerCutFormatted} de ${totalFormatted}). Acesse o painel agora para aceitar o chamado: ${appUrl}/painel`
+      const claimUrl = `${appUrl}/painel?claim=${call_id}`
+      const message = `Fala, ${firstName}! ⚡ Tem um cliente aguardando atendimento para ${serviceName} no ${neighborhood} (Ganhos líquidos: ${providerCutFormatted} de ${totalFormatted}). Clique no link para aceitar agora: ${claimUrl}`
       return {
         provider_id: prov.id,
         provider_name: prov.full_name,
         provider_phone: prov.phone,
+        claim_url: claimUrl,
         message,
       }
     })

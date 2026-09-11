@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import Link from 'next/link'
 import { CallChat } from '@/components/chat/call-chat'
 import { ChamadoEmFila } from '@/components/chamado-em-fila'
+import { CancelCallModal } from '@/components/cancel-call-modal'
 
 export default function AcompanharPage() {
   const { callId } = useParams<{ callId: string }>()
@@ -23,6 +24,7 @@ export default function AcompanharPage() {
   const [loading, setLoading] = useState(true)
   const [showPix, setShowPix] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
   const [rating, setRating] = useState(0)
   const [rated, setRated] = useState(false)
   const hasAutoOpenedPixRef = useRef(false)
@@ -91,19 +93,25 @@ export default function AcompanharPage() {
     }
   }, [callId, fetchCall, supabase])
 
-  const handleCancel = async () => {
-    if (!call || (call.status !== 'searching' && call.status !== 'queued' && call.status !== 'no_providers_available')) return
+  const handleConfirmCancel = async (reason: string, note?: string) => {
+    if (!call) return
     setCancelling(true)
 
     try {
       const response = await fetch('/api/calls/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ call_id: callId, reason: 'client_request' }),
+        body: JSON.stringify({
+          call_id: callId,
+          reason,
+          cancellation_reason: reason,
+          note,
+        }),
       })
       setCancelling(false)
+      setShowCancelModal(false)
       if (response.ok) {
-        toast.info('Chamado cancelado.')
+        toast.info('Chamado cancelado com sucesso.')
         router.replace('/')
       } else {
         const json = await response.json().catch(() => ({}))
@@ -175,7 +183,7 @@ export default function AcompanharPage() {
               price: call.total_price,
               client_phone: (call.client as { phone?: string })?.phone,
             }}
-            onCancel={handleCancel}
+            onCancel={() => setShowCancelModal(true)}
           />
         </div>
       ) : (
@@ -290,7 +298,7 @@ export default function AcompanharPage() {
         <div className="pb-6">
           <button
             id="btn-cancel-call"
-            onClick={handleCancel}
+            onClick={() => setShowCancelModal(true)}
             disabled={cancelling}
             className="btn-danger"
           >
@@ -314,6 +322,14 @@ export default function AcompanharPage() {
           </Link>
         </div>
       )}
+
+      {/* Modal de confirmação e motivo de cancelamento */}
+      <CancelCallModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirmCancel={handleConfirmCancel}
+        isLoading={cancelling}
+      />
 
       {/* Modal de pagamento Pix / Cartão */}
       {showPix && (

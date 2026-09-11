@@ -6,9 +6,10 @@ import { createClient } from '@/lib/supabase/client'
 import { Profile, ServiceCall } from '@/lib/types'
 import { CallAlertModal } from '@/components/call-alert-modal'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { Power, Loader2, MapPin, CreditCard, Zap, Lock, AlertTriangle } from 'lucide-react'
+import { Power, Loader2, MapPin, CreditCard, Zap, Lock, AlertTriangle, Volume2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { PanelHeader } from '@/components/provider/panel-header'
+import { audioAlert } from '@/lib/audio-alert'
 
 export default function PainelPage() {
   const router = useRouter()
@@ -167,6 +168,7 @@ export default function PainelPage() {
 
   // Toggle online/offline com obtenção ativa de GPS e trava obrigatória do Mercado Pago
   const handleToggleOnline = async () => {
+    audioAlert.unlockAudio()
     if (!profile) return
 
     if (!recipientGatewayId) {
@@ -268,8 +270,10 @@ export default function PainelPage() {
               callData.service = srv as any
             }
             setPendingCall(callData)
+            audioAlert.startAlarm()
           } else if (callData && callData.status !== 'searching') {
             setPendingCall(null)
+            audioAlert.stopAlarm()
           }
         }
       )
@@ -278,6 +282,7 @@ export default function PainelPage() {
     return () => {
       supabase.removeChannel(channel)
       clearInterval(pollInterval)
+      audioAlert.stopAlarm()
     }
   }, [profile, isOnline, supabase])
 
@@ -285,6 +290,7 @@ export default function PainelPage() {
     if (!pendingCall) return
     const callId = pendingCall.id
     setPendingCall(null)
+    audioAlert.stopAlarm()
 
     await supabase
       .from('service_calls')
@@ -294,11 +300,19 @@ export default function PainelPage() {
       })
       .eq('id', callId)
 
+    // Dispara WhatsApp confirmando que o técnico está a caminho
+    void fetch('/api/calls/notify-accepted', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ call_id: callId, provider_id: profile?.id }),
+    }).catch(() => {})
+
     router.push(`/chamado/${callId}`)
-  }, [pendingCall, router, supabase])
+  }, [pendingCall, profile, router, supabase])
 
   const handleRejectCall = useCallback(async () => {
     if (!pendingCall) return
+    audioAlert.stopAlarm()
     await fetch('/api/calls/skip-provider', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -310,6 +324,7 @@ export default function PainelPage() {
 
   const handleTimeoutCall = useCallback(async () => {
     if (!pendingCall) return
+    audioAlert.stopAlarm()
     await fetch('/api/calls/skip-provider', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -354,6 +369,7 @@ export default function PainelPage() {
             }
           } else if (payload.eventType === 'INSERT') {
             if (payload.new && payload.new.status === 'queued') {
+              audioAlert.playCallChime()
               loadQueued()
             }
           } else if (payload.eventType === 'DELETE') {
@@ -373,6 +389,7 @@ export default function PainelPage() {
 
   const handleClaimQueued = async (callId: string) => {
     if (!profile) return
+    audioAlert.stopAlarm()
     if (!recipientGatewayId) {
       toast.error('Para atender chamados e garantir seus repasses via Pix, conecte sua conta do Mercado Pago acima.')
       return
@@ -407,6 +424,17 @@ export default function PainelPage() {
     }
   }
 
+  // Ativa automaticamente o aceite se o prestador acessou via deep link do WhatsApp (?claim=ID)
+  useEffect(() => {
+    if (typeof window === 'undefined' || !profile || !recipientGatewayId) return
+    const params = new URLSearchParams(window.location.search)
+    const claimId = params.get('claim')
+    if (claimId && !claimingCallId) {
+      console.log('⚡ [Deep Link] Assumindo chamado via link direto do WhatsApp:', claimId)
+      handleClaimQueued(claimId)
+    }
+  }, [profile, recipientGatewayId])
+
   if (!profile) {
     return (
       <div className="page-container items-center justify-center">
@@ -421,6 +449,25 @@ export default function PainelPage() {
     <div className="page-container p-4">
       {/* Header com Navegação Segura e Status */}
       <PanelHeader isOnline={isOnline} />
+
+      {/* Indicador de Alerta Sonoro */}
+      <div className="flex items-center justify-between mb-3 px-1">
+        <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <Volume2 size={12} className="text-emerald-600" />
+          Alerta sonoro ativo
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            audioAlert.unlockAudio()
+            audioAlert.playCallChime()
+            toast.success('🔊 Teste de alarme reproduzido!')
+          }}
+          className="text-[11px] text-gray-400 hover:text-gray-600 underline cursor-pointer"
+        >
+          Testar som
+        </button>
+      </div>
 
 
       {/* Saudação e Saldo */}

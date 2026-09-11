@@ -10,14 +10,15 @@ import { MapPin, Loader2, AlertTriangle, CheckCircle, ArrowLeft } from 'lucide-r
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { DEFAULT_SERVICES } from '@/lib/catalog'
+import { EnderecoForm, StructuredAddress } from '@/components/endereco-form'
 
-export default function ChamarPage() {
+export default function ChamarServicePage() {
   const { serviceId } = useParams<{ serviceId: string }>()
   const router = useRouter()
   const supabase = createClient()
 
   const [service, setService] = useState<QuickService | null>(null)
-  const [address, setAddress] = useState('')
+  const [structuredAddress, setStructuredAddress] = useState<StructuredAddress | null>(null)
   const [confirmed, setConfirmed] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -69,8 +70,8 @@ export default function ChamarPage() {
       toast.error('Confirme que leu o aviso sobre peças e materiais')
       return
     }
-    if (!address.trim()) {
-      toast.error('Digite o endereço completo com rua e número')
+    if (!structuredAddress) {
+      toast.error('Preencha o endereço completo (Bairro, Rua, Número e Ponto de Referência)')
       return
     }
     if (!service) return
@@ -102,7 +103,8 @@ export default function ChamarPage() {
         body: JSON.stringify({
           service_id: service.id,
           client_id: user.id,
-          client_address: address.trim(),
+          client_address: structuredAddress.fullAddress,
+          neighborhood: structuredAddress.neighborhood,
           client_lat: lat ?? -17.7915,
           client_lng: lng ?? -50.9192,
         }),
@@ -216,21 +218,8 @@ export default function ChamarPage() {
             )}
           </div>
 
-          {/* Endereço manual */}
-          <div>
-            <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--color-text-muted)' }}>
-              Endereço completo (rua, número, bairro)
-            </label>
-            <textarea
-              id="input-address"
-              value={address}
-              onChange={e => setAddress(e.target.value)}
-              placeholder="Ex: Rua das Flores, 123, Setor Central, Rio Verde - GO"
-              className="input resize-none"
-              rows={3}
-              required
-            />
-          </div>
+          {/* Endereço Inteligente Estruturado */}
+          <EnderecoForm onAddressChange={setStructuredAddress} />
 
           {/* Aviso obrigatório de peças */}
           <div className="banner-warning">

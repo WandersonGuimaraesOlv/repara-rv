@@ -114,8 +114,7 @@ export async function POST(req: NextRequest) {
 
         const providerName = provider.full_name || 'Técnico Credenciado';
         const trackingUrl = `${appUrl}/acompanhar/${callId}`;
-        const serviceName = (fullCall?.service as { name?: string })?.name || 'serviço';
-        const clientMessage = `Boa notícia! O técnico ${providerName} aceitou seu chamado de ${serviceName} e já está se preparando para ir até você! 🚗⚡ Acompanhe em tempo real: ${trackingUrl}`;
+        const clientMessage = `Tudo certo! O técnico ${providerName} acabou de assumir seu chamado e já está a caminho do seu endereço. Acompanhe a chegada por aqui: ${trackingUrl}`;
 
         console.log(`📲 [WhatsApp Cliente] Notificação de aceite disparada para ${clientPhone}`);
 

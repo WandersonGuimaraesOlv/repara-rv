@@ -52,11 +52,39 @@ Tarefas administrativas, fiscais e legais sob responsabilidade dos fundadores pa
 ## 5. Lançamento e Presença Física
 - [ ] **Inserir Dados Oficiais no Rodapé:**
   - Inserir no PWA: Razão Social, CNPJ, endereço comercial da sede e e-mail/WhatsApp do SAC.
-- [ ] **Parceria Piloto com Lojas Locais:**
-  - Visitar 2 ou 3 lojas tradicionais de materiais elétricos e hidráulicos da cidade para apresentar o app e colocar cartazes/adesivos informativos para os profissionais que compram materiais lá.
+---
 
-Estou lançando uma plataforma web (PWA) de intermediação de pequenos serviços residenciais em Rio Verde.
+## 6. Infraestrutura de Mensageria (WhatsApp)
+- [ ] **Conexão da Instância de Disparo (Evolution API / Z-API):**
+  - Adquirir e ativar chip exclusivo para o Repara RV.
+  - Conectar instância da Evolution API ou Z-API para disparo das notificações da fila prioritária (`notify-queue`) e confirmações pós-aceite (`notify-accepted`).
+  - Configurar as variáveis no Cloudflare / `.dev.vars`:
+    - `WHATSAPP_WEBHOOK_URL` ou `PROVIDER_ALERT_WEBHOOK_URL`
+    - `CLIENT_ALERT_WEBHOOK_URL`
+  - Validar entrega real do deep link no celular do prestador: `https://repararv.com/painel?claim=ID`.
 
-Para a contabilidade: Nosso modelo é de agenciamento/marketplace. O cliente paga o serviço via Pix e o gateway realiza um split automático: o prestador recebe a mão de obra dele e nós retemos uma taxa fixa de comissão. Preciso abrir um CNPJ no Simples Nacional com os CNAEs adequados e orientações para emitir NFS-e apenas sobre a nossa comissão de intermediação.
+---
 
-Para o jurídico: Preciso da elaboração dos Termos de Uso da plataforma, Política de Privacidade (LGPD) e o contrato de prestação de serviços/parceria com a agência de marketing
+## 7. Produção Audiovisual & Lançamento de Tráfego Pago
+- [ ] **Fechar Produção do Vídeo Institucional 9:16 (60 segundos):**
+  - Contratar/aprovar entrega do animador com o roteiro aprovado no enquadramento vertical (Stories/Reels).
+  - Ter o arquivo final exportado em alta definição para subir os criativos das campanhas locais no Instagram/Facebook Ads direcionando para `https://repararv.com`.
+
+---
+
+## 8. Formação da Base Reserva de Prestadores (Pré-Anúncios)
+- [ ] **Meta de Homologação Pré-Campanha (Mínimo 8 a 10 Profissionais Ativos):**
+  - 2 Eletricistas
+  - 2 Encanadores
+  - 2 Montadores de Móveis
+  - 2 Chaveiros
+  - Garantir que todos concluíram o fluxo OAuth do Mercado Pago (para não quebrar o split Pix automático).
+  - Realizar chamada de alinhamento com cada um sobre o funcionamento do painel e o som de alerta contínuo.
+
+---
+
+### Mensagens-Chave para Prestadores e Parceiros:
+
+**Para a contabilidade:** Nosso modelo é de agenciamento/marketplace. O cliente paga o serviço via Pix e o gateway realiza um split automático: o prestador recebe a mão de obra dele e nós retemos uma taxa fixa de comissão. Preciso abrir um CNPJ no Simples Nacional com os CNAEs adequados e orientações para emitir NFS-e apenas sobre a nossa comissão de intermediação.
+
+**Para o jurídico:** Preciso da elaboração dos Termos de Uso da plataforma, Política de Privacidade (LGPD) e o contrato de prestação de serviços/parceria com a agência de marketing.

@@ -25,30 +25,30 @@ const supabase = createClient(supabaseUrl, serviceRoleKey)
 
 const SERVICES = [
   // Elétrica
-  { name: 'Troca de Chuveiro / Resistência', category: 'Elétrica', fixed_price: 70.00, platform_fee: 12.00, icon: 'ShowerHead', is_active: true },
-  { name: 'Troca de Tomada / Interruptor / Lâmpada', category: 'Elétrica', fixed_price: 50.00, platform_fee: 12.00, icon: 'Plug', is_active: true },
-  { name: 'Instalação de Ventilador de Teto', category: 'Elétrica', fixed_price: 120.00, platform_fee: 12.00, icon: 'Fan', is_active: true },
-  { name: 'Instalação de Plafon / Painel LED', category: 'Elétrica', fixed_price: 60.00, platform_fee: 12.00, icon: 'Lightbulb', is_active: true },
+  { name: 'Troca de Chuveiro / Resistência', category: 'Elétrica', fixed_price: 75.00, platform_fee: 12.00, icon: 'ShowerHead', is_active: true },
+  { name: 'Troca de Tomada / Interruptor / Lâmpada', category: 'Elétrica', fixed_price: 60.00, platform_fee: 10.00, icon: 'Plug', is_active: true },
+  { name: 'Instalação de Ventilador de Teto', category: 'Elétrica', fixed_price: 130.00, platform_fee: 20.00, icon: 'Fan', is_active: true },
+  { name: 'Instalação de Plafon / Painel LED', category: 'Elétrica', fixed_price: 70.00, platform_fee: 12.00, icon: 'Lightbulb', is_active: true },
 
   // Hidráulica
-  { name: 'Troca de Torneira / Sifão de Pia', category: 'Hidráulica', fixed_price: 60.00, platform_fee: 12.00, icon: 'Droplet', is_active: true },
-  { name: 'Desentupimento de Ralo / Vaso Sanitário', category: 'Hidráulica', fixed_price: 100.00, platform_fee: 12.00, icon: 'Pipette', is_active: true },
-  { name: 'Reparo de Caixa Acoplada', category: 'Hidráulica', fixed_price: 70.00, platform_fee: 12.00, icon: 'Wrench', is_active: true },
-  { name: 'Vedação de Box / Pia com Silicone', category: 'Hidráulica', fixed_price: 60.00, platform_fee: 12.00, icon: 'ShieldCheck', is_active: true },
+  { name: 'Troca de Torneira / Sifão de Pia', category: 'Hidráulica', fixed_price: 70.00, platform_fee: 12.00, icon: 'Droplet', is_active: true },
+  { name: 'Desentupimento de Ralo / Vaso Sanitário', category: 'Hidráulica', fixed_price: 110.00, platform_fee: 18.00, icon: 'Pipette', is_active: true },
+  { name: 'Reparo de Caixa Acoplada', category: 'Hidráulica', fixed_price: 80.00, platform_fee: 15.00, icon: 'Wrench', is_active: true },
+  { name: 'Vedação de Box / Pia com Silicone', category: 'Hidráulica', fixed_price: 70.00, platform_fee: 12.00, icon: 'ShieldCheck', is_active: true },
 
   // Montagem & Fixação
-  { name: 'Fixação de Suporte de TV / Cortina / Quadro', category: 'Montagem', fixed_price: 70.00, platform_fee: 12.00, icon: 'Tv', is_active: true },
-  { name: 'Montagem / Desmontagem Móvel Pequeno', category: 'Montagem', fixed_price: 90.00, platform_fee: 12.00, icon: 'Hammer', is_active: true },
-  { name: 'Instalação de Varal de Teto / Parede', category: 'Montagem', fixed_price: 80.00, platform_fee: 12.00, icon: 'Shirt', is_active: true },
-  { name: 'Regulagem de Dobradiças e Gavetas', category: 'Montagem', fixed_price: 60.00, platform_fee: 12.00, icon: 'Settings2', is_active: true },
+  { name: 'Fixação de Suporte de TV / Cortina / Quadro', category: 'Montagem', fixed_price: 75.00, platform_fee: 12.00, icon: 'Tv', is_active: true },
+  { name: 'Montagem / Desmontagem Móvel Pequeno', category: 'Montagem', fixed_price: 95.00, platform_fee: 15.00, icon: 'Hammer', is_active: true },
+  { name: 'Instalação de Varal de Teto / Parede', category: 'Montagem', fixed_price: 85.00, platform_fee: 15.00, icon: 'Shirt', is_active: true },
+  { name: 'Regulagem de Dobradiças e Gavetas', category: 'Montagem', fixed_price: 70.00, platform_fee: 12.00, icon: 'Settings2', is_active: true },
 
   // Chaveiro & Segurança
-  { name: 'Abertura de Porta (Bateu-Fechou)', category: 'Chaveiro', fixed_price: 100.00, platform_fee: 12.00, icon: 'Key', is_active: true },
-  { name: 'Troca de Fechadura / Miolo de Porta', category: 'Chaveiro', fixed_price: 80.00, platform_fee: 12.00, icon: 'Lock', is_active: true },
+  { name: 'Abertura de Porta (Bateu-Fechou)', category: 'Chaveiro', fixed_price: 120.00, platform_fee: 20.00, icon: 'Key', is_active: true },
+  { name: 'Troca de Fechadura / Miolo de Porta', category: 'Chaveiro', fixed_price: 85.00, platform_fee: 15.00, icon: 'Lock', is_active: true },
 
   // Eletro & Cozinha
-  { name: 'Instalação de Máquina de Lavar', category: 'Instalação', fixed_price: 70.00, platform_fee: 12.00, icon: 'WashingMachine', is_active: true },
-  { name: 'Troca de Mangueira e Registro de Gás', category: 'Instalação', fixed_price: 50.00, platform_fee: 12.00, icon: 'Flame', is_active: true },
+  { name: 'Instalação de Máquina de Lavar', category: 'Instalação', fixed_price: 80.00, platform_fee: 15.00, icon: 'WashingMachine', is_active: true },
+  { name: 'Troca de Mangueira e Registro de Gás', category: 'Instalação', fixed_price: 60.00, platform_fee: 10.00, icon: 'Flame', is_active: true },
 ]
 
 async function runSeed() {

@@ -7,11 +7,11 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createServiceClient()
 
-    const body: CreateCallPayload & { client_id?: string } = await request.json()
-    const { service_id, client_address, client_lat, client_lng } = body
+    const body: CreateCallPayload & { client_id?: string; neighborhood?: string } = await request.json()
+    const { service_id, client_address, client_lat, client_lng, neighborhood } = body
 
-    if (!service_id || !client_address) {
-      return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 })
+    if (!service_id || !client_address || client_address.trim().length < 8) {
+      return NextResponse.json({ error: 'Endereço incompleto. Forneça rua, número, bairro e ponto de referência.' }, { status: 400 })
     }
 
     // 1. Identifica e autentica o usuário
@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
         provider_cut: service.fixed_price - service.platform_fee,
         status: initialStatus,
         expires_at: expiresAt,
+        neighborhood: neighborhood || 'Setor Central',
         client_address,
         client_location: `SRID=4326;POINT(${lng} ${lat})`,
         accepted_at: null,
