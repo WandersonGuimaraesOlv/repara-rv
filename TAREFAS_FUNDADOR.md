@@ -26,13 +26,14 @@ Tarefas administrativas, fiscais e legais sob responsabilidade dos fundadores pa
 ---
 
 ## 3. Termos Legais & Compliance (Site e App)
-- [ ] **Redigir Termos de Uso da Plataforma:**
-  - Deixar explícito que o Repara RV é uma intermediadora de tecnologia e não empregadora direta.
-  - Regra de peças: deixar documentado que o cliente é responsável pelo fornecimento de materiais.
-  - Regras de cancelamento e no-show (cliente ausente por mais de 10 min).
-- [ ] **Redigir Política de Privacidade (LGPD):**
-  - Justificativa do uso da geolocalização e retenção de logs de chamados.
-  - Canal para o usuário solicitar exclusão definitiva de dados.
+- [x] **Redigir e Publicar Termos de Uso da Plataforma:**
+  - Ativo em produção: [`https://repararv.com/termos`](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/app/termos/page.tsx)
+  - Regra de peças explícita (mão de obra inclusa, peças novas pelo cliente).
+  - Regras de cancelamento, no-show, garantia de 7 dias e foro de Rio Verde (GO).
+- [x] **Redigir e Publicar Política de Privacidade (LGPD):**
+  - Ativo em produção: [`https://repararv.com/privacidade`](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/app/privacidade/page.tsx)
+  - Justificativa do uso da geolocalização e canal de exclusão de dados.
+  - Requisito obrigatório cumprido para aprovação do Meta Ads e WhatsApp Business API.
 - [ ] **Acordo de Sócios & Contrato da Agência:**
   - Formalizar o percentual de 15% da agência de marketing com cláusula de Vesting atrelada a entregas (vídeo institucional 2D + ativação dos primeiros prestadores).
 
@@ -50,8 +51,8 @@ Tarefas administrativas, fiscais e legais sob responsabilidade dos fundadores pa
 ---
 
 ## 5. Lançamento e Presença Física
-- [ ] **Inserir Dados Oficiais no Rodapé:**
-  - Inserir no PWA: Razão Social, CNPJ, endereço comercial da sede e e-mail/WhatsApp do SAC.
+- [x] **Inserir Dados Oficiais no Rodapé:**
+  - Inserido no PWA: Razão Social, CNAE 7490-1/04, sede em Rio Verde (GO), links de Termos de Uso e Privacidade.
 ---
 
 ## 6. Infraestrutura de Mensageria (WhatsApp)
@@ -59,16 +60,17 @@ Tarefas administrativas, fiscais e legais sob responsabilidade dos fundadores pa
   - Adquirir e ativar chip exclusivo para o Repara RV.
   - Conectar instância da Evolution API ou Z-API para disparo das notificações da fila prioritária (`notify-queue`) e confirmações pós-aceite (`notify-accepted`).
   - Configurar as variáveis no Cloudflare / `.dev.vars`:
-    - `WHATSAPP_WEBHOOK_URL` ou `PROVIDER_ALERT_WEBHOOK_URL`
-    - `CLIENT_ALERT_WEBHOOK_URL`
+    - `WHATSAPP_API_URL`
+    - `WHATSAPP_API_KEY`
   - Validar entrega real do deep link no celular do prestador: `https://repararv.com/painel?claim=ID`.
 
 ---
 
 ## 7. Produção Audiovisual & Lançamento de Tráfego Pago
-- [ ] **Fechar Produção do Vídeo Institucional 9:16 (60 segundos):**
-  - Contratar/aprovar entrega do animador com o roteiro aprovado no enquadramento vertical (Stories/Reels).
-  - Ter o arquivo final exportado em alta definição para subir os criativos das campanhas locais no Instagram/Facebook Ads direcionando para `https://repararv.com`.
+- [x] **Fechar Produção do Vídeo Institucional 9:16 (60 segundos):**
+  - Roteiro segundo a segundo, locução, visual e estratégia no Meta Ads prontos em [`ROTEIRO_VIDEO_9_16_META_ADS.md`](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/ROTEIRO_VIDEO_9_16_META_ADS.md).
+- [ ] **Subir os Criativos no Meta Ads:**
+  - Ativar campanha com geolocalização estrita para Rio Verde (GO) após ter no mínimo 8 prestadores online.
 
 ---
 
