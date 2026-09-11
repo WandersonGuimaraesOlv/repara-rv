@@ -73,11 +73,13 @@ Tarefas administrativas, fiscais e legais sob responsabilidade dos fundadores pa
 ---
 
 ## 8. Formação da Base Reserva de Prestadores (Pré-Anúncios)
+> 📘 **Playbook Completo de Abordagem e Roteiro de Balcão:** Consulte [`ROTEIRO_RECRUTAMENTO_TECNICOS_RV.md`](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/ROTEIRO_RECRUTAMENTO_TECNICOS_RV.md) para os scripts de 90 segundos, quebra de objeções e checklist presencial de 5 minutos no celular do prestador.
+
 - [ ] **Meta de Homologação Pré-Campanha (Mínimo 8 a 10 Profissionais Ativos):**
-  - 2 Eletricistas
-  - 2 Encanadores
-  - 2 Montadores de Móveis
+  - 3 Eletricistas
+  - 3 Encanadores / Desentupidores
   - 2 Chaveiros
+  - 2 Montadores de Móveis
   - Garantir que todos concluíram o fluxo OAuth do Mercado Pago (para não quebrar o split Pix automático).
   - Realizar chamada de alinhamento com cada um sobre o funcionamento do painel e o som de alerta contínuo.
 
