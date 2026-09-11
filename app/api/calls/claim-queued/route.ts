@@ -49,21 +49,48 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Executar RPC de atribuição atômica no PostgreSQL
-    const { data: updatedCall, error: claimError } = await supabaseAdmin
+    // 2. Executar atribuição atômica no PostgreSQL (Quem gravar primeiro, ganha)
+    // Só atualiza se o status AINDA FOR 'queued'
+    let updatedCall: any[] | null = null;
+    const { data: rpcData, error: claimError } = await supabaseAdmin
       .rpc('claim_queued_call', {
         p_call_id: callId,
         p_provider_id: providerId,
       });
 
-    if (claimError) {
-      console.error('[claim-queued] Erro ao executar RPC claim_queued_call:', claimError);
-      return NextResponse.json({ error: claimError.message }, { status: 500 });
+    if (!claimError && rpcData) {
+      updatedCall = rpcData;
+    } else {
+      // Fallback para instrução SQL atômica direta via PostgREST
+      const nowIso = new Date().toISOString();
+      const { data: directData, error: directError } = await supabaseAdmin
+        .from('service_calls')
+        .update({
+          provider_id: providerId,
+          status: 'accepted',
+          accepted_at: nowIso,
+          updated_at: nowIso,
+        })
+        .eq('id', callId)
+        .eq('status', 'queued')
+        .select();
+
+      if (directError) {
+        console.error('[claim-queued] Erro ao atualizar atomicamente chamado:', directError);
+        return NextResponse.json({ error: directError.message }, { status: 500 });
+      }
+      updatedCall = directData;
     }
 
+    // Se 0 linhas afetadas, outro técnico clicou 1 milissegundo antes
     if (!updatedCall || updatedCall.length === 0) {
       return NextResponse.json(
-        { error: 'Este chamado já foi assumido por outro profissional ou expirou' }, 
+        {
+          success: false,
+          code: 'CALL_ALREADY_CLAIMED',
+          message: 'Este chamado já foi assumido por outro profissional parceiro.',
+          error: 'Este chamado já foi assumido por outro profissional parceiro.',
+        },
         { status: 409 }
       );
     }

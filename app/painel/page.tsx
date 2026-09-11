@@ -337,12 +337,31 @@ export default function PainelPage() {
     loadQueued()
     const interval = setInterval(loadQueued, 4000)
 
+    // Escuta alterações na tabela de chamados via Supabase Realtime
     const channel = supabase
-      .channel('queued-calls-realtime')
+      .channel('service_calls_queue')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'service_calls', filter: 'status=eq.queued' },
-        () => loadQueued()
+        { event: '*', schema: 'public', table: 'service_calls' },
+        (payload: any) => {
+          if (payload.eventType === 'UPDATE') {
+            // Se o chamado que estava na fila mudou de status (ex: 'accepted'),
+            // remove o card da tela de todos os outros prestadores na hora (<300ms)
+            if (payload.new && payload.new.status !== 'queued') {
+              setQueuedCalls(prev => prev.filter(c => c.id !== payload.new.id))
+            } else if (payload.new && payload.new.status === 'queued') {
+              loadQueued()
+            }
+          } else if (payload.eventType === 'INSERT') {
+            if (payload.new && payload.new.status === 'queued') {
+              loadQueued()
+            }
+          } else if (payload.eventType === 'DELETE') {
+            if (payload.old && payload.old.id) {
+              setQueuedCalls(prev => prev.filter(c => c.id !== payload.old.id))
+            }
+          }
+        }
       )
       .subscribe()
 
@@ -370,8 +389,15 @@ export default function PainelPage() {
       if (res.ok) {
         toast.success('Chamado assumido com sucesso! Abrindo atendimento... 🚗⚡')
         router.push(`/chamado/${callId}`)
+      } else if (res.status === 409 || data.code === 'CALL_ALREADY_CLAIMED') {
+        // Alerta amigável e acolhedor para o Prestador B (que perdeu no milissegundo)
+        toast.info('⚡ Chamado já assumido!', {
+          description: 'Outro prestador foi mais rápido e pegou este serviço. Continue online no painel para receber os próximos chamados.',
+          duration: 6000,
+        })
+        setQueuedCalls(prev => prev.filter(c => c.id !== callId))
       } else {
-        toast.error(data.error || 'Não foi possível assumir este chamado.')
+        toast.error(data.message || data.error || 'Não foi possível assumir este chamado.')
         setQueuedCalls(prev => prev.filter(c => c.id !== callId))
       }
     } catch {
