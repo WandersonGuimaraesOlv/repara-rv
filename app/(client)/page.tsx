@@ -865,11 +865,19 @@ export default function TriiderClientHomePage() {
               <p className="text-xs text-slate-400 leading-relaxed">
                 A plataforma sob demanda de serviços residenciais de Rio Verde (GO). Conectando moradores a prestadores qualificados com preço fixo e transparência.
               </p>
-              <div className="pt-2 text-[11px] text-slate-500 border-t border-slate-800 space-y-0.5">
+              <div className="pt-2 text-[11px] text-slate-500 border-t border-slate-800 space-y-1">
                 <p className="font-semibold text-slate-400">Repara RV Tecnologia e Intermediação Ltda</p>
                 <p>CNAE 7490-1/04 • Sede em Rio Verde - GO • CEP 75901-000</p>
-                <p>SAC: sac@repararv.com • Conforme Decreto Federal 7.962/13</p>
-                <p className="pt-1">© {new Date().getFullYear()} Repara RV • Todos os direitos reservados.</p>
+                <div className="flex items-center gap-3 pt-1 text-slate-400">
+                  <Link href="/termos" className="hover:text-white underline transition-colors">
+                    Termos de Uso
+                  </Link>
+                  <span>•</span>
+                  <Link href="/privacidade" className="hover:text-white underline transition-colors">
+                    Privacidade (LGPD)
+                  </Link>
+                </div>
+                <p className="pt-0.5">© {new Date().getFullYear()} Repara RV • Todos os direitos reservados.</p>
               </div>
             </div>
 
@@ -1051,6 +1059,23 @@ export default function TriiderClientHomePage() {
                 <ClipboardList size={18} className="text-slate-600" />
                 <span>Meus Chamados & Histórico</span>
               </button>
+              <div className="flex items-center justify-center gap-4 py-2 text-[11px] text-slate-500 border-t border-slate-100 mt-2">
+                <Link
+                  href="/termos"
+                  onClick={() => setIsProfileMenuOpen(false)}
+                  className="hover:text-slate-800 underline transition-colors"
+                >
+                  Termos de Uso
+                </Link>
+                <span>•</span>
+                <Link
+                  href="/privacidade"
+                  onClick={() => setIsProfileMenuOpen(false)}
+                  className="hover:text-slate-800 underline transition-colors"
+                >
+                  Privacidade (LGPD)
+                </Link>
+              </div>
             </div>
 
             <button
