@@ -26,10 +26,11 @@ Tarefas administrativas, fiscais e legais sob responsabilidade dos fundadores pa
   - Salvar as configurações.
 - [x] **Obter Credenciais de Produção:**
   - `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_CLIENT_ID` e `MERCADOPAGO_CLIENT_SECRET` configurados no servidor.
-- [x] **Fluxo de Split Automático do Prestador Concluído:**
-  - Prestadores conectam suas subcontas pelo Painel (`/painel`) com 1 clique via OAuth do Mercado Pago.
-  - Ao pagar Pix ou Cartão, o split é executado em tempo real (`application_fee: R$ 12,00` retido para Repara RV e saldo creditado ao técnico).
-  - Fallback resiliente ativo para quem ainda não conectou o Mercado Pago.
+- [x] **Fluxo de Split Automático e Blindagem Fiscal Concluídos:**
+  - Prestadores conectam suas subcontas pelo Painel (`/painel`) via OAuth oficial do Mercado Pago.
+  - **Trava de Ativação Mandatória:** Prestadores sem subconta vinculada ficam bloqueados de ficar online e são ignorados pelo radar PostGIS (`find_nearest_provider`).
+  - **Proteção Fiscal:** Eliminado qualquer fallback de retenção de 100% na conta master, blindando o CNPJ do Repara RV contra bitributação sobre os R$ 75,00 integrais (tributa-se estritamente os R$ 12,00 de intermediação).
+  - Ao pagar Pix ou Cartão, o split é executado de ponta a ponta (`application_fee: R$ 12,00` retido para Repara RV e R$ 63,00 creditados diretamente ao técnico).
 
 ---
 

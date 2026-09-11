@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Profile, ServiceCall } from '@/lib/types'
 import { CallAlertModal } from '@/components/call-alert-modal'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { Power, Loader2, MapPin, CreditCard, Zap } from 'lucide-react'
+import { Power, Loader2, MapPin, CreditCard, Zap, Lock, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { PanelHeader } from '@/components/provider/panel-header'
 
@@ -50,12 +50,23 @@ export default function PainelPage() {
               .select('is_online, pix_key, recipient_gateway_id')
               .eq('provider_id', user.id)
               .maybeSingle()
-            setIsOnline(status?.is_online ?? false)
+
+            const hasMp = Boolean(status?.recipient_gateway_id)
+            setRecipientGatewayId(status?.recipient_gateway_id ?? null)
+
+            // Regra estrita: prestador sem subconta conectada NÃO pode estar online
+            if (!hasMp && status?.is_online) {
+              setIsOnline(false)
+              await supabase
+                .from('provider_status')
+                .update({ is_online: false, updated_at: new Date().toISOString() })
+                .eq('provider_id', user.id)
+            } else {
+              setIsOnline(hasMp && Boolean(status?.is_online))
+            }
+
             if (status?.pix_key) {
               setProviderPixKey(status.pix_key)
-            }
-            if (status?.recipient_gateway_id) {
-              setRecipientGatewayId(status.recipient_gateway_id)
             }
 
             const today = new Date().toISOString().split('T')[0]
@@ -129,7 +140,8 @@ export default function PainelPage() {
       const res = await fetch('/api/mercadopago/oauth/disconnect', { method: 'POST' })
       if (res.ok) {
         setRecipientGatewayId(null)
-        toast.success('Conta Mercado Pago desconectada.')
+        setIsOnline(false)
+        toast.success('Conta Mercado Pago desconectada. Você foi colocado offline.')
       } else {
         toast.error('Erro ao desconectar.')
       }
@@ -151,9 +163,15 @@ export default function PainelPage() {
       .then(() => {})
   }, [lat, lng, isOnline, profile, supabase])
 
-  // Toggle online/offline com obtenção ativa de GPS e fallback de segurança
+  // Toggle online/offline com obtenção ativa de GPS e trava obrigatória do Mercado Pago
   const handleToggleOnline = async () => {
     if (!profile) return
+
+    if (!recipientGatewayId) {
+      toast.error('Para receber chamados e garantir seus repasses automáticos via Pix, conecte sua conta do Mercado Pago acima.')
+      return
+    }
+
     setTogglingOnline(true)
 
     const newOnline = !isOnline
@@ -421,6 +439,19 @@ export default function PainelPage() {
         </div>
       )}
 
+      {/* Alerta de Obrigatoriedade Mercado Pago */}
+      {!recipientGatewayId && (
+        <div className="w-full max-w-md mx-auto mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-start gap-3 animate-slide-up shadow-lg">
+          <AlertTriangle size={20} className="text-amber-400 shrink-0 mt-0.5" />
+          <div className="text-xs leading-relaxed">
+            <strong className="block font-bold text-amber-200 text-sm mb-1">
+              Vínculo do Mercado Pago Obrigatório
+            </strong>
+            Para receber chamados e garantir seus repasses automáticos via Pix, conecte sua conta do Mercado Pago acima.
+          </div>
+        </div>
+      )}
+
       {/* Toggle Online/Offline */}
       <div className="flex-1 flex flex-col items-center justify-center py-8">
         <div className="relative mb-8">
@@ -430,34 +461,65 @@ export default function PainelPage() {
           <button
             id="btn-toggle-online"
             onClick={handleToggleOnline}
-            disabled={togglingOnline}
-            className="relative z-10 w-32 h-32 rounded-full flex flex-col items-center justify-center gap-2 transition-all active:scale-95"
+            disabled={togglingOnline || !recipientGatewayId}
+            aria-disabled={!recipientGatewayId}
+            className={`relative z-10 w-32 h-32 rounded-full flex flex-col items-center justify-center gap-2 transition-all ${
+              !recipientGatewayId
+                ? 'opacity-60 cursor-not-allowed'
+                : 'active:scale-95 cursor-pointer'
+            }`}
             style={{
-              background: isOnline
+              background: !recipientGatewayId
+                ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))'
+                : isOnline
                 ? 'linear-gradient(135deg, #10B981, #059669)'
                 : 'linear-gradient(135deg, var(--color-surface-alt), var(--color-surface))',
-              border: `3px solid ${isOnline ? '#10B981' : 'var(--color-border)'}`,
-              boxShadow: isOnline ? '0 0 32px rgba(16,185,129,0.4)' : 'var(--shadow-card)',
+              border: `3px solid ${
+                !recipientGatewayId
+                  ? '#F59E0B'
+                  : isOnline
+                  ? '#10B981'
+                  : 'var(--color-border)'
+              }`,
+              boxShadow: !recipientGatewayId
+                ? '0 0 16px rgba(245, 158, 11, 0.2)'
+                : isOnline
+                ? '0 0 32px rgba(16,185,129,0.4)'
+                : 'var(--shadow-card)',
             }}
           >
             {togglingOnline ? (
               <Loader2 size={32} className="animate-spin" color="white" />
+            ) : !recipientGatewayId ? (
+              <Lock size={34} className="text-amber-400" />
             ) : (
               <Power size={36} color={isOnline ? 'white' : 'var(--color-text-subtle)'} />
             )}
             <span
               className="text-xs font-bold"
-              style={{ color: isOnline ? 'white' : 'var(--color-text-subtle)' }}
+              style={{
+                color: !recipientGatewayId
+                  ? '#FCD34D'
+                  : isOnline
+                  ? 'white'
+                  : 'var(--color-text-subtle)',
+              }}
             >
-              {isOnline ? 'ONLINE' : 'OFFLINE'}
+              {!recipientGatewayId ? 'BLOQUEADO' : isOnline ? 'ONLINE' : 'OFFLINE'}
             </span>
           </button>
         </div>
 
-        <p className="text-center text-sm" style={{ color: 'var(--color-text-muted)' }}>
-          {isOnline
-            ? '🟢 Você está visível para clientes próximos.\nMantendo GPS ativo...'
-            : 'Toque para ficar disponível\ne receber chamados.'}
+        <p className="text-center text-sm max-w-xs" style={{ color: 'var(--color-text-muted)' }}>
+          {!recipientGatewayId ? (
+            <span className="text-amber-400 text-xs font-semibold block">
+              🔒 Conecte sua conta do Mercado Pago acima para desbloquear sua disponibilidade.
+            </span>
+          ) : isOnline ? (
+            '🟢 Você está visível para clientes próximos.\nMantendo GPS ativo...'
+          ) : (
+            'Toque para ficar disponível\ne receber chamados.'
+          )}
         </p>
 
         {lat && lng && isOnline && (

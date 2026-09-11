@@ -12,11 +12,12 @@ export async function POST() {
 
     const supabaseAdmin = await createServiceClient()
 
-    // 1. Limpa recipient_gateway_id em provider_status
+    // 1. Limpa recipient_gateway_id em provider_status e força status offline
     await supabaseAdmin
       .from('provider_status')
       .update({
         recipient_gateway_id: null,
+        is_online: false,
         updated_at: new Date().toISOString(),
       })
       .eq('provider_id', user.id)

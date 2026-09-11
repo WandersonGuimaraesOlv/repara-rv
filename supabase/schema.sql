@@ -257,6 +257,8 @@ BEGIN
   SELECT ps.provider_id INTO nearest_provider_id
   FROM provider_status ps
   WHERE ps.is_online = TRUE
+    AND ps.recipient_gateway_id IS NOT NULL
+    AND TRIM(ps.recipient_gateway_id) <> ''
     AND ps.current_location IS NOT NULL
     AND NOT (ps.provider_id = ANY(excluded_ids))
     AND NOT EXISTS (
@@ -270,6 +272,23 @@ BEGIN
   RETURN nearest_provider_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger para garantir que prestador só fica online se tiver Mercado Pago conectado
+CREATE OR REPLACE FUNCTION check_provider_online_gateway()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.is_online = TRUE AND (NEW.recipient_gateway_id IS NULL OR TRIM(NEW.recipient_gateway_id) = '') THEN
+    RAISE EXCEPTION 'Para ficar online e receber chamados, o prestador precisa conectar sua conta do Mercado Pago.';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_check_provider_online_gateway ON provider_status;
+CREATE TRIGGER trg_check_provider_online_gateway
+  BEFORE INSERT OR UPDATE OF is_online, recipient_gateway_id ON provider_status
+  FOR EACH ROW
+  EXECUTE FUNCTION check_provider_online_gateway();
 
 -- ============================================================
 -- REALTIME: Habilitar tabelas

@@ -59,21 +59,23 @@ export async function POST(request: NextRequest) {
     const platformFee = Number(call.platform_fee || 12)
 
     if (call.provider_id) {
-      try {
-        const { data: gatewayAcc } = await supabase
-          .from('provider_gateway_accounts')
-          .select('mp_access_token, mp_user_id')
-          .eq('provider_id', call.provider_id)
-          .maybeSingle()
+      const { data: gatewayAcc, error: gwErr } = await supabase
+        .from('provider_gateway_accounts')
+        .select('mp_access_token, mp_user_id')
+        .eq('provider_id', call.provider_id)
+        .maybeSingle()
 
-        if (gatewayAcc?.mp_access_token) {
-          activeAccessToken = gatewayAcc.mp_access_token
-          isSplitActive = true
-          console.log(`[Split Mercado Pago] Ativado para prestador ${call.provider_id} (MP User: ${gatewayAcc.mp_user_id}). Fee: R$ ${platformFee}`)
-        }
-      } catch (err) {
-        console.warn('[Split Mercado Pago] provider_gateway_accounts não disponível, usando token master:', err)
+      if (gwErr || !gatewayAcc?.mp_access_token) {
+        console.error(`[Split Mercado Pago] Bloqueio de segurança: Prestador ${call.provider_id} não possui subconta vinculada via OAuth. Cobrança barrada para evitar retenção indevida e bitributação no CNPJ.`)
+        return NextResponse.json(
+          { error: 'O prestador deste chamado ainda não concluiu a vinculação da conta Mercado Pago. Por segurança fiscal, o pagamento foi pausado.' },
+          { status: 422 }
+        )
       }
+
+      activeAccessToken = gatewayAcc.mp_access_token
+      isSplitActive = true
+      console.log(`[Split Mercado Pago] Ativado para prestador ${call.provider_id} (MP User: ${gatewayAcc.mp_user_id}). Fee retida: R$ ${platformFee}`)
     }
 
     const clientName = (call.client as { full_name?: string })?.full_name || 'Cliente Repara RV'
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
     const lastName = nameParts.slice(1).join(' ') || 'ReparaRV'
     const payerEmail = payer_email || 'financeiro@repararv.com'
 
-    // 3. Gera Cobrança Pix Direta no Mercado Pago (com application_fee se split ativo)
+    // 3. Gera Cobrança Pix Direta no Mercado Pago (com application_fee obrigatório se split ativo)
     let qrCode = call.pix_copy_paste || null
     let qrCodeBase64 = call.pix_qr_code || null
     let paymentId = call.pix_payment_id || null
@@ -105,7 +107,7 @@ export async function POST(request: NextRequest) {
           pixPayload.application_fee = platformFee
         }
 
-        let mpPixRes = await fetch('https://api.mercadopago.com/v1/payments', {
+        const mpPixRes = await fetch('https://api.mercadopago.com/v1/payments', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -115,21 +117,6 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify(pixPayload),
         })
 
-        // Fallback resiliente: se a subconta falhar, tenta com a conta da plataforma
-        if (!mpPixRes.ok && isSplitActive) {
-          console.warn('[Split Pix] Falha com subconta do prestador. Tentando conta master...')
-          delete pixPayload.application_fee
-          mpPixRes = await fetch('https://api.mercadopago.com/v1/payments', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${accessToken}`,
-              'X-Idempotency-Key': `repararv-pix-${call_id}-${Date.now()}-fallback`,
-            },
-            body: JSON.stringify(pixPayload),
-          })
-        }
-
         if (mpPixRes.ok) {
           const pixData = await mpPixRes.json()
           qrCode = pixData?.point_of_interaction?.transaction_data?.qr_code || null
@@ -137,7 +124,7 @@ export async function POST(request: NextRequest) {
           paymentId = pixData?.id ? String(pixData.id) : null
         } else {
           const pixErr = await mpPixRes.json().catch(() => ({}))
-          console.error('[API /api/pix/create] Erro MP Pix:', pixErr)
+          console.error('[API /api/pix/create] Erro MP Pix com split:', pixErr)
         }
       } catch (err) {
         console.error('[API /api/pix/create] Falha ao chamar MP Pix:', err)
@@ -172,7 +159,7 @@ export async function POST(request: NextRequest) {
           prefPayload.marketplace_fee = platformFee
         }
 
-        let mpPrefRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
+        const mpPrefRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -181,26 +168,12 @@ export async function POST(request: NextRequest) {
           body: JSON.stringify(prefPayload),
         })
 
-        // Fallback resiliente para Cartão: se subconta falhar, tenta com conta master
-        if (!mpPrefRes.ok && isSplitActive) {
-          console.warn('[Split Cartão] Falha com subconta do prestador. Tentando conta master...')
-          delete prefPayload.marketplace_fee
-          mpPrefRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify(prefPayload),
-          })
-        }
-
         if (mpPrefRes.ok) {
           const prefData = await mpPrefRes.json()
           checkoutUrl = prefData.init_point || null
         } else {
           const prefErr = await mpPrefRes.json().catch(() => ({}))
-          console.error('[API /api/pix/create] Erro MP Preference:', prefErr)
+          console.error('[API /api/pix/create] Erro MP Preference com split:', prefErr)
         }
       } catch (err) {
         console.error('[API /api/pix/create] Falha ao criar MP Preference:', err)

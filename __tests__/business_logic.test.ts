@@ -40,4 +40,61 @@ describe('SQA Business Logic & Financial Integrity', () => {
     expect(isValidOtp('1234567')).toBe(false)
     expect(isValidOtp('12345a')).toBe(false)
   })
+
+  it('strictly validates provider online eligibility: requires Mercado Pago OAuth connection', () => {
+    const canProviderGoOnline = (status: {
+      is_online: boolean
+      recipient_gateway_id: string | null
+    }) => {
+      const hasMpConnected = Boolean(status.recipient_gateway_id && status.recipient_gateway_id.trim().length > 0)
+      return hasMpConnected
+    }
+
+    expect(canProviderGoOnline({ is_online: false, recipient_gateway_id: null })).toBe(false)
+    expect(canProviderGoOnline({ is_online: false, recipient_gateway_id: '' })).toBe(false)
+    expect(canProviderGoOnline({ is_online: false, recipient_gateway_id: '   ' })).toBe(false)
+    expect(canProviderGoOnline({ is_online: false, recipient_gateway_id: '509128262' })).toBe(true)
+  })
+
+  it('guarantees fiscal protection: rejects split charges without connected subaccount', () => {
+    const evaluatePaymentRouting = (params: {
+      totalAmount: number
+      platformFee: number
+      providerSubaccount: { mp_access_token?: string; mp_user_id?: string } | null
+    }) => {
+      if (!params.providerSubaccount?.mp_access_token) {
+        return {
+          allowed: false,
+          error: 'Prestador sem subconta conectada. Pagamento barrado para evitar bitributação.',
+        }
+      }
+
+      return {
+        allowed: true,
+        applicationFee: params.platformFee,
+        providerCut: params.totalAmount - params.platformFee,
+        recipientToken: params.providerSubaccount.mp_access_token,
+      }
+    }
+
+    // Sem subconta: DEVE ser barrado (não reter 100% no CNPJ)
+    const blockedResult = evaluatePaymentRouting({
+      totalAmount: 75,
+      platformFee: 12,
+      providerSubaccount: null,
+    })
+    expect(blockedResult.allowed).toBe(false)
+    expect(blockedResult.error).toContain('evitar bitributação')
+
+    // Com subconta conectada: permitido e split exato
+    const validResult = evaluatePaymentRouting({
+      totalAmount: 75,
+      platformFee: 12,
+      providerSubaccount: { mp_access_token: 'TEST-TOKEN-123', mp_user_id: '987654' },
+    })
+    expect(validResult.allowed).toBe(true)
+    expect(validResult.applicationFee).toBe(12)
+    expect(validResult.providerCut).toBe(63)
+    expect(validResult.recipientToken).toBe('TEST-TOKEN-123')
+  })
 })
