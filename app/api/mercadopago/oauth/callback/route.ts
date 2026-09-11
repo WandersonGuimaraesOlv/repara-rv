@@ -82,14 +82,26 @@ export async function GET(request: NextRequest) {
       console.warn('[OAuth Callback] provider_gateway_accounts pendente de migração:', dbErr)
     }
 
-    // 3. Atualiza recipient_gateway_id na tabela provider_status
+    // 3. Atualiza ou insere recipient_gateway_id na tabela provider_status
     await supabaseAdmin
       .from('provider_status')
-      .update({
+      .upsert({
+        provider_id: providerId,
         recipient_gateway_id: String(tokenData.user_id),
         updated_at: new Date().toISOString(),
-      })
-      .eq('provider_id', providerId)
+      }, { onConflict: 'provider_id' })
+
+    // 4. Marca flag em profiles de forma defensiva
+    try {
+      await supabaseAdmin
+        .from('profiles')
+        .update({
+          mercado_pago_connected: true,
+        })
+        .eq('id', providerId)
+    } catch {
+      // Silencioso caso a coluna mercado_pago_connected ainda não exista no schema
+    }
 
     console.log(`[OAuth Callback] Prestador ${providerId} conectou com sucesso conta MP ${tokenData.user_id}`)
 
