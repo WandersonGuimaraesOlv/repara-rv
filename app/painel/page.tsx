@@ -38,23 +38,67 @@ export default function PainelPage() {
   useEffect(() => {
     const load = async () => {
       try {
+        let authUser = null
         const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data: prof } = await supabase
+        authUser = user
+        if (!authUser) {
+          const { data: { session } } = await supabase.auth.getSession()
+          authUser = session?.user ?? null
+        }
+
+        if (authUser) {
+          let { data: prof } = await supabase
             .from('profiles')
             .select('*')
-            .eq('id', user.id)
-            .single()
+            .eq('id', authUser.id)
+            .maybeSingle()
 
-          if (prof && prof.role === 'provider') {
+          // Se não encontrou perfil ou se o usuário veio explicitamente para o painel do prestador
+          if (!prof) {
+            const { data: createdProf } = await supabase
+              .from('profiles')
+              .upsert({
+                id: authUser.id,
+                full_name: authUser.user_metadata?.full_name || 'Profissional Parceiro',
+                phone: authUser.phone || authUser.user_metadata?.phone || '',
+                role: 'provider',
+              })
+              .select('*')
+              .maybeSingle()
+            if (createdProf) prof = createdProf
+          } else if (prof.role === 'client') {
+            // Habilita role de prestador para acesso imediato e transparente
+            await supabase
+              .from('profiles')
+              .update({ role: 'provider' })
+              .eq('id', authUser.id)
+            prof.role = 'provider'
+          }
+
+          if (prof && (prof.role === 'provider' || prof.role === 'admin')) {
             setProfile(prof as Profile)
-            const { data: status } = await supabase
+            let { data: status } = await supabase
               .from('provider_status')
               .select('is_online, pix_key, recipient_gateway_id')
-              .eq('provider_id', user.id)
+              .eq('provider_id', authUser.id)
               .maybeSingle()
 
-            const hasMp = Boolean(status?.recipient_gateway_id)
+            if (!status) {
+              await supabase
+                .from('provider_status')
+                .upsert({
+                  provider_id: authUser.id,
+                  is_online: false,
+                  pix_key: prof.pix_key || prof.phone || '',
+                })
+              status = {
+                is_online: false,
+                pix_key: prof.pix_key || prof.phone || '',
+                recipient_gateway_id: null
+              }
+            }
+
+            const hasMp = Boolean(status?.recipient_gateway_id || prof.mercado_pago_connected)
             setRecipientGatewayId(status?.recipient_gateway_id ?? null)
 
             // Regra estrita: prestador sem subconta conectada NÃO pode estar online
@@ -63,7 +107,7 @@ export default function PainelPage() {
               await supabase
                 .from('provider_status')
                 .update({ is_online: false, updated_at: new Date().toISOString() })
-                .eq('provider_id', user.id)
+                .eq('provider_id', authUser.id)
             } else {
               setIsOnline(hasMp && Boolean(status?.is_online))
             }
@@ -76,7 +120,7 @@ export default function PainelPage() {
             const { data: calls } = await supabase
               .from('service_calls')
               .select('provider_cut, payment_status')
-              .eq('provider_id', user.id)
+              .eq('provider_id', authUser.id)
               .eq('status', 'completed')
               .gte('completed_at', today)
 
@@ -85,12 +129,6 @@ export default function PainelPage() {
 
             setTotalToday(paidCalls.reduce((sum, c) => sum + (c.provider_cut ?? 0), 0))
             setPendingToday(pendingCalls.length)
-            return
-          }
-
-          if (prof && prof.role === 'client') {
-            toast.info('Cadastre sua chave Pix para começar a receber chamados como prestador!')
-            router.replace('/onboarding?role=provider')
             return
           }
         }

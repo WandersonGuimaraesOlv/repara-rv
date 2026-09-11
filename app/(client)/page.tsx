@@ -36,7 +36,10 @@ import {
   Key,
   WashingMachine,
   Flame,
-  AlertCircle
+  AlertCircle,
+  Shield,
+  FileText,
+  Loader2
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { DEFAULT_SERVICES } from '@/lib/catalog'
@@ -115,6 +118,9 @@ export default function TriiderClientHomePage() {
   } | null>(null)
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState<boolean>(false)
   const profileMenuRef = useRef<HTMLDivElement>(null)
+  const [isOrdersModalOpen, setIsOrdersModalOpen] = useState<boolean>(false)
+  const [userOrders, setUserOrders] = useState<any[]>([])
+  const [loadingOrders, setLoadingOrders] = useState<boolean>(false)
 
   // Fecha o menu de perfil ao clicar fora (sem precisar de div backdrop bloqueante)
   useEffect(() => {
@@ -192,7 +198,7 @@ export default function TriiderClientHomePage() {
     }
   }, [])
 
-  // Ação para navegar para os pedidos reais do usuário
+  // Ação para abrir o histórico completo de chamados do usuário
   const handleMyOrders = async () => {
     setIsProfileMenuOpen(false)
     if (!currentUser) {
@@ -200,27 +206,39 @@ export default function TriiderClientHomePage() {
       return
     }
 
+    setIsOrdersModalOpen(true)
+    setLoadingOrders(true)
+
     try {
       const supabase = createClient()
-      const { data: latestCall } = await supabase
+      const { data: calls, error } = await supabase
         .from('service_calls')
-        .select('id, status')
-        .eq('client_id', currentUser.id)
+        .select(`
+          id, 
+          status, 
+          created_at, 
+          total_price, 
+          provider_cut, 
+          neighborhood, 
+          payment_status, 
+          client_id, 
+          provider_id,
+          service:quick_services(name)
+        `)
+        .or(`client_id.eq.${currentUser.id},provider_id.eq.${currentUser.id}`)
         .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
 
-      if (latestCall) {
-        router.push(`/acompanhar/${latestCall.id}`)
+      if (error) {
+        console.error('Erro ao buscar pedidos:', error)
+        toast.error('Não foi possível carregar seu histórico de chamados.')
       } else {
-        toast.info('Você não possui chamados em andamento no momento. Escolha um serviço abaixo para chamar um profissional!')
-        const el = document.getElementById('servicos')
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth' })
-        }
+        setUserOrders(calls || [])
       }
-    } catch {
+    } catch (err) {
+      console.error('Erro inesperado:', err)
       toast.error('Erro ao consultar chamados. Tente novamente.')
+    } finally {
+      setLoadingOrders(false)
     }
   }
 
@@ -387,30 +405,30 @@ export default function TriiderClientHomePage() {
                           </p>
                         )}
                         <span className="inline-block mt-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-orange-100 text-orange-700">
-                          {currentUser.role === 'provider' ? 'Prestador Autônomo' : 'Cliente / Morador'}
+                          {currentUser.role === 'admin' ? 'Administrador' : currentUser.role === 'provider' ? 'Prestador Autônomo' : 'Cliente / Morador'}
                         </span>
                       </div>
 
                       <div className="py-1">
-                        {currentUser.role === 'provider' ? (
+                        {currentUser.role === 'admin' && (
                           <Link
-                            href="/painel"
+                            href="/admin/dashboard"
                             onClick={() => setIsProfileMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-orange-600 hover:bg-orange-50 transition-colors"
                           >
-                            <Bike size={15} className="text-orange-600" />
-                            <span>Painel do Prestador</span>
-                          </Link>
-                        ) : (
-                          <Link
-                            href="/onboarding?role=provider"
-                            onClick={() => setIsProfileMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
-                          >
-                            <Bike size={15} className="text-orange-600" />
-                            <span>Quero ser Prestador</span>
+                            <Shield size={15} />
+                            <span>Torre de Controle Admin</span>
                           </Link>
                         )}
+
+                        <Link
+                          href="/painel"
+                          onClick={() => setIsProfileMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                        >
+                          <Bike size={15} className="text-orange-600" />
+                          <span>Acessar Painel do Prestador</span>
+                        </Link>
 
                         <button
                           type="button"
@@ -418,7 +436,7 @@ export default function TriiderClientHomePage() {
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition-colors cursor-pointer text-left"
                         >
                           <ClipboardList size={15} className="text-slate-500" />
-                          <span>Meus Pedidos / Chamados</span>
+                          <span>Meus Chamados & Histórico</span>
                         </button>
                       </div>
 
@@ -1028,33 +1046,33 @@ export default function TriiderClientHomePage() {
 
             <div className="space-y-2 mb-4">
               <span className="inline-block px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-orange-100 text-orange-700 mb-2">
-                {currentUser.role === 'provider' ? 'Prestador Autônomo' : 'Cliente / Morador'}
+                {currentUser.role === 'admin' ? 'Administrador' : currentUser.role === 'provider' ? 'Prestador Autônomo' : 'Cliente / Morador'}
               </span>
 
-              {currentUser.role === 'provider' ? (
+              {currentUser.role === 'admin' && (
                 <Link
-                  href="/painel"
+                  href="/admin/dashboard"
                   onClick={() => setIsProfileMenuOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-slate-800 font-semibold text-xs border border-slate-200 hover:bg-orange-50"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-orange-500 text-white font-bold text-xs shadow-sm hover:bg-orange-600 transition-colors"
                 >
-                  <Bike size={18} className="text-orange-600" />
-                  <span>Acessar Painel do Prestador</span>
-                </Link>
-              ) : (
-                <Link
-                  href="/onboarding?role=provider"
-                  onClick={() => setIsProfileMenuOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-slate-800 font-semibold text-xs border border-slate-200 hover:bg-orange-50"
-                >
-                  <Bike size={18} className="text-orange-600" />
-                  <span>Quero ser Prestador Parceiro</span>
+                  <Shield size={18} />
+                  <span>Torre de Controle (Admin)</span>
                 </Link>
               )}
+
+              <Link
+                href="/painel"
+                onClick={() => setIsProfileMenuOpen(false)}
+                className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-slate-800 font-semibold text-xs border border-slate-200 hover:bg-orange-50 transition-colors"
+              >
+                <Bike size={18} className="text-orange-600" />
+                <span>Acessar Painel do Prestador</span>
+              </Link>
 
               <button
                 type="button"
                 onClick={handleMyOrders}
-                className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-slate-800 font-semibold text-xs border border-slate-200 hover:bg-orange-50 cursor-pointer text-left"
+                className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-slate-800 font-semibold text-xs border border-slate-200 hover:bg-orange-50 cursor-pointer text-left transition-colors"
               >
                 <ClipboardList size={18} className="text-slate-600" />
                 <span>Meus Chamados & Histórico</span>
@@ -1163,6 +1181,172 @@ export default function TriiderClientHomePage() {
                   {selectedNeighborhood === bairro && <CheckCircle2 size={16} className="text-orange-600" />}
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ────────────────────────────────────────────────────────
+          MODAL DE MEUS CHAMADOS & HISTÓRICO COMPLETO
+          ──────────────────────────────────────────────────────── */}
+      {isOrdersModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
+          <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-slate-200 animate-in slide-in-from-bottom-6 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-orange-100 text-orange-600">
+                  <ClipboardList size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Meus Chamados & Histórico</h3>
+                  <p className="text-xs text-slate-500">Acompanhe seus pedidos ou veja comprovantes</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOrdersModalOpen(false)}
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Conteúdo Dinâmico */}
+            <div className="overflow-y-auto flex-1 pr-1 space-y-3">
+              {loadingOrders ? (
+                <div className="py-12 flex flex-col items-center justify-center text-center">
+                  <Loader2 size={36} className="animate-spin text-orange-600 mb-3" />
+                  <p className="text-sm font-semibold text-slate-700">Buscando seus chamados...</p>
+                  <p className="text-xs text-slate-400 mt-1">Conectando ao banco de dados</p>
+                </div>
+              ) : userOrders.length === 0 ? (
+                <div className="py-10 px-4 text-center flex flex-col items-center">
+                  <div className="w-16 h-16 rounded-full bg-orange-50 text-orange-400 flex items-center justify-center mb-3">
+                    <ClipboardList size={30} />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900">Nenhum chamado registrado</h4>
+                  <p className="text-xs text-slate-500 max-w-xs mt-1 mb-5">
+                    Você ainda não possui pedidos ou atendimentos na Repara RV. Escolha um serviço abaixo para chamar um profissional!
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOrdersModalOpen(false)
+                      const el = document.getElementById('servicos')
+                      if (el) el.scrollIntoView({ behavior: 'smooth' })
+                    }}
+                    className="px-5 py-2.5 bg-orange-600 text-white rounded-xl text-xs font-bold hover:bg-orange-700 transition-all shadow-sm shadow-orange-600/20"
+                  >
+                    Solicitar Serviço Agora
+                  </button>
+                </div>
+              ) : (
+                userOrders.map((order) => {
+                  const serviceName = Array.isArray(order.service)
+                    ? order.service[0]?.name
+                    : order.service?.name || 'Serviço Repara RV'
+                  const isActive = ['queued', 'searching', 'accepted', 'on_the_way', 'in_progress'].includes(order.status)
+                  const isCompleted = order.status === 'completed'
+                  const isCancelled = order.status === 'cancelled'
+
+                  const statusConfig = (() => {
+                    switch (order.status) {
+                      case 'queued':
+                        return { label: 'Na Fila de Espera', badgeClass: 'bg-amber-50 text-amber-800 border-amber-200', dotClass: 'bg-amber-500' }
+                      case 'searching':
+                        return { label: 'Buscando Técnico', badgeClass: 'bg-amber-50 text-amber-800 border-amber-200', dotClass: 'bg-amber-500 animate-ping' }
+                      case 'accepted':
+                      case 'on_the_way':
+                        return { label: 'Técnico a Caminho', badgeClass: 'bg-blue-50 text-blue-800 border-blue-200', dotClass: 'bg-blue-500' }
+                      case 'in_progress':
+                        return { label: 'Em Execução', badgeClass: 'bg-purple-50 text-purple-800 border-purple-200', dotClass: 'bg-purple-500' }
+                      case 'completed':
+                        return { label: 'Concluído', badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200', dotClass: 'bg-emerald-500' }
+                      case 'cancelled':
+                        return { label: 'Cancelado', badgeClass: 'bg-rose-50 text-rose-800 border-rose-200', dotClass: 'bg-rose-500' }
+                      default:
+                        return { label: order.status, badgeClass: 'bg-slate-50 text-slate-700 border-slate-200', dotClass: 'bg-slate-400' }
+                    }
+                  })()
+
+                  return (
+                    <div
+                      key={order.id}
+                      className="border border-slate-200 rounded-2xl p-4 bg-white hover:border-orange-300 hover:shadow-md transition-all flex flex-col gap-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                            {serviceName}
+                          </h4>
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-1">
+                            <Clock size={12} />
+                            <span>
+                              {new Date(order.created_at).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border shrink-0 ${statusConfig.badgeClass}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dotClass}`} />
+                          {statusConfig.label}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs py-2 px-3 bg-slate-50 rounded-xl">
+                        <div className="flex items-center gap-1 text-slate-600">
+                          <MapPin size={13} className="text-orange-600 shrink-0" />
+                          <span className="truncate max-w-[180px] sm:max-w-[240px] text-[11px] font-medium">
+                            {order.neighborhood || 'Rio Verde - GO'}
+                          </span>
+                        </div>
+                        <span className="font-black text-slate-900 text-xs">
+                          {formatCurrency(order.total_price || 0)}
+                        </span>
+                      </div>
+
+                      <div>
+                        {isActive ? (
+                          <Link
+                            href={`/acompanhar/${order.id}`}
+                            onClick={() => setIsOrdersModalOpen(false)}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-orange-600/20 transition-all hover:scale-[1.01]"
+                          >
+                            <span>Acompanhar em Tempo Real</span>
+                            <ArrowRight size={14} />
+                          </Link>
+                        ) : isCompleted ? (
+                          <Link
+                            href={`/acompanhar/${order.id}`}
+                            onClick={() => setIsOrdersModalOpen(false)}
+                            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-200 transition-all"
+                          >
+                            <FileText size={14} className="text-slate-600" />
+                            <span>Ver Detalhes / Comprovante</span>
+                          </Link>
+                        ) : isCancelled ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsOrdersModalOpen(false)
+                              const el = document.getElementById('servicos')
+                              if (el) el.scrollIntoView({ behavior: 'smooth' })
+                            }}
+                            className="w-full text-center py-1.5 text-xs font-bold text-orange-600 hover:underline"
+                          >
+                            Solicitar este serviço novamente
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  )
+                })
+              )}
             </div>
           </div>
         </div>
