@@ -1,105 +1,120 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 
-export async function POST(request: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const supabaseUser = await createClient()
-    const { data: { user }, error: authErr } = await supabaseUser.auth.getUser()
+    const body = await req.json().catch(() => ({}));
+    const callId = body.callId || body.call_id;
+    let providerId = body.providerId || body.provider_id;
 
-    if (authErr || !user) {
-      return NextResponse.json({ error: 'Não autorizado. Faça login primeiro.' }, { status: 401 })
-    }
-
-    const { call_id } = await request.json()
-    if (!call_id) {
-      return NextResponse.json({ error: 'call_id é obrigatório' }, { status: 400 })
-    }
-
-    const supabaseAdmin = await createServiceClient()
-
-    // 1. Verifica se o prestador tem Mercado Pago conectado e está online
-    const { data: status } = await supabaseAdmin
-      .from('provider_status')
-      .select('is_online, recipient_gateway_id')
-      .eq('provider_id', user.id)
-      .maybeSingle()
-
-    if (!status?.recipient_gateway_id) {
-      return NextResponse.json(
-        { error: 'Para aceitar chamados e receber seus repasses automáticos via Pix, conecte sua conta do Mercado Pago no painel.' },
-        { status: 403 }
-      )
-    }
-
-    // 2. Busca perfil do prestador
-    const { data: providerProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('full_name, phone')
-      .eq('id', user.id)
-      .single()
-
-    // 3. Assunção atômica: garante que o chamado ainda está em 'queued'
-    const { data: updatedCall, error: updateErr } = await supabaseAdmin
-      .from('service_calls')
-      .update({
-        provider_id: user.id,
-        status: 'accepted',
-        accepted_at: new Date().toISOString(),
-      })
-      .eq('id', call_id)
-      .eq('status', 'queued')
-      .select('*, client:profiles!client_id(full_name, phone), service:quick_services(name)')
-      .maybeSingle()
-
-    if (updateErr || !updatedCall) {
-      return NextResponse.json(
-        { error: 'Este chamado já foi assumido por outro profissional ou não está mais disponível na fila.' },
-        { status: 409 }
-      )
-    }
-
-    const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com'
-    const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost'))
-      ? rawAppUrl
-      : 'https://repararv.com'
-
-    // 4. Dispara notificação de confirmação para o WhatsApp do cliente
-    const clientPhone = (updatedCall.client as { phone?: string })?.phone
-    const providerName = providerProfile?.full_name || 'Técnico Credenciado'
-    const trackingUrl = `${appUrl}/acompanhar/${call_id}`
-
-    const clientMessage = `Boa notícia! O técnico ${providerName} aceitou seu chamado de ${(updatedCall.service as { name?: string })?.name || 'serviço'} e já está se preparando para ir até você! 🚗⚡ Acompanhe o deslocamento em tempo real: ${trackingUrl}`
-
-    console.log(`📲 [WhatsApp Cliente] Notificação de aceite disparada para ${clientPhone}: ${clientMessage}`)
-
-    const webhookUrl = process.env.CLIENT_ALERT_WEBHOOK_URL || process.env.WHATSAPP_WEBHOOK_URL
-    if (webhookUrl && clientPhone) {
-      try {
-        await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            event: 'order_accepted_from_queue',
-            call_id,
-            recipient_phone: clientPhone,
-            message: clientMessage,
-            provider_name: providerName,
-            tracking_url: trackingUrl,
-          }),
-        })
-      } catch (clientWhErr) {
-        console.warn('[WhatsApp Cliente] Falha ao enviar webhook:', clientWhErr)
+    // Se providerId não for enviado no body, obtém do usuário autenticado na sessão
+    if (!providerId) {
+      const supabaseUser = await createClient();
+      const { data: { user } } = await supabaseUser.auth.getUser().catch(() => ({ data: { user: null } }));
+      if (user) {
+        providerId = user.id;
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      call_id,
-      status: 'accepted',
-      message: 'Chamado da fila assumido com sucesso!',
-    })
+    if (!callId || !providerId) {
+      return NextResponse.json({ error: 'Dados incompletos (callId e providerId são obrigatórios)' }, { status: 400 });
+    }
+
+    const supabaseAdmin = await createServiceClient();
+
+    // 1. Validar se o prestador tem Mercado Pago conectado e perfil ativo
+    const { data: provider, error: providerError } = await supabaseAdmin
+      .from('profiles')
+      .select('id, full_name, phone, role, mercado_pago_connected')
+      .eq('id', providerId)
+      .maybeSingle();
+
+    if (providerError || !provider || provider.role !== 'provider') {
+      return NextResponse.json({ error: 'Prestador não autorizado' }, { status: 403 });
+    }
+
+    // Verifica conexão Mercado Pago (em profiles ou em provider_status/gateway_accounts)
+    const { data: status } = await supabaseAdmin
+      .from('provider_status')
+      .select('recipient_gateway_id, is_online')
+      .eq('provider_id', providerId)
+      .maybeSingle();
+
+    const isMpConnected = Boolean(provider.mercado_pago_connected || status?.recipient_gateway_id);
+
+    if (!isMpConnected) {
+      return NextResponse.json(
+        { error: 'Conecte sua conta do Mercado Pago para aceitar chamados' }, 
+        { status: 412 }
+      );
+    }
+
+    // 2. Executar RPC de atribuição atômica no PostgreSQL
+    const { data: updatedCall, error: claimError } = await supabaseAdmin
+      .rpc('claim_queued_call', {
+        p_call_id: callId,
+        p_provider_id: providerId,
+      });
+
+    if (claimError) {
+      console.error('[claim-queued] Erro ao executar RPC claim_queued_call:', claimError);
+      return NextResponse.json({ error: claimError.message }, { status: 500 });
+    }
+
+    if (!updatedCall || updatedCall.length === 0) {
+      return NextResponse.json(
+        { error: 'Este chamado já foi assumido por outro profissional ou expirou' }, 
+        { status: 409 }
+      );
+    }
+
+    const acceptedCall = updatedCall[0];
+
+    // 3. Disparo assíncrono (fire-and-forget) para notificar o cliente via WhatsApp
+    void (async () => {
+      try {
+        const { data: fullCall } = await supabaseAdmin
+          .from('service_calls')
+          .select('*, client:profiles!client_id(phone), service:quick_services(name)')
+          .eq('id', callId)
+          .single();
+
+        const clientPhone = (fullCall?.client as { phone?: string })?.phone;
+        const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com';
+        const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost'))
+          ? rawAppUrl
+          : 'https://repararv.com';
+
+        const providerName = provider.full_name || 'Técnico Credenciado';
+        const trackingUrl = `${appUrl}/acompanhar/${callId}`;
+        const serviceName = (fullCall?.service as { name?: string })?.name || 'serviço';
+        const clientMessage = `Boa notícia! O técnico ${providerName} aceitou seu chamado de ${serviceName} e já está se preparando para ir até você! 🚗⚡ Acompanhe em tempo real: ${trackingUrl}`;
+
+        console.log(`📲 [WhatsApp Cliente] Notificação de aceite disparada para ${clientPhone}`);
+
+        const webhookUrl = process.env.CLIENT_ALERT_WEBHOOK_URL || process.env.WHATSAPP_WEBHOOK_URL;
+        if (webhookUrl && clientPhone) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event: 'order_accepted_from_queue',
+              call_id: callId,
+              recipient_phone: clientPhone,
+              message: clientMessage,
+              provider_name: providerName,
+              tracking_url: trackingUrl,
+            }),
+          });
+        }
+      } catch (whErr) {
+        console.warn('[WhatsApp Cliente] Falha ao enviar notificação assíncrona:', whErr);
+      }
+    })();
+
+    return NextResponse.json({ success: true, call: acceptedCall }, { status: 200 });
   } catch (err: any) {
-    console.error('[API /api/calls/claim-queued] Erro interno:', err)
-    return NextResponse.json({ error: 'Erro ao assumir chamado da fila.' }, { status: 500 })
+    console.error('[API /api/calls/claim-queued] Erro interno:', err);
+    return NextResponse.json({ error: err.message || 'Erro ao processar aceite da fila' }, { status: 500 });
   }
 }

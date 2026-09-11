@@ -353,6 +353,7 @@ export default function PainelPage() {
   }, [profile, supabase])
 
   const handleClaimQueued = async (callId: string) => {
+    if (!profile) return
     if (!recipientGatewayId) {
       toast.error('Para atender chamados e garantir seus repasses via Pix, conecte sua conta do Mercado Pago acima.')
       return
@@ -363,7 +364,7 @@ export default function PainelPage() {
       const res = await fetch('/api/calls/claim-queued', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ call_id: callId }),
+        body: JSON.stringify({ callId, providerId: profile.id, call_id: callId, provider_id: profile.id }),
       })
       const data = await res.json()
       if (res.ok) {

@@ -126,18 +126,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: callError?.message || 'Erro ao criar chamado no sistema.' }, { status: 500 })
     }
 
-    // Se entrou na fila prioritária, notifica prestadores cadastrados via WhatsApp/webhook
+    // Se entrou na fila prioritária, notifica prestadores cadastrados via WhatsApp/webhook (fire-and-forget assíncrono)
     if (isQueued) {
-      const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com'
-      const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost'))
-        ? rawAppUrl
-        : 'https://repararv.com'
+      void (async () => {
+        try {
+          const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com'
+          const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost'))
+            ? rawAppUrl
+            : 'https://repararv.com'
 
-      fetch(`${appUrl}/api/calls/notify-queue`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ call_id: call.id }),
-      }).catch(err => console.warn('[API /api/calls/create] Falha assíncrona ao invocar notify-queue:', err))
+          await fetch(`${appUrl}/api/calls/notify-queue`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ call_id: call.id }),
+          })
+        } catch (err) {
+          console.warn('[API /api/calls/create] Falha assíncrona ao invocar notify-queue:', err)
+        }
+      })()
     }
 
     return NextResponse.json({ call_id: call.id, status: call.status })

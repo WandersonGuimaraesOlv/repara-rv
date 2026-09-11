@@ -345,3 +345,23 @@ WHERE NOT EXISTS (SELECT 1 FROM quick_services WHERE name = 'Montagem / Desmonta
 INSERT INTO quick_services (name, category, description, fixed_price, platform_fee, icon, color, sort_order)
 SELECT 'Visita Diagnóstico / Socorro Geral 24h', 'Emergência', 'Visita emergencial para diagnóstico e primeiros reparos. Disponível 24 horas.', 50.00, 10.00, 'ambulance', '#EF4444', 8
 WHERE NOT EXISTS (SELECT 1 FROM quick_services WHERE name = 'Visita Diagnóstico / Socorro Geral 24h');
+
+-- ============================================================
+-- FUNCTION: Aceite Atômico de Chamado na Fila Prioritária
+-- ============================================================
+CREATE OR REPLACE FUNCTION claim_queued_call(p_call_id UUID, p_provider_id UUID)
+RETURNS SETOF service_calls AS $$
+BEGIN
+  RETURN QUERY
+  UPDATE service_calls
+  SET 
+    provider_id = p_provider_id,
+    status = 'accepted',
+    accepted_at = NOW(),
+    updated_at = NOW()
+  WHERE id = p_call_id 
+    AND status = 'queued'
+    AND (expires_at IS NULL OR expires_at > NOW())
+  RETURNING *;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

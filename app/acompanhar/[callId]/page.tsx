@@ -168,14 +168,14 @@ export default function AcompanharPage() {
       {(call.status === 'queued' || call.status === 'no_providers_available') ? (
         <div className="flex-1 flex flex-col items-center justify-center">
           <ChamadoEmFila
-            order={{
+            call={{
+              id: call.id,
               service_name: (call.service as { name?: string })?.name ?? 'Serviço residencial',
               address: call.client_address,
               price: call.total_price,
               client_phone: (call.client as { phone?: string })?.phone,
             }}
             onCancel={handleCancel}
-            cancelling={cancelling}
           />
         </div>
       ) : (
