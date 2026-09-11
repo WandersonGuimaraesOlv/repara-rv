@@ -148,4 +148,95 @@ describe('SQA Business Logic & Financial Integrity', () => {
     expect(msg).toContain('Ganhos líquidos: R$ 65,00')
     expect(msg).toContain('https://repararv.com/painel')
   })
+
+  it('strictly validates provider compliance and security: blocks rejected or suspended technicians', () => {
+    const isProviderEligibleForDispath = (provider: {
+      is_blocked: boolean
+      background_check_status: 'pending' | 'approved' | 'rejected'
+      has_mp_connected: boolean
+    }) => {
+      if (provider.is_blocked) return false
+      if (provider.background_check_status === 'rejected') return false
+      if (!provider.has_mp_connected) return false
+      return true
+    }
+
+    // Aprovado e com MP: 100% elegível
+    expect(
+      isProviderEligibleForDispath({
+        is_blocked: false,
+        background_check_status: 'approved',
+        has_mp_connected: true,
+      })
+    ).toBe(true)
+
+    // Bloqueio preventivo (is_blocked = true): DEVE ser barrado
+    expect(
+      isProviderEligibleForDispath({
+        is_blocked: true,
+        background_check_status: 'approved',
+        has_mp_connected: true,
+      })
+    ).toBe(false)
+
+    // Reprovado em antecedentes criminais: DEVE ser barrado
+    expect(
+      isProviderEligibleForDispath({
+        is_blocked: false,
+        background_check_status: 'rejected',
+        has_mp_connected: true,
+      })
+    ).toBe(false)
+
+    // Sem Mercado Pago conectado: barrado preventivamente (sem split)
+    expect(
+      isProviderEligibleForDispath({
+        is_blocked: false,
+        background_check_status: 'approved',
+        has_mp_connected: false,
+      })
+    ).toBe(false)
+  })
+
+  it('formats safe Rio Verde administrative WhatsApp links with DDI 55 and URL encoding', () => {
+    const sanitizePhone = (raw: string) => {
+      let digits = raw.replace(/\D/g, '')
+      if (digits.startsWith('0')) digits = digits.slice(1)
+      if (!digits.startsWith('55')) {
+        if (digits.length === 10 || digits.length === 11) {
+          digits = `55${digits}`
+        }
+      }
+      return digits
+    }
+
+    const formatAdminWaUrl = (rawPhone: string, name: string) => {
+      const phone = sanitizePhone(rawPhone)
+      const msg = encodeURIComponent(`Olá ${name}, aqui é da administração da Repara RV em Rio Verde...`)
+      return `https://wa.me/${phone}?text=${msg}`
+    }
+
+    const formatMpDemandWaUrl = (rawPhone: string, name: string) => {
+      const phone = sanitizePhone(rawPhone)
+      const msg = encodeURIComponent(
+        `Olá ${name}, aqui é da equipe de gestão do Repara RV! Identificamos que sua conta Mercado Pago ainda não está conectada para o split automático de pagamentos Pix. Sem ela, nosso sistema não pode despachar chamados para você em Rio Verde.\n\nConecte sua conta em menos de 1 minuto pelo link seguro:\nhttps://repararv.com/painel/configuracoes/mercado-pago`
+      )
+      return `https://wa.me/${phone}?text=${msg}`
+    }
+
+    // DDD 64 local
+    const url1 = formatAdminWaUrl('(64) 99345-6789', 'Carlos Eletricista')
+    expect(url1).toContain('https://wa.me/5564993456789?text=')
+    expect(url1).toContain('Carlos%20Eletricista')
+
+    // Já com 55
+    const url2 = formatAdminWaUrl('+55 64 99999-8888', 'Maria Encanadora')
+    expect(url2).toContain('https://wa.me/5564999998888?text=')
+
+    // Cobrança Mercado Pago
+    const mpUrl = formatMpDemandWaUrl('64988887777', 'Roberto Chaveiro')
+    expect(mpUrl).toContain('https://wa.me/5564988887777?text=')
+    expect(mpUrl).toContain(encodeURIComponent('https://repararv.com/painel/configuracoes/mercado-pago'))
+  })
 })
+

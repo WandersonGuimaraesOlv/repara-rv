@@ -1,7 +1,11 @@
 'use server'
 
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { updateUserRoleSchema } from '@/lib/validations/admin-users'
+import { 
+  updateUserRoleSchema, 
+  updateBackgroundCheckSchema, 
+  toggleUserBlockedSchema 
+} from '@/lib/validations/admin-users'
 import { revalidatePath } from 'next/cache'
 
 /**
@@ -37,11 +41,18 @@ export interface AdminUserListItem {
   created_at: string
   terms_accepted_at?: string | null
   self_declaration_signed?: boolean | null
+  background_check_status: 'pending' | 'approved' | 'rejected'
+  is_blocked: boolean
+  completed_orders_count: number
+  rating_avg: number
+  mercado_pago_connected: boolean
+  recipient_gateway_id: string | null
   provider_status?: {
     is_online: boolean
     pix_key: string
     pix_key_type: string
     updated_at: string
+    recipient_gateway_id?: string | null
   } | null
   total_calls_as_client: number
   unpaid_calls_as_client: number
@@ -78,7 +89,7 @@ export async function getAdminUsersListAction(): Promise<{
       return { success: false, error: 'Falha ao consultar perfis de usuários.' }
     }
 
-    // 2. Busca status de prestadores (Pix, online/offline)
+    // 2. Busca status de prestadores (Pix, online/offline, recipient_gateway_id)
     const { data: providerStatuses } = await adminDb
       .from('provider_status')
       .select('*')
@@ -88,6 +99,7 @@ export async function getAdminUsersListAction(): Promise<{
       is_online?: boolean | null
       pix_key?: string | null
       pix_key_type?: string | null
+      recipient_gateway_id?: string | null
       updated_at?: string | null
     }
 
@@ -140,6 +152,25 @@ export async function getAdminUsersListAction(): Promise<{
     // Monta a lista consolidada
     const usersList: AdminUserListItem[] = profiles.map((p) => {
       const ps = providerMap.get(p.id)
+      const rawStatus = (p as Record<string, unknown>).background_check_status
+      const backgroundCheckStatus: 'pending' | 'approved' | 'rejected' =
+        rawStatus === 'approved' || rawStatus === 'rejected' ? rawStatus : 'pending'
+
+      const isBlocked = Boolean((p as Record<string, unknown>).is_blocked)
+      const ratingAvg = typeof (p as Record<string, unknown>).rating_avg === 'number'
+        ? Number((p as Record<string, unknown>).rating_avg)
+        : 5.0
+      
+      const completedCalls = providerCompletedMap.get(p.id) ?? (
+        typeof (p as Record<string, unknown>).completed_orders_count === 'number'
+          ? Number((p as Record<string, unknown>).completed_orders_count)
+          : 0
+      )
+
+      const rawMpConnected = Boolean((p as Record<string, unknown>).mercado_pago_connected)
+      const gatewayId = ps?.recipient_gateway_id || ((p as Record<string, unknown>).recipient_gateway_id as string) || null
+      const isMpConnected = rawMpConnected || Boolean(gatewayId && String(gatewayId).trim().length > 0)
+
       return {
         id: p.id,
         role: p.role,
@@ -149,18 +180,25 @@ export async function getAdminUsersListAction(): Promise<{
         created_at: p.created_at || new Date().toISOString(),
         terms_accepted_at: p.terms_accepted_at,
         self_declaration_signed: p.self_declaration_signed,
+        background_check_status: backgroundCheckStatus,
+        is_blocked: isBlocked,
+        completed_orders_count: completedCalls,
+        rating_avg: ratingAvg,
+        mercado_pago_connected: isMpConnected,
+        recipient_gateway_id: gatewayId,
         provider_status: ps
           ? {
               is_online: Boolean(ps.is_online),
               pix_key: ps.pix_key || '',
               pix_key_type: ps.pix_key_type || '',
+              recipient_gateway_id: ps.recipient_gateway_id || null,
               updated_at: ps.updated_at || '',
             }
           : null,
         total_calls_as_client: clientCallsMap.get(p.id) || 0,
         unpaid_calls_as_client: clientUnpaidMap.get(p.id) || 0,
         total_calls_as_provider: providerCallsMap.get(p.id) || 0,
-        completed_calls_as_provider: providerCompletedMap.get(p.id) || 0,
+        completed_calls_as_provider: completedCalls,
         paid_calls_as_provider: providerPaidMap.get(p.id) || 0,
         total_earned_as_provider: providerEarningsMap.get(p.id) || 0,
         pending_earnings_as_provider: providerPendingEarningsMap.get(p.id) || 0,
@@ -236,3 +274,112 @@ export async function updateUserRoleAction(input: unknown) {
 
   return { success: true, data }
 }
+
+/**
+ * Atualiza o status de verificação de antecedentes / compliance do usuário.
+ */
+export async function updateBackgroundCheckStatusAction(input: unknown) {
+  const authCheck = await requireAdmin()
+  if (!authCheck.authorized) {
+    return { success: false, error: authCheck.error }
+  }
+
+  const parsed = updateBackgroundCheckSchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: 'Dados inválidos para alteração de compliance.' }
+  }
+
+  const { userId, status } = parsed.data
+  const adminDb = await createServiceClient()
+
+  try {
+    const { data, error } = await adminDb
+      .from('profiles')
+      .update({ background_check_status: status })
+      .eq('id', userId)
+      .select('id, full_name, background_check_status')
+      .single()
+
+    if (error) {
+      if (error.code === '42703' || error.message?.includes('background_check_status')) {
+        return {
+          success: false,
+          error: 'Coluna background_check_status ainda não existe no Supabase. Execute o script SQL no painel Supabase.'
+        }
+      }
+      return { success: false, error: `Erro ao atualizar compliance: ${error.message}` }
+    }
+
+    // Se reprovado, derruba prestador do radar imediatamente para proteção dos moradores
+    if (status === 'rejected') {
+      await adminDb
+        .from('provider_status')
+        .update({ is_online: false, updated_at: new Date().toISOString() })
+        .eq('provider_id', userId)
+    }
+
+    revalidatePath('/admin/usuarios')
+    revalidatePath('/admin/dashboard')
+    revalidatePath('/painel')
+
+    return { success: true, data }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro inesperado ao atualizar compliance.'
+    return { success: false, error: msg }
+  }
+}
+
+/**
+ * Suspende ou reativa a conta de um usuário (bloqueio emergencial de segurança).
+ */
+export async function toggleUserBlockedAction(input: unknown) {
+  const authCheck = await requireAdmin()
+  if (!authCheck.authorized) {
+    return { success: false, error: authCheck.error }
+  }
+
+  const parsed = toggleUserBlockedSchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: 'Dados inválidos para bloqueio/desbloqueio.' }
+  }
+
+  const { userId, isBlocked } = parsed.data
+  const adminDb = await createServiceClient()
+
+  try {
+    const { data, error } = await adminDb
+      .from('profiles')
+      .update({ is_blocked: isBlocked })
+      .eq('id', userId)
+      .select('id, full_name, is_blocked')
+      .single()
+
+    if (error) {
+      if (error.code === '42703' || error.message?.includes('is_blocked')) {
+        return {
+          success: false,
+          error: 'Coluna is_blocked ainda não existe no Supabase. Execute o script SQL no painel Supabase.'
+        }
+      }
+      return { success: false, error: `Erro ao atualizar status de suspensão: ${error.message}` }
+    }
+
+    // Se bloqueado/suspenso, derruba prestador do radar imediatamente
+    if (isBlocked) {
+      await adminDb
+        .from('provider_status')
+        .update({ is_online: false, updated_at: new Date().toISOString() })
+        .eq('provider_id', userId)
+    }
+
+    revalidatePath('/admin/usuarios')
+    revalidatePath('/admin/dashboard')
+    revalidatePath('/painel')
+
+    return { success: true, data }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro inesperado ao alterar status da conta.'
+    return { success: false, error: msg }
+  }
+}
+

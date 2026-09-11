@@ -20,6 +20,11 @@ export type Database = {
           terms_accepted_at: string | null
           self_declaration_signed: boolean | null
           created_at: string | null
+          background_check_status?: 'pending' | 'approved' | 'rejected' | null
+          is_blocked?: boolean | null
+          completed_orders_count?: number | null
+          rating_avg?: number | null
+          mercado_pago_connected?: boolean | null
         }
         Insert: {
           id: string
@@ -31,6 +36,11 @@ export type Database = {
           terms_accepted_at?: string | null
           self_declaration_signed?: boolean | null
           created_at?: string | null
+          background_check_status?: 'pending' | 'approved' | 'rejected' | null
+          is_blocked?: boolean | null
+          completed_orders_count?: number | null
+          rating_avg?: number | null
+          mercado_pago_connected?: boolean | null
         }
         Update: {
           id?: string
@@ -42,6 +52,11 @@ export type Database = {
           terms_accepted_at?: string | null
           self_declaration_signed?: boolean | null
           created_at?: string | null
+          background_check_status?: 'pending' | 'approved' | 'rejected' | null
+          is_blocked?: boolean | null
+          completed_orders_count?: number | null
+          rating_avg?: number | null
+          mercado_pago_connected?: boolean | null
         }
       }
       provider_status: {

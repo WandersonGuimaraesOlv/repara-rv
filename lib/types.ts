@@ -36,6 +36,11 @@ export interface Profile {
   pix_key?: string
   pix_key_type?: PixKeyType
   is_active?: boolean
+  background_check_status?: 'pending' | 'approved' | 'rejected'
+  is_blocked?: boolean
+  completed_orders_count?: number
+  rating_avg?: number
+  mercado_pago_connected?: boolean
 }
 
 // ─── Status do Prestador ───────────────────────────────────
