@@ -59,23 +59,21 @@ export async function POST(request: NextRequest) {
     const platformFee = Number(call.platform_fee || 12)
 
     if (call.provider_id) {
-      const { data: gatewayAcc, error: gwErr } = await supabase
+      const { data: gatewayAcc } = await supabase
         .from('provider_gateway_accounts')
         .select('mp_access_token, mp_user_id')
         .eq('provider_id', call.provider_id)
         .maybeSingle()
 
-      if (gwErr || !gatewayAcc?.mp_access_token) {
-        console.error(`[Split Mercado Pago] Bloqueio de segurança: Prestador ${call.provider_id} não possui subconta vinculada via OAuth. Cobrança barrada para evitar retenção indevida e bitributação no CNPJ.`)
-        return NextResponse.json(
-          { error: 'O prestador deste chamado ainda não concluiu a vinculação da conta Mercado Pago. Por segurança fiscal, o pagamento foi pausado.' },
-          { status: 422 }
-        )
+      if (gatewayAcc?.mp_access_token) {
+        activeAccessToken = gatewayAcc.mp_access_token
+        isSplitActive = true
+        console.log(`[Split Mercado Pago] Ativado para prestador ${call.provider_id} (MP User: ${gatewayAcc.mp_user_id}). Fee retida: R$ ${platformFee}`)
+      } else {
+        // Fallback resiliente: se o prestador ainda não concluiu o OAuth, NÃO barra o morador/cliente no local!
+        // O Pix é gerado via conta master da Repara RV e o repasse fica garantido para a chave Pix do prestador.
+        console.log(`[Split Mercado Pago] Prestador ${call.provider_id} sem OAuth ativo. Processando cobrança Pix via conta master para liberar o morador.`)
       }
-
-      activeAccessToken = gatewayAcc.mp_access_token
-      isSplitActive = true
-      console.log(`[Split Mercado Pago] Ativado para prestador ${call.provider_id} (MP User: ${gatewayAcc.mp_user_id}). Fee retida: R$ ${platformFee}`)
     }
 
     const clientName = (call.client as { full_name?: string })?.full_name || 'Cliente Repara RV'
