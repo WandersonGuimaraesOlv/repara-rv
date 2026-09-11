@@ -25,8 +25,8 @@ export async function GET() {
 
     const redirectUri = `${appUrl}/api/mercadopago/oauth/callback`
 
-    // URL oficial de autorização OAuth do Mercado Pago
-    const authUrl = `https://auth.mercadopago.com/authorization?client_id=${clientId}&response_type=code&platform_id=mp&state=${user.id}&redirect_uri=${encodeURIComponent(redirectUri)}`
+    // URL oficial de autorização OAuth do Mercado Pago Brasil
+    const authUrl = `https://auth.mercadopago.com.br/authorization?client_id=${clientId}&response_type=code&platform_id=mp&state=${user.id}&redirect_uri=${encodeURIComponent(redirectUri)}`
 
     return NextResponse.json({
       success: true,
