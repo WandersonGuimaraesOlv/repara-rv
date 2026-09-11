@@ -39,6 +39,7 @@ export function buildWazeUrl(lat?: number | null, lng?: number | null, address?:
 export function getStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     searching: 'Buscando prestador...',
+    queued: 'Na fila prioritária',
     accepted: 'Prestador a caminho',
     on_the_way: 'Prestador a caminho',
     in_progress: 'Serviço em andamento',
@@ -54,6 +55,7 @@ export function getStatusLabel(status: string): string {
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
     searching: 'text-amber-400',
+    queued: 'text-amber-500',
     accepted: 'text-blue-400',
     on_the_way: 'text-blue-400',
     in_progress: 'text-indigo-400',
@@ -61,7 +63,7 @@ export function getStatusColor(status: string): string {
     cancelled: 'text-red-400',
     cancelled_by_client: 'text-red-400',
     cancelled_by_provider: 'text-red-400',
-    no_providers_available: 'text-red-400',
+    no_providers_available: 'text-amber-500',
   }
   return colors[status] ?? 'text-slate-400'
 }

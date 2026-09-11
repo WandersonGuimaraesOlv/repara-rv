@@ -97,4 +97,55 @@ describe('SQA Business Logic & Financial Integrity', () => {
     expect(validResult.providerCut).toBe(63)
     expect(validResult.recipientToken).toBe('TEST-TOKEN-123')
   })
+
+  it('handles priority queue status and 2-hour expiration', () => {
+    const resolveInitialCallState = (nearestProviderId: string | null) => {
+      const isQueued = !nearestProviderId
+      return {
+        status: isQueued ? 'queued' : 'searching',
+        expires_at: isQueued ? new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() : null,
+      }
+    }
+
+    // Sem técnico online: entra na fila prioritária, não quebra com erro
+    const queuedState = resolveInitialCallState(null)
+    expect(queuedState.status).toBe('queued')
+    expect(queuedState.expires_at).toBeTruthy()
+    const diffHours = (new Date(queuedState.expires_at!).getTime() - Date.now()) / (1000 * 60 * 60)
+    expect(Math.round(diffHours)).toBe(2)
+
+    // Com técnico online: inicia searching
+    const onlineState = resolveInitialCallState('prov-123')
+    expect(onlineState.status).toBe('searching')
+    expect(onlineState.expires_at).toBeNull()
+  })
+
+  it('formats WhatsApp notification for queued order accurately', () => {
+    const formatQueueWhatsAppAlert = (params: {
+      providerName: string
+      serviceName: string
+      neighborhood: string
+      totalPrice: number
+      providerCut: number
+    }) => {
+      const firstName = params.providerName.split(' ')[0]
+      const totalFormatted = `R$ ${params.totalPrice.toFixed(2).replace('.', ',')}`
+      const cutFormatted = `R$ ${params.providerCut.toFixed(2).replace('.', ',')}`
+      return `Fala, ${firstName}! ⚡ Tem um cliente aguardando atendimento para ${params.serviceName} no ${params.neighborhood} (Ganhos líquidos: ${cutFormatted} de ${totalFormatted}). Acesse o painel agora para aceitar o chamado: https://repararv.com/painel`
+    }
+
+    const msg = formatQueueWhatsAppAlert({
+      providerName: 'Almir da Silva',
+      serviceName: 'Troca de Chuveiro',
+      neighborhood: 'Setor Central',
+      totalPrice: 80,
+      providerCut: 65,
+    })
+
+    expect(msg).toContain('Fala, Almir!')
+    expect(msg).toContain('Troca de Chuveiro')
+    expect(msg).toContain('Setor Central')
+    expect(msg).toContain('Ganhos líquidos: R$ 65,00')
+    expect(msg).toContain('https://repararv.com/painel')
+  })
 })

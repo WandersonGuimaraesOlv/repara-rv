@@ -3,11 +3,12 @@
 import { RideStatus } from '@/lib/types'
 import { getStatusLabel } from '@/lib/utils'
 import {
-  Search, CheckCircle, Car, Wrench, Star, XCircle, AlertCircle
+  Search, CheckCircle, Car, Wrench, Star, XCircle, AlertCircle, Clock
 } from 'lucide-react'
 
 const STATUS_ICONS: Record<RideStatus, React.ElementType> = {
   searching:              Search,
+  queued:                 Clock,
   accepted:               CheckCircle,
   on_the_way:             Car,
   in_progress:            Wrench,

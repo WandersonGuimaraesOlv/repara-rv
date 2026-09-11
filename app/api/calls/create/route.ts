@@ -98,6 +98,10 @@ export async function POST(request: NextRequest) {
       console.warn('[API] find_nearest_provider RPC warning:', rpcError)
     }
 
+    const isQueued = !nearestProvider
+    const initialStatus = isQueued ? 'queued' : 'searching'
+    const expiresAt = isQueued ? new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() : null
+
     // 4. Cria o chamado oficial no banco de dados
     const { data: call, error: callError } = await supabase
       .from('service_calls')
@@ -108,7 +112,8 @@ export async function POST(request: NextRequest) {
         total_price: service.fixed_price,
         platform_fee: service.platform_fee,
         provider_cut: service.fixed_price - service.platform_fee,
-        status: nearestProvider ? 'searching' : 'no_providers_available',
+        status: initialStatus,
+        expires_at: expiresAt,
         client_address,
         client_location: `SRID=4326;POINT(${lng} ${lat})`,
         accepted_at: null,
@@ -119,6 +124,20 @@ export async function POST(request: NextRequest) {
     if (callError || !call) {
       console.error('[API] Erro ao criar service_calls:', callError)
       return NextResponse.json({ error: callError?.message || 'Erro ao criar chamado no sistema.' }, { status: 500 })
+    }
+
+    // Se entrou na fila prioritária, notifica prestadores cadastrados via WhatsApp/webhook
+    if (isQueued) {
+      const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com'
+      const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost'))
+        ? rawAppUrl
+        : 'https://repararv.com'
+
+      fetch(`${appUrl}/api/calls/notify-queue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ call_id: call.id }),
+      }).catch(err => console.warn('[API /api/calls/create] Falha assíncrona ao invocar notify-queue:', err))
     }
 
     return NextResponse.json({ call_id: call.id, status: call.status })

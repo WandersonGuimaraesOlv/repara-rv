@@ -43,13 +43,26 @@ export async function POST(request: NextRequest) {
     })
 
     if (!nextProvider) {
-      // Sem mais prestadores disponíveis
+      // Sem mais prestadores disponíveis no momento: entra na fila prioritária!
+      const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
       await supabase
         .from('service_calls')
-        .update({ status: 'no_providers_available', provider_id: null })
+        .update({ status: 'queued', provider_id: null, expires_at: expiresAt })
         .eq('id', call_id)
 
-      return NextResponse.json({ status: 'no_providers_available' })
+      // Notifica prestadores cadastrados da fila prioritária
+      const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com'
+      const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost'))
+        ? rawAppUrl
+        : 'https://repararv.com'
+
+      fetch(`${appUrl}/api/calls/notify-queue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ call_id }),
+      }).catch(err => console.warn('[API /api/calls/skip-provider] Falha ao invocar notify-queue:', err))
+
+      return NextResponse.json({ status: 'queued' })
     }
 
     // Atribui ao próximo prestador

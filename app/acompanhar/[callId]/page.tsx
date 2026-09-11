@@ -12,6 +12,7 @@ import { XCircle, Loader2, Star, ArrowLeft, CheckCircle2, AlertTriangle, CreditC
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { CallChat } from '@/components/chat/call-chat'
+import { ChamadoEmFila } from '@/components/chamado-em-fila'
 
 export default function AcompanharPage() {
   const { callId } = useParams<{ callId: string }>()
@@ -31,7 +32,7 @@ export default function AcompanharPage() {
     if (!callId) return
     const { data, error } = await supabase
       .from('service_calls')
-      .select('*, service:quick_services(*), provider:profiles!provider_id(*)')
+      .select('*, service:quick_services(*), provider:profiles!provider_id(*), client:profiles!client_id(*)')
       .eq('id', callId)
       .maybeSingle()
 
@@ -70,10 +71,10 @@ export default function AcompanharPage() {
             }
           }
           if (payload.new.status === 'accepted' || payload.new.status === 'on_the_way') {
-            toast.info('Prestador a caminho! 🚗')
+            toast.success('🎉 Um profissional aceitou seu chamado e já está a caminho! 🚗⚡')
           }
-          if (payload.new.status === 'no_providers_available') {
-            toast.error('Nenhum prestador disponível no momento.')
+          if (payload.new.status === 'queued') {
+            toast.info('Seu chamado está na fila prioritária. Avisaremos no seu WhatsApp!')
           }
         }
       )
@@ -91,7 +92,7 @@ export default function AcompanharPage() {
   }, [callId, fetchCall, supabase])
 
   const handleCancel = async () => {
-    if (!call || call.status !== 'searching') return
+    if (!call || (call.status !== 'searching' && call.status !== 'queued' && call.status !== 'no_providers_available')) return
     setCancelling(true)
 
     try {
@@ -163,37 +164,55 @@ export default function AcompanharPage() {
         </div>
       </header>
 
-      {/* Tracker central */}
-      <div className="flex-1 flex flex-col items-center justify-center py-8">
-        <CallStatusTracker
-          status={call.status}
-          providerName={(call.provider as { full_name?: string })?.full_name}
-        />
-      </div>
-
-      {/* Info do serviço */}
-      <div
-        className="card p-4 mb-4"
-        style={{ borderColor: 'rgba(99,102,241,0.3)' }}
-      >
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Serviço solicitado</p>
-            <p className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>
-              {(call.service as { name?: string })?.name ?? 'Serviço'}
-            </p>
-            <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-              📍 {call.client_address}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Total</p>
-            <p className="font-bold text-lg" style={{ color: 'var(--color-cta)' }}>
-              {formatCurrency(call.total_price)}
-            </p>
-          </div>
+      {/* Se o chamado estiver na fila de espera prioritária */}
+      {(call.status === 'queued' || call.status === 'no_providers_available') ? (
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <ChamadoEmFila
+            order={{
+              service_name: (call.service as { name?: string })?.name ?? 'Serviço residencial',
+              address: call.client_address,
+              price: call.total_price,
+              client_phone: (call.client as { phone?: string })?.phone,
+            }}
+            onCancel={handleCancel}
+            cancelling={cancelling}
+          />
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Tracker central */}
+          <div className="flex-1 flex flex-col items-center justify-center py-8">
+            <CallStatusTracker
+              status={call.status}
+              providerName={(call.provider as { full_name?: string })?.full_name}
+            />
+          </div>
+
+          {/* Info do serviço */}
+          <div
+            className="card p-4 mb-4"
+            style={{ borderColor: 'rgba(99,102,241,0.3)' }}
+          >
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Serviço solicitado</p>
+                <p className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>
+                  {(call.service as { name?: string })?.name ?? 'Serviço'}
+                </p>
+                <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
+                  📍 {call.client_address}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Total</p>
+                <p className="font-bold text-lg" style={{ color: 'var(--color-cta)' }}>
+                  {formatCurrency(call.total_price)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Chat em Tempo Real com Alinhamento de Materiais e Peças */}
       {(call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress' || call.status === 'completed') && (
@@ -287,8 +306,8 @@ export default function AcompanharPage() {
         </div>
       )}
 
-      {/* Voltar ao início (após cancelamento/sem prestador) */}
-      {(call.status === 'cancelled' || call.status === 'no_providers_available') && (
+      {/* Voltar ao início (apenas após cancelamento explícito) */}
+      {call.status === 'cancelled' && (
         <div className="pb-6">
           <Link href="/" id="btn-go-home" className="btn-primary">
             ← Voltar ao início

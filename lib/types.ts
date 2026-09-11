@@ -2,6 +2,7 @@ export type UserRole = 'client' | 'provider' | 'admin'
 
 export type RideStatus =
   | 'searching'
+  | 'queued'
   | 'accepted'
   | 'on_the_way'
   | 'in_progress'
@@ -90,6 +91,8 @@ export interface ServiceCall {
   accepted_at?: string | null
   completed_at?: string | null
   cancelled_at?: string | null
+  expires_at?: string | null
+  neighborhood?: string | null
   // Joins opcionais
   service?: QuickService
   client?: Profile

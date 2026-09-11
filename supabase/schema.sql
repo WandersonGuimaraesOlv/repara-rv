@@ -17,6 +17,7 @@ END $$;
 DO $$ BEGIN
   CREATE TYPE ride_status AS ENUM (
     'searching',
+    'queued',
     'accepted',
     'on_the_way',
     'in_progress',
@@ -159,10 +160,12 @@ CREATE TABLE IF NOT EXISTS service_calls (
   created_at       TIMESTAMPTZ DEFAULT NOW(),
   accepted_at      TIMESTAMPTZ,
   completed_at     TIMESTAMPTZ,
-  cancelled_at     TIMESTAMPTZ
+  cancelled_at     TIMESTAMPTZ,
+  expires_at       TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '2 hours')
 );
 
 ALTER TABLE service_calls ADD COLUMN IF NOT EXISTS neighborhood TEXT NOT NULL DEFAULT 'Setor Central';
+ALTER TABLE service_calls ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '2 hours');
 
 CREATE INDEX IF NOT EXISTS idx_service_calls_location ON service_calls USING GIST(client_location);
 CREATE INDEX IF NOT EXISTS idx_service_calls_status ON service_calls (status);

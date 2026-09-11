@@ -23,6 +23,8 @@ export default function PainelPage() {
   const [providerPixKey, setProviderPixKey] = useState('')
   const [recipientGatewayId, setRecipientGatewayId] = useState<string | null>(null)
   const [connectingMp, setConnectingMp] = useState(false)
+  const [queuedCalls, setQueuedCalls] = useState<ServiceCall[]>([])
+  const [claimingCallId, setClaimingCallId] = useState<string | null>(null)
 
   const { lat, lng, error: geoError, getPosition } = useGeolocation(true)
 
@@ -317,6 +319,67 @@ export default function PainelPage() {
     toast.warning('Tempo esgotado! Chamado foi para o próximo prestador.')
   }, [pendingCall, profile])
 
+  // Monitora chamados na fila prioritária
+  useEffect(() => {
+    if (!profile) return
+
+    const loadQueued = async () => {
+      const { data } = await supabase
+        .from('service_calls')
+        .select('*, service:quick_services(*)')
+        .eq('status', 'queued')
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      setQueuedCalls((data as ServiceCall[]) || [])
+    }
+
+    loadQueued()
+    const interval = setInterval(loadQueued, 4000)
+
+    const channel = supabase
+      .channel('queued-calls-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'service_calls', filter: 'status=eq.queued' },
+        () => loadQueued()
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+      clearInterval(interval)
+    }
+  }, [profile, supabase])
+
+  const handleClaimQueued = async (callId: string) => {
+    if (!recipientGatewayId) {
+      toast.error('Para atender chamados e garantir seus repasses via Pix, conecte sua conta do Mercado Pago acima.')
+      return
+    }
+
+    setClaimingCallId(callId)
+    try {
+      const res = await fetch('/api/calls/claim-queued', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ call_id: callId }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Chamado assumido com sucesso! Abrindo atendimento... 🚗⚡')
+        router.push(`/chamado/${callId}`)
+      } else {
+        toast.error(data.error || 'Não foi possível assumir este chamado.')
+        setQueuedCalls(prev => prev.filter(c => c.id !== callId))
+      }
+    } catch {
+      toast.error('Erro de conexão ao assumir chamado.')
+    } finally {
+      setClaimingCallId(null)
+    }
+  }
+
   if (!profile) {
     return (
       <div className="page-container items-center justify-center">
@@ -437,6 +500,66 @@ export default function PainelPage() {
             <strong>GPS inativo.</strong> {geoError} Clientes próximos não serão encontrados corretamente.
           </p>
         </div>
+      )}
+
+      {/* Oportunidades na Fila de Espera Prioritária */}
+      {queuedCalls.length > 0 && (
+        <section className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 animate-slide-up shadow-md">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+              </span>
+              <h3 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                Fila Prioritária ({queuedCalls.length} cliente{queuedCalls.length > 1 ? 's' : ''} aguardando)
+              </h3>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              ⚡ Ao vivo
+            </span>
+          </div>
+
+          <div className="space-y-2.5">
+            {queuedCalls.map(qCall => (
+              <div
+                key={qCall.id}
+                className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-white truncate">
+                    {(qCall.service as { name?: string })?.name || 'Serviço residencial'}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5 truncate">
+                    📍 {qCall.neighborhood || 'Rio Verde (GO)'} — {qCall.client_address}
+                  </p>
+                  <p className="text-xs font-semibold text-emerald-400 mt-1">
+                    Ganhos: R$ {Number(qCall.provider_cut || 0).toFixed(2).replace('.', ',')} (Total: R$ {Number(qCall.total_price || 0).toFixed(2).replace('.', ',')})
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleClaimQueued(qCall.id)}
+                  disabled={claimingCallId === qCall.id}
+                  className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                >
+                  {claimingCallId === qCall.id ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" />
+                      <span>Assumindo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap size={13} className="text-yellow-300" />
+                      <span>Atender Chamado Agora</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Alerta de Obrigatoriedade Mercado Pago */}

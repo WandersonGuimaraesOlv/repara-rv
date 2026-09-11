@@ -58,6 +58,7 @@ describe('SQA Metrics & Quality: lib/utils.ts', () => {
       expect(getStatusLabel('completed')).toBe('Concluído')
       expect(getStatusLabel('cancelled_by_client')).toBe('Cancelado pelo cliente')
       expect(getStatusLabel('no_providers_available')).toBe('Nenhum prestador disponível')
+      expect(getStatusLabel('queued')).toBe('Na fila prioritária')
     })
 
     it('returns consistent color classes for status indicators', () => {
