@@ -103,24 +103,49 @@ export async function POST(request: NextRequest) {
     const expiresAt = isQueued ? new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() : null
 
     // 4. Cria o chamado oficial no banco de dados
-    const { data: call, error: callError } = await supabase
+    const insertPayload: Record<string, any> = {
+      client_id: user.id,
+      provider_id: nearestProvider ?? null,
+      service_id: service.id,
+      total_price: service.fixed_price,
+      platform_fee: service.platform_fee,
+      provider_cut: service.fixed_price - service.platform_fee,
+      status: initialStatus,
+      expires_at: expiresAt,
+      neighborhood: neighborhood || 'Setor Central',
+      client_address,
+      client_location: `SRID=4326;POINT(${lng} ${lat})`,
+      accepted_at: null,
+    }
+
+    let { data: call, error: callError } = await supabase
       .from('service_calls')
-      .insert({
-        client_id: user.id,
-        provider_id: nearestProvider ?? null,
-        service_id: service.id,
-        total_price: service.fixed_price,
-        platform_fee: service.platform_fee,
-        provider_cut: service.fixed_price - service.platform_fee,
-        status: initialStatus,
-        expires_at: expiresAt,
-        neighborhood: neighborhood || 'Setor Central',
-        client_address,
-        client_location: `SRID=4326;POINT(${lng} ${lat})`,
-        accepted_at: null,
-      })
+      .insert(insertPayload)
       .select()
       .single()
+
+    // Fallback defensivo imediato: se a coluna expires_at ou o enum 'queued' ainda não foram aplicados no Supabase remoto
+    if (
+      callError &&
+      (callError.message?.includes('expires_at') ||
+        callError.message?.includes('queued') ||
+        (callError as any).code === 'PGRST204' ||
+        (callError as any).code === '42703' ||
+        (callError as any).code === '22P02')
+    ) {
+      console.warn('[API] Schema remoto desatualizado (falta expires_at ou enum queued). Executando fallback defensivo...')
+      delete insertPayload.expires_at
+      if (insertPayload.status === 'queued') {
+        insertPayload.status = 'no_providers_available'
+      }
+      const retry = await supabase
+        .from('service_calls')
+        .insert(insertPayload)
+        .select()
+        .single()
+      call = retry.data
+      callError = retry.error
+    }
 
     if (callError || !call) {
       console.error('[API] Erro ao criar service_calls:', callError)
