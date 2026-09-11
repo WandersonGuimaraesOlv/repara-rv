@@ -44,6 +44,7 @@ import { QuickService } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/logo'
+import { PwaInstallBanner } from '@/components/pwa-install-banner'
 
 const RIO_VERDE_NEIGHBORHOODS = [
   'Setor Central',
@@ -571,6 +572,55 @@ export default function TriiderClientHomePage() {
                 </button>
               ))}
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-8 pt-8 border-t border-slate-200/60 text-left">
+              <div className="p-3.5 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs flex items-start gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 shrink-0">
+                  <ShieldCheck size={18} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Segurança Verificada</h4>
+                  <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
+                    Checagem rigorosa de antecedentes criminais e residência.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs flex items-start gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-50 text-amber-600 shrink-0">
+                  <Zap size={18} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Chegada Rápida</h4>
+                  <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
+                    Técnico no seu endereço em 30 a 45 min em Rio Verde.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs flex items-start gap-2.5">
+                <div className="p-2 rounded-xl bg-blue-50 text-blue-600 shrink-0">
+                  <Lock size={18} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Pagamento Protegido</h4>
+                  <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
+                    Pague via Pix com total segurança direto na plataforma.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs flex items-start gap-2.5">
+                <div className="p-2 rounded-xl bg-purple-50 text-purple-600 shrink-0">
+                  <Sparkles size={18} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Garantia de 7 Dias</h4>
+                  <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
+                    Se o reparo apresentar defeito, reexecutamos sem custo.
+                  </p>
+                </div>
+              </div>
+            </div>
 
           </div>
         </div>
@@ -1092,6 +1142,9 @@ export default function TriiderClientHomePage() {
           </div>
         </div>
       )}
+
+      {/* Banner Inteligente de Instalação PWA */}
+      <PwaInstallBanner />
 
     </div>
   )

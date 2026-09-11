@@ -67,6 +67,8 @@ export interface QuickService {
   sort_order: number
   is_active: boolean
   created_at?: string
+  included?: string[]
+  not_included?: string[]
 }
 
 // ─── Chamado de Serviço ────────────────────────────────────

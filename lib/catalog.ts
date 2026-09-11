@@ -251,3 +251,122 @@ export const DEFAULT_SERVICES: QuickService[] = [
     is_active: true,
   },
 ]
+
+export function getServiceScope(serviceName = '', category = ''): { included: string[]; not_included: string[] } {
+  const name = serviceName.toLowerCase()
+
+  if (name.includes('chuveiro') || name.includes('resistência')) {
+    return {
+      included: [
+        'Mão de obra para desmontagem e nova instalação',
+        'Fita veda-rosca (teflon) e conectores elétricos de engate',
+        'Teste completo de temperatura (fria e quente) e verificação de vazamento',
+      ],
+      not_included: [
+        'O chuveiro novo ou resistência nova (devem ser fornecidos pelo cliente)',
+        'Passagem de nova fiação até o quadro de distribuição',
+        'Troca do disjuntor geral (orçado à parte caso necessário)',
+      ],
+    }
+  }
+
+  if (name.includes('torneira') || name.includes('sifão')) {
+    return {
+      included: [
+        'Retirada da torneira ou sifão danificado',
+        'Instalação com fita veda-rosca de alta densidade',
+        'Teste rigoroso de estanqueidade e fluxo de água',
+      ],
+      not_included: [
+        'A torneira nova, flexível ou sifão novo (fornecidos pelo cliente)',
+        'Quebra de alvenaria ou reparos estruturais de encanamento interno',
+        'Troca de cuba ou reparo na bancada de mármore',
+      ],
+    }
+  }
+
+  if (name.includes('ventilador')) {
+    return {
+      included: [
+        'Montagem das pás e acoplamento do motor',
+        'Fixação no teto, balanceamento e alinhamento das hélices',
+        'Ligação na rede elétrica existente e teste de rotação/velocidade',
+      ],
+      not_included: [
+        'O ventilador de teto novo na caixa (fornecido pelo cliente)',
+        'Passagem de novos conduítes ou fiação estrutural pela laje',
+        'Reforço de sustentação em forros de gesso ou drywall rebaixados',
+      ],
+    }
+  }
+
+  if (name.includes('tomada') || name.includes('interruptor') || name.includes('lâmpada')) {
+    return {
+      included: [
+        'Desconexão segura do ponto elétrico desenergizado',
+        'Fixação de novo espelho, interruptor, tomada ou soquete',
+        'Teste de voltagem (110V/220V) com multímetro no local',
+      ],
+      not_included: [
+        'O conjunto de tomada, espelho ou lâmpadas novas (fornecidos pelo cliente)',
+        'Recabeamento completo ou troca da fiação interna do imóvel',
+      ],
+    }
+  }
+
+  if (name.includes('desentupimento')) {
+    return {
+      included: [
+        'Desobstrução mecânica especializada de ralo, vaso ou pia',
+        'Remoção de resíduos e limpeza inicial do ponto de escoamento',
+        'Teste de vazão e esgotamento pleno com água corrente',
+      ],
+      not_included: [
+        'Obras de troca de prumada ou tubulações de esgoto quebradas',
+        'Caminhão limpa-fossa para esgotamento geral de fossa séptica',
+      ],
+    }
+  }
+
+  if (name.includes('suporte de tv') || name.includes('cortina') || name.includes('quadro')) {
+    return {
+      included: [
+        'Furação com furadeira de impacto e broca apropriada para a parede',
+        'Nivelamento preciso com nível bolha ou laser',
+        'Buchas e parafusos padrão de fixação reforçada',
+      ],
+      not_included: [
+        'O suporte de TV, varão de cortina ou quadros (fornecidos pelo cliente)',
+        'Passagem de cabos HDMI ou fiação embutida dentro da alvenaria',
+      ],
+    }
+  }
+
+  if (name.includes('fechadura') || name.includes('porta')) {
+    return {
+      included: [
+        'Mão de obra de desmontagem e assentamento do novo miolo ou fechadura',
+        'Ajuste fino no batente para travamento suave e sem atrito',
+        'Teste completo de chave e tranca de segurança',
+      ],
+      not_included: [
+        'A fechadura nova, miolo ou cópias extras de chaves (fornecidos pelo cliente)',
+        'Restauração de portas estufadas ou madeiramento podre',
+      ],
+    }
+  }
+
+  // Fallback padrão universal
+  return {
+    included: [
+      'Mão de obra técnica especializada com ferramentas completas',
+      'Execução, testes de funcionamento e segurança no local',
+      'Limpeza básica do local de trabalho e descarte dos materiais substituídos',
+    ],
+    not_included: [
+      'O produto, aparelho ou peça nova a ser instalada (fornecidos pelo cliente)',
+      'Materiais pesados de construção civil, reformas de alvenaria ou pintura',
+      'Serviços elétricos ou hidráulicos estruturais que exijam quebra de paredes',
+    ],
+  }
+}

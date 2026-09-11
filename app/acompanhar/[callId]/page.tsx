@@ -8,12 +8,13 @@ import { CallStatusTracker } from '@/components/call-status-tracker'
 import { PixPaymentModal } from '@/components/pix-payment-modal'
 import { EmergencySosButton } from '@/components/emergency-sos-button'
 import { formatCurrency } from '@/lib/utils'
-import { XCircle, Loader2, Star, ArrowLeft, CheckCircle2, AlertTriangle, CreditCard } from 'lucide-react'
+import { XCircle, Loader2, Star, ArrowLeft, CheckCircle2, AlertTriangle, CreditCard, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { CallChat } from '@/components/chat/call-chat'
 import { ChamadoEmFila } from '@/components/chamado-em-fila'
 import { CancelCallModal } from '@/components/cancel-call-modal'
+import { ComprovanteManutencaoModal } from '@/components/comprovante-manutencao-modal'
 
 export default function AcompanharPage() {
   const { callId } = useParams<{ callId: string }>()
@@ -25,6 +26,7 @@ export default function AcompanharPage() {
   const [showPix, setShowPix] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showComprovante, setShowComprovante] = useState(false)
   const [rating, setRating] = useState(0)
   const [rated, setRated] = useState(false)
   const hasAutoOpenedPixRef = useRef(false)
@@ -265,32 +267,57 @@ export default function AcompanharPage() {
 
       {/* Avaliação (após concluído) */}
       {call.status === 'completed' && (
-        <div
-          className="card p-4 mb-4 text-center animate-slide-up"
-          style={{ borderColor: 'rgba(245,158,11,0.4)' }}
-        >
-          <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text)' }}>
-            Como foi o serviço?
-          </p>
-          <div className="flex justify-center gap-2">
-            {[1, 2, 3, 4, 5].map(star => (
-              <button
-                key={star}
-                id={`btn-rate-${star}`}
-                onClick={() => handleRate(star)}
-                disabled={rated}
-                className="transition-transform hover:scale-125 active:scale-95"
-              >
-                <Star
-                  size={32}
-                  fill={star <= rating ? '#F59E0B' : 'none'}
-                  style={{ color: star <= rating ? '#F59E0B' : 'var(--color-border)' }}
-                />
-              </button>
-            ))}
+        <>
+          <div
+            className="card p-4 mb-4 text-center animate-slide-up"
+            style={{ borderColor: 'rgba(245,158,11,0.4)' }}
+          >
+            <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text)' }}>
+              Como foi o serviço?
+            </p>
+            <div className="flex justify-center gap-2">
+              {[1, 2, 3, 4, 5].map(star => (
+                <button
+                  key={star}
+                  id={`btn-rate-${star}`}
+                  onClick={() => handleRate(star)}
+                  disabled={rated}
+                  className="transition-transform hover:scale-125 active:scale-95"
+                >
+                  <Star
+                    size={32}
+                    fill={star <= rating ? '#F59E0B' : 'none'}
+                    style={{ color: star <= rating ? '#F59E0B' : 'var(--color-border)' }}
+                  />
+                </button>
+              ))}
+            </div>
+            {rated && <p className="text-xs mt-2" style={{ color: 'var(--color-success)' }}>Avaliação enviada! Obrigado ⭐</p>}
           </div>
-          {rated && <p className="text-xs mt-2" style={{ color: 'var(--color-success)' }}>Avaliação enviada! Obrigado ⭐</p>}
-        </div>
+
+          {/* Comprovante Oficial para Imobiliária / Inquilino */}
+          <div className="card p-4 mb-4 bg-orange-50/80 border-orange-200 shadow-xs animate-slide-up text-left">
+            <div className="flex items-start gap-2.5">
+              <div className="p-2 rounded-xl bg-orange-100 text-orange-600 shrink-0 mt-0.5">
+                <FileText size={18} />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-orange-950">Mora de aluguel ou precisa de recibo?</p>
+                <p className="text-[11px] text-orange-900/80 mt-0.5 leading-snug">
+                  Gere o comprovante oficial timbrado do Repara RV para abater no aluguel ou comprovação junto à imobiliária em Rio Verde.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowComprovante(true)}
+                  className="mt-2.5 w-full py-2.5 px-3 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <FileText size={14} />
+                  <span>Baixar Comprovante de Manutenção (PDF)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Botão cancelar (só se searching) */}
@@ -330,6 +357,25 @@ export default function AcompanharPage() {
         onConfirmCancel={handleConfirmCancel}
         isLoading={cancelling}
       />
+
+      {/* Modal de comprovante oficial para imobiliária */}
+      {showComprovante && (
+        <ComprovanteManutencaoModal
+          isOpen={showComprovante}
+          onClose={() => setShowComprovante(false)}
+          call={{
+            id: call.id,
+            service_name: (call.service as { name?: string })?.name ?? 'Serviço Residencial',
+            total_price: call.total_price,
+            client_address: call.client_address,
+            client_name: (call.client as { full_name?: string })?.full_name,
+            client_phone: (call.client as { phone?: string })?.phone,
+            provider_name: (call.provider as { full_name?: string })?.full_name,
+            completed_at: call.completed_at ?? undefined,
+            created_at: call.created_at,
+          }}
+        />
+      )}
 
       {/* Modal de pagamento Pix / Cartão */}
       {showPix && (
