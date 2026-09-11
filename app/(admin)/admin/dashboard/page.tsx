@@ -25,7 +25,13 @@ import {
   AlertTriangle,
   Check,
   CreditCard,
-  Copy
+  Copy,
+  Clock,
+  Send,
+  Radio,
+  Zap,
+  ExternalLink,
+  ShieldCheck
 } from 'lucide-react'
 import { updateCallPaymentStatusAction } from '@/app/actions/admin-users'
 import { toast } from 'sonner'
@@ -51,6 +57,7 @@ interface ServiceCallRecord {
   accepted_at?: string | null
   completed_at?: string | null
   cancelled_at?: string | null
+  expires_at?: string | null
   service?: { name: string; category: string } | null
   client?: { full_name: string; phone: string } | null
   provider?: { full_name: string; phone: string } | null
@@ -80,18 +87,51 @@ interface EmergencyAlertRecord {
   caller?: { full_name: string; phone: string } | null
 }
 
+interface ProviderContact {
+  id: string
+  full_name: string
+  phone: string
+  mercado_pago_connected?: boolean | null
+  provider_status?: {
+    is_online?: boolean | null
+    recipient_gateway_id?: string | null
+  } | {
+    is_online?: boolean | null
+    recipient_gateway_id?: string | null
+  }[] | null
+}
+
 export default function AdminDashboardPage() {
   const supabase = createClient()
   const [calls, setCalls] = useState<ServiceCallRecord[]>([])
   const [auditLogs, setAuditLogs] = useState<AuditLogRecord[]>([])
   const [emergencyAlerts, setEmergencyAlerts] = useState<EmergencyAlertRecord[]>([])
+  const [providersList, setProvidersList] = useState<ProviderContact[]>([])
   const [loading, setLoading] = useState<boolean>(true)
+  
+  // Ticker de tempo em tempo real para recalcular estagnação na fila
+  const [currentTime, setCurrentTime] = useState<number>(Date.now())
+  
+  // Modal de Despacho Rápido via WhatsApp
+  const [dispatchCall, setDispatchCall] = useState<ServiceCallRecord | null>(null)
+  const [dispatchSearch, setDispatchSearch] = useState<string>('')
+  const [copiedClaimId, setCopiedClaimId] = useState<string | null>(null)
+
+  // Abas de navegação
   const [activeTab, setActiveTab] = useState<'overview' | 'completed' | 'cancellations' | 'audit' | 'sos'>('overview')
   const [cancelFilter, setCancelFilter] = useState<'all' | 'arrived' | 'allocated' | 'searching'>('all')
   const [selectedProviderFilter, setSelectedProviderFilter] = useState<string>('')
   const [completedSearchQuery, setCompletedSearchQuery] = useState<string>('')
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'pending'>('all')
   const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null)
+
+  // Timer de 30 segundos no cliente para atualizar estagnação da fila (> 5 min)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now())
+    }, 30000)
+    return () => clearInterval(timer)
+  }, [])
 
   const handleTogglePaymentStatus = async (callId: string, currentStatus?: string | null) => {
     const newStatus = currentStatus === 'paid' ? 'pending' : 'paid'
@@ -120,7 +160,7 @@ export default function AdminDashboardPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      // 1. Busca chamados com relacionamentos incluindo payment_status
+      // 1. Busca chamados com relacionamentos incluindo payment_status e expires_at
       const { data: callsData, error: callsError } = await supabase
         .from('service_calls')
         .select(`
@@ -144,6 +184,7 @@ export default function AdminDashboardPage() {
           accepted_at,
           completed_at,
           cancelled_at,
+          expires_at,
           service:quick_services(name, category),
           client:profiles!client_id(full_name, phone),
           provider:profiles!provider_id(full_name, phone)
@@ -154,7 +195,24 @@ export default function AdminDashboardPage() {
         setCalls(callsData as unknown as ServiceCallRecord[])
       }
 
-      // 2. Busca histórico imutável de auditoria
+      // 2. Busca prestadores cadastrados para o despacho emergencial via WhatsApp
+      const { data: provsData } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          full_name,
+          phone,
+          mercado_pago_connected,
+          provider_status(is_online, recipient_gateway_id)
+        `)
+        .eq('role', 'provider')
+        .order('full_name', { ascending: true })
+
+      if (provsData) {
+        setProvidersList(provsData as unknown as ProviderContact[])
+      }
+
+      // 3. Busca histórico imutável de auditoria
       const { data: auditData, error: auditError } = await supabase
         .from('service_audit_logs')
         .select('*')
@@ -165,7 +223,7 @@ export default function AdminDashboardPage() {
         setAuditLogs(auditData as unknown as AuditLogRecord[])
       }
 
-      // 3. Busca incidentes do botão SOS
+      // 4. Busca incidentes do botão SOS
       const { data: alertData, error: alertError } = await supabase
         .from('emergency_alerts')
         .select('*, caller:profiles!triggered_by(full_name, phone)')
@@ -186,7 +244,39 @@ export default function AdminDashboardPage() {
     fetchData()
   }, [fetchData])
 
-  // Métricas Calculadas com separação rigorosa de Pago vs Pendente
+  // Inscrição Realtime com Cleanup Seguro no retorno do useEffect
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-dashboard-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'service_calls' },
+        () => {
+          fetchData()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [supabase, fetchData])
+
+  // Chamados na Fila de Espera ('queued') e Estagnados (> 5 min)
+  const allQueuedCalls = useMemo(() => {
+    return calls.filter(c => c.status === 'queued')
+  }, [calls])
+
+  const stuckQueuedCalls = useMemo(() => {
+    return calls.filter(c => {
+      if (c.status !== 'queued') return false
+      const createdAt = new Date(c.created_at).getTime()
+      const elapsedMinutes = (currentTime - createdAt) / (1000 * 60)
+      return elapsedMinutes >= 5
+    })
+  }, [calls, currentTime])
+
+  // Métricas Financeiras Rigorosamente Segregadas (GMV vs. Take Rate vs. Repasse Prestadores)
   const metrics = useMemo(() => {
     const total = calls.length
     const completed = calls.filter(c => c.status === 'completed')
@@ -194,17 +284,19 @@ export default function AdminDashboardPage() {
     const pendingCompleted = completed.filter(c => c.payment_status !== 'paid')
     const cancelled = calls.filter(c => c.status === 'cancelled' || c.status === 'no_providers_available')
     const inProgress = calls.filter(c => ['accepted', 'on_the_way', 'in_progress'].includes(c.status))
-    const searching = calls.filter(c => c.status === 'searching')
+    const queuedCount = allQueuedCalls.length
 
-    // Volume GMV Liquidado (pago) vs Pendente de Pix
+    // 1. GMV Total (Volume Bruto Transacionado pelos Clientes)
     const gmvPaid = paidCompleted.reduce((acc, c) => acc + Number(c.total_price || 0), 0)
     const gmvPending = pendingCompleted.reduce((acc, c) => acc + Number(c.total_price || 0), 0)
+    const gmvTotal = gmvPaid + gmvPending
 
-    // Regra inegociável: platform_fee fixa de R$ 12,00 por serviço concluído
-    const platformRevenueRealized = paidCompleted.length * 12.0
-    const platformRevenuePending = pendingCompleted.length * 12.0
+    // 2. Receita da Plataforma (Take Rate retido)
+    const platformRevenueRealized = paidCompleted.reduce((acc, c) => acc + Number(c.platform_fee || 12.0), 0)
+    const platformRevenuePending = pendingCompleted.reduce((acc, c) => acc + Number(c.platform_fee || 12.0), 0)
+    const platformRevenueTotal = platformRevenueRealized + platformRevenuePending
 
-    // Repasse aos técnicos: liquidado vs pendente
+    // 3. Repasse Líquido dos Técnicos (mão de obra pura após split)
     const providerPayoutRealized = paidCompleted.reduce(
       (acc, c) => acc + Number(c.provider_cut || (Number(c.total_price) - 12)),
       0
@@ -213,6 +305,9 @@ export default function AdminDashboardPage() {
       (acc, c) => acc + Number(c.provider_cut || (Number(c.total_price) - 12)),
       0
     )
+    const providerPayoutTotal = providerPayoutRealized + providerPayoutPending
+
+    // Proteção contra divisão por zero
     const cancellationRate = total > 0 ? (cancelled.length / total) * 100 : 0
 
     return {
@@ -222,17 +317,92 @@ export default function AdminDashboardPage() {
       pendingPaymentCount: pendingCompleted.length,
       cancelledCount: cancelled.length,
       inProgressCount: inProgress.length,
-      searchingCount: searching.length,
+      queuedCount,
+      stuckQueuedCount: stuckQueuedCalls.length,
+      gmvTotal,
       gmvPaid,
       gmvPending,
+      platformRevenueTotal,
       platformRevenueRealized,
       platformRevenuePending,
+      providerPayoutTotal,
       providerPayoutRealized,
       providerPayoutPending,
       cancellationRate,
       sosCount: emergencyAlerts.length,
     }
-  }, [calls, emergencyAlerts])
+  }, [calls, allQueuedCalls, stuckQueuedCalls, emergencyAlerts])
+
+  // Diagnóstico Analítico dos Motivos de Cancelamento
+  const cancellationReasonAnalysis = useMemo(() => {
+    const cancelled = calls.filter(c => c.status === 'cancelled' || c.status === 'no_providers_available')
+    const total = cancelled.length
+
+    let demoraCount = 0
+    let valorAltoCount = 0
+    let resolveuSozinhoCount = 0
+    let enderecoCount = 0
+    let outrosCount = 0
+
+    cancelled.forEach(c => {
+      const reason = `${c.cancellation_reason || ''} ${c.cancel_reason || ''} ${c.cancel_note || ''}`.toLowerCase()
+      if (
+        c.status === 'no_providers_available' || 
+        reason.includes('demor') || 
+        reason.includes('tempo') || 
+        reason.includes('prestador') ||
+        c.cancellation_stage === 'no_providers_available'
+      ) {
+        demoraCount++
+      } else if (reason.includes('valor') || reason.includes('preço') || reason.includes('caro') || reason.includes('alto')) {
+        valorAltoCount++
+      } else if (reason.includes('sozinho') || reason.includes('desist') || reason.includes('outro modo') || reason.includes('cliente')) {
+        resolveuSozinhoCount++
+      } else if (reason.includes('endereço') || reason.includes('local') || reason.includes('bairro')) {
+        enderecoCount++
+      } else {
+        outrosCount++
+      }
+    })
+
+    // Proteção rigorosa contra divisão por zero (NaN%)
+    const safePct = (count: number) => (total > 0 ? (count / total) * 100 : 0)
+
+    const demoraPct = safePct(demoraCount)
+    const isDemoraCritical = demoraPct >= 40 && total >= 2
+
+    return {
+      total,
+      isDemoraCritical,
+      demoraPct,
+      reasons: [
+        { label: 'Demora para encontrar prestador', count: demoraCount, pct: demoraPct, color: 'bg-red-500', text: 'text-red-400' },
+        { label: 'Achou o valor do serviço alto', count: valorAltoCount, pct: safePct(valorAltoCount), color: 'bg-amber-500', text: 'text-amber-400' },
+        { label: 'Resolveu o reparo sozinho / Desistiu', count: resolveuSozinhoCount, pct: safePct(resolveuSozinhoCount), color: 'bg-blue-500', text: 'text-blue-400' },
+        { label: 'Endereço incorreto / Fora de Rio Verde', count: enderecoCount, pct: safePct(enderecoCount), color: 'bg-purple-500', text: 'text-purple-400' },
+        { label: 'Outros motivos / Não informado', count: outrosCount, pct: safePct(outrosCount), color: 'bg-slate-500', text: 'text-slate-400' },
+      ],
+    }
+  }, [calls])
+
+  // Ranking de Bairros de Rio Verde com Proteção contra Divisão por Zero
+  const neighborhoodRanking = useMemo(() => {
+    const map: Record<string, number> = {}
+    const totalCalls = calls.length
+    calls.forEach(c => {
+      const hood = c.neighborhood || 'Setor Central'
+      map[hood] = (map[hood] || 0) + 1
+    })
+
+    return Object.entries(map)
+      .map(([name, count]) => ({
+        name,
+        count,
+        pct: totalCalls > 0 ? (count / totalCalls) * 100 : 0,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6)
+  }, [calls])
 
   // Ranking de Prestadores com métricas de recebimento
   const providerRanking = useMemo(() => {
@@ -275,18 +445,20 @@ export default function AdminDashboardPage() {
       }
     })
 
-    return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 10)
+    return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 8)
   }, [calls])
 
-  // Lista de técnicos com chamados concluídos (para filtro em chips)
-  const completedProvidersList = useMemo(() => {
-    const set = new Set<string>()
-    calls.filter(c => c.status === 'completed').forEach(c => {
-      const provObj = Array.isArray(c.provider) ? c.provider[0] : c.provider
-      if (provObj?.full_name) set.add(provObj.full_name)
+  // Filtro de técnicos no Modal de Despacho Emergencial
+  const filteredDispatchProviders = useMemo(() => {
+    const q = dispatchSearch.trim().toLowerCase()
+    return providersList.filter(p => {
+      if (!q) return true
+      return (
+        p.full_name.toLowerCase().includes(q) ||
+        p.phone.includes(q)
+      )
     })
-    return Array.from(set).sort()
-  }, [calls])
+  }, [providersList, dispatchSearch])
 
   // Chamados Concluídos Filtrados com Suporte a Status Financeiro (Pago / Pendente)
   const completedCalls = useMemo(() => {
@@ -302,13 +474,8 @@ export default function AdminDashboardPage() {
       const serviceCategory = serviceObj?.category || ''
       const neighborhood = c.neighborhood || ''
 
-      // Filtro de pagamento
-      if (paymentFilter === 'paid' && c.payment_status !== 'paid') {
-        return false
-      }
-      if (paymentFilter === 'pending' && c.payment_status === 'paid') {
-        return false
-      }
+      if (paymentFilter === 'paid' && c.payment_status !== 'paid') return false
+      if (paymentFilter === 'pending' && c.payment_status === 'paid') return false
 
       if (selectedProviderFilter && provName.toLowerCase() !== selectedProviderFilter.toLowerCase()) {
         return false
@@ -330,19 +497,6 @@ export default function AdminDashboardPage() {
     })
   }, [calls, paymentFilter, selectedProviderFilter, completedSearchQuery])
 
-  // Ranking de Bairros Atendidos
-  const neighborhoodRanking = useMemo(() => {
-    const map: Record<string, number> = {}
-    calls.forEach(c => {
-      const hood = c.neighborhood || 'Setor Central'
-      map[hood] = (map[hood] || 0) + 1
-    })
-    return Object.entries(map)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
-  }, [calls])
-
   // Chamados Cancelados com Filtros
   const cancelledCalls = useMemo(() => {
     const base = calls.filter(c => c.status === 'cancelled' || c.status === 'no_providers_available')
@@ -360,112 +514,197 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Cabeçalho do Dashboard */}
+      {/* Cabeçalho da Torre de Controle */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-white flex items-center gap-2.5">
-            <BarChart3 className="text-orange-500" size={26} />
-            Analytics & Central de Auditoria
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              Torre de Controle Operacional
+            </span>
+            <span className="text-xs text-slate-500 font-medium">Rio Verde - GO</span>
+          </div>
+          <h1 className="text-2xl font-extrabold text-white flex items-center gap-2.5 mt-1.5">
+            <Radio className="text-orange-500" size={26} />
+            Radar de Despacho & Performance
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Métricas em tempo real de transações, performance de técnicos e radar forense de cancelamentos.
+            Monitoramento em tempo real de chamados na fila, despacho rápido no WhatsApp e métricas financeiras.
           </p>
         </div>
 
         <button
           onClick={fetchData}
           disabled={loading}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition-colors self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition-colors self-start sm:self-auto cursor-pointer"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin text-orange-500' : 'text-slate-400'} />
           Atualizar Dados
         </button>
       </div>
 
-      {/* Grid de KPIs Principais */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Chamados Concluídos */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">Concluídos</span>
-            <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
-              <CheckCircle2 size={18} />
+      {/* ============================================================ */}
+      {/* 🚨 ALERTA CRÍTICO: CHAMADOS ESTAGNANOS NA FILA DE ESPERA (> 5 MIN) */}
+      {/* ============================================================ */}
+      {stuckQueuedCalls.length > 0 && (
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-red-950/90 via-red-900/60 to-slate-900 border-2 border-red-500/80 shadow-2xl shadow-red-950/50 space-y-4 animate-pulse">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-red-600 text-white rounded-xl shadow-lg">
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h2 className="text-base font-black text-white flex items-center gap-2">
+                  🚨 ALERTA CRÍTICO: {stuckQueuedCalls.length} chamado{stuckQueuedCalls.length > 1 ? 's' : ''} aguardando técnico há mais de 5 minutos!
+                </h2>
+                <p className="text-xs text-red-200 mt-0.5">
+                  Alto risco de desistência do morador. Acione os prestadores manualmente via WhatsApp antes do cancelamento.
+                </p>
+              </div>
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-white">
-            {metrics.completedCount}
-          </div>
-          <div className="text-xs text-slate-400 flex flex-wrap items-center gap-1.5">
-            <span className="text-emerald-400 font-semibold">{metrics.paidCount} pagos</span>
-            {metrics.pendingPaymentCount > 0 ? (
-              <span className="text-amber-400 font-semibold">
-                · {metrics.pendingPaymentCount} pendente{metrics.pendingPaymentCount > 1 ? 's' : ''} Pix ⚠️
-              </span>
-            ) : (
-              <span className="text-slate-500">· 100% quitados</span>
-            )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+            {stuckQueuedCalls.map((call) => {
+              const elapsedMinutes = Math.floor((currentTime - new Date(call.created_at).getTime()) / 60000)
+              const serviceName = call.service?.name || 'Serviço sob demanda'
+              const clientName = call.client?.full_name || 'Morador'
+              const neighborhood = call.neighborhood || 'Setor Central'
+              const providerCut = Number(call.provider_cut || (Number(call.total_price) - 12))
+
+              return (
+                <div
+                  key={call.id}
+                  className="p-3.5 rounded-xl bg-slate-950/80 border border-red-500/40 hover:border-red-400 transition-all flex flex-col justify-between gap-3 shadow-sm"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-black bg-red-500 text-white uppercase tracking-wider">
+                        ⏳ {elapsedMinutes} min na fila
+                      </span>
+                      <span className="text-xs font-bold text-emerald-400">
+                        R$ {providerCut.toFixed(2)} (Líquido)
+                      </span>
+                    </div>
+
+                    <div>
+                      <div className="text-xs font-bold text-white line-clamp-1">{serviceName}</div>
+                      <div className="text-[11px] text-slate-300 flex items-center gap-1 mt-0.5">
+                        <MapPin size={11} className="text-red-400 shrink-0" />
+                        <span className="font-semibold">{neighborhood}</span> · {clientName}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setDispatchCall(call)}
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black text-white bg-red-600 hover:bg-red-500 active:scale-95 transition-all shadow-md cursor-pointer"
+                  >
+                    <Send size={13} />
+                    🚨 Acionar Prestadores no WhatsApp
+                  </button>
+                </div>
+              )
+            })}
           </div>
         </div>
+      )}
 
-        {/* Volume Transacionado (GMV) */}
+      {/* ============================================================ */}
+      {/* GRID DE KPIs PRINCIPAIS (GMV vs. TAKE RATE vs. REPASSE TÉCNICOS) */}
+      {/* ============================================================ */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Volume Bruto Transacionado (GMV) */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">GMV Liquidado</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">GMV Transacionado</span>
             <div className="p-2 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20">
               <DollarSign size={18} />
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-white">
-            {formatCurrency(metrics.gmvPaid)}
+            {formatCurrency(metrics.gmvTotal)}
           </div>
           <div className="text-xs text-slate-400 space-y-0.5">
+            <div className="text-emerald-400 font-semibold">
+              ✔ {formatCurrency(metrics.gmvPaid)} liquidado (pago)
+            </div>
             {metrics.gmvPending > 0 && (
               <div className="text-amber-400 font-medium">
-                + {formatCurrency(metrics.gmvPending)} pendente Pix ⚠️
+                ⏳ + {formatCurrency(metrics.gmvPending)} aguardando Pix
               </div>
             )}
-            <div className="text-slate-500">
-              Repassado aos técnicos: <strong className="text-slate-300">{formatCurrency(metrics.providerPayoutRealized)}</strong>
-            </div>
           </div>
         </div>
 
-        {/* Receita Líquida da Plataforma */}
+        {/* Card 2: Receita Própria da Plataforma (Take Rate) */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">Receita Líquida</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">Receita Repara RV</span>
             <div className="p-2 bg-orange-500/10 rounded-xl text-orange-400 border border-orange-500/20">
               <TrendingUp size={18} />
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-orange-400">
-            {formatCurrency(metrics.platformRevenueRealized)}
+            {formatCurrency(metrics.platformRevenueTotal)}
           </div>
           <div className="text-xs text-slate-400 space-y-0.5">
+            <div className="text-emerald-400 font-semibold">
+              ✔ {formatCurrency(metrics.platformRevenueRealized)} realizada
+            </div>
             {metrics.platformRevenuePending > 0 && (
               <div className="text-amber-400 font-medium">
-                + {formatCurrency(metrics.platformRevenuePending)} a receber ({metrics.pendingPaymentCount} pend.)
+                ⏳ + {formatCurrency(metrics.platformRevenuePending)} a receber
               </div>
             )}
-            <div className="text-slate-500">
-              Taxa fixa <strong className="text-slate-300">R$ 12,00</strong> / serviço liquidado
-            </div>
           </div>
         </div>
 
-        {/* Taxa de Cancelamento */}
+        {/* Card 3: Repasse Líquido dos Prestadores */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">Cancelamentos</span>
-            <div className="p-2 bg-red-500/10 rounded-xl text-red-400 border border-red-500/20">
-              <XCircle size={18} />
+            <span className="text-xs font-semibold uppercase tracking-wider">Repasse Técnicos</span>
+            <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
+              <Wrench size={18} />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-white">
-            {metrics.cancelledCount}
+          <div className="text-2xl sm:text-3xl font-black text-emerald-400">
+            {formatCurrency(metrics.providerPayoutTotal)}
           </div>
-          <div className="text-xs text-slate-500">
-            Taxa global: <strong className={metrics.cancellationRate > 20 ? 'text-red-400' : 'text-slate-300'}>{metrics.cancellationRate.toFixed(1)}%</strong>
+          <div className="text-xs text-slate-400 space-y-0.5">
+            <div className="text-emerald-400 font-semibold">
+              ✔ {formatCurrency(metrics.providerPayoutRealized)} transferido
+            </div>
+            {metrics.providerPayoutPending > 0 && (
+              <div className="text-amber-400 font-medium">
+                ⏳ + {formatCurrency(metrics.providerPayoutPending)} pendente Pix
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Card 4: Fila Ativa & Concluídos */}
+        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-semibold uppercase tracking-wider">Fila & Concluídos</span>
+            <div className="p-2 bg-purple-500/10 rounded-xl text-purple-400 border border-purple-500/20">
+              <Zap size={18} />
+            </div>
+          </div>
+          <div className="flex items-baseline gap-2 text-2xl sm:text-3xl font-black text-white">
+            <span>{metrics.completedCount}</span>
+            <span className="text-xs font-bold text-slate-400">concluídos</span>
+          </div>
+          <div className="text-xs text-slate-400 flex flex-wrap items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300">
+              {metrics.queuedCount} na fila agora
+            </span>
+            {metrics.stuckQueuedCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-red-500 text-white animate-pulse">
+                {metrics.stuckQueuedCount} estagnado{metrics.stuckQueuedCount > 1 ? 's' : ''} ⚠️
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -474,7 +713,7 @@ export default function AdminDashboardPage() {
       <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto">
         <button
           onClick={() => setActiveTab('overview')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'overview'
               ? 'bg-orange-500 text-white shadow-sm'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -486,7 +725,7 @@ export default function AdminDashboardPage() {
 
         <button
           onClick={() => setActiveTab('completed')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'completed'
               ? 'bg-emerald-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -503,7 +742,7 @@ export default function AdminDashboardPage() {
 
         <button
           onClick={() => setActiveTab('cancellations')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'cancellations'
               ? 'bg-orange-500 text-white shadow-sm'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -515,7 +754,7 @@ export default function AdminDashboardPage() {
 
         <button
           onClick={() => setActiveTab('audit')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'audit'
               ? 'bg-orange-500 text-white shadow-sm'
               : 'text-slate-400 hover:text-white hover:bg-slate-900'
@@ -527,7 +766,7 @@ export default function AdminDashboardPage() {
 
         <button
           onClick={() => setActiveTab('sos')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'sos'
               ? 'bg-red-600 text-white shadow-sm'
               : 'text-slate-400 hover:text-red-400 hover:bg-slate-900'
@@ -538,14 +777,112 @@ export default function AdminDashboardPage() {
         </button>
       </div>
 
-      {/* ABA 1: VISÃO GERAL & RANKINGS */}
+      {/* ============================================================ */}
+      {/* ABA 1: VISÃO GERAL, MOTIVOS DE CANCELAMENTO & RANKINGS */}
+      {/* ============================================================ */}
       {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Top Prestadores */}
+        <div className="space-y-6">
+          {/* Linha Superior: Diagnóstico de Cancelamentos e Concentração de Bairros */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Card: Diagnóstico dos Motivos de Cancelamento */}
+            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <XCircle className="text-red-400" size={18} />
+                  Diagnóstico dos Motivos de Cancelamento
+                </h3>
+                <span className="text-xs font-bold text-slate-400">
+                  {cancellationReasonAnalysis.total} cancelamento{cancellationReasonAnalysis.total === 1 ? '' : 's'}
+                </span>
+              </div>
+
+              {cancellationReasonAnalysis.isDemoraCritical && (
+                <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 flex items-start gap-2.5">
+                  <AlertTriangle size={16} className="text-red-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-red-400 font-bold block">⚠️ Alerta de Capacidade Operacional em Rio Verde:</strong>
+                    Mais de {cancellationReasonAnalysis.demoraPct.toFixed(0)}% dos cancelamentos são causados por tempo de espera excessivo. Priorize o credenciamento de prestadores nessas categorias.
+                  </div>
+                </div>
+              )}
+
+              {cancellationReasonAnalysis.total === 0 ? (
+                <p className="text-xs text-slate-500 py-6 text-center">
+                  Nenhum chamado cancelado registrado até o momento. Excelente retenção!
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {cancellationReasonAnalysis.reasons.map((item) => (
+                    <div key={item.label} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-300 font-medium">{item.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`font-bold ${item.text}`}>{item.pct.toFixed(0)}%</span>
+                          <span className="text-slate-500 text-[11px]">({item.count})</span>
+                        </div>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${item.color} transition-all duration-500`}
+                          style={{ width: `${Math.min(100, Math.max(0, item.pct))}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Card: Bairros Mais Demandados de Rio Verde */}
+            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <MapPin className="text-cyan-400" size={18} />
+                  Ranking de Demanda por Bairros (Rio Verde)
+                </h3>
+                <span className="text-xs font-bold text-slate-400">
+                  {neighborhoodRanking.length} bairros ativos
+                </span>
+              </div>
+
+              {neighborhoodRanking.length === 0 ? (
+                <p className="text-xs text-slate-500 py-6 text-center">
+                  Nenhum chamado registrado por geolocalização até o momento.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {neighborhoodRanking.map((hood, index) => (
+                    <div key={hood.name} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 font-semibold text-white">
+                          <span className="w-5 h-5 rounded-md bg-slate-800 text-cyan-400 font-bold text-[11px] flex items-center justify-center">
+                            #{index + 1}
+                          </span>
+                          {hood.name}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-cyan-400">{hood.pct.toFixed(0)}%</span>
+                          <span className="text-slate-500 text-[11px]">({hood.count} chamados)</span>
+                        </div>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500"
+                          style={{ width: `${Math.min(100, Math.max(0, hood.pct))}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Linha Inferior: Top Prestadores em Rio Verde */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <Award className="text-amber-400" size={18} />
-              Top Técnicos em Rio Verde (Por Conclusão)
+              Top Técnicos em Rio Verde (Por Conclusão de Serviços)
             </h3>
 
             {providerRanking.length === 0 ? (
@@ -553,88 +890,33 @@ export default function AdminDashboardPage() {
                 Ainda não há dados suficientes de chamados concluídos para gerar o ranking.
               </p>
             ) : (
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                 {providerRanking.map((prov, index) => (
                   <div
                     key={prov.name}
-                    className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition-colors"
+                    className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition-colors flex flex-col justify-between gap-3"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                    <div>
+                      <div className="flex items-center justify-between">
                         <span className="w-6 h-6 rounded-full bg-slate-800 text-orange-400 font-bold text-xs flex items-center justify-center">
                           #{index + 1}
                         </span>
-                        <div>
-                          <div className="text-xs font-bold text-white">{prov.name}</div>
-                          <div className="text-[11px] text-slate-400">{prov.phone}</div>
-                        </div>
-                      </div>
-
-                      <div className="text-right">
                         <span className="text-xs font-bold text-emerald-400">
-                          {prov.paidCount} {prov.paidCount === 1 ? 'pago' : 'pagos'}
+                          {prov.paidCount} pago{prov.paidCount === 1 ? '' : 's'}
                         </span>
-                        {prov.pendingCount > 0 && (
-                          <span className="text-[11px] font-bold text-amber-400 ml-1.5">
-                            ({prov.pendingCount} pendente{prov.pendingCount > 1 ? 's' : ''})
-                          </span>
-                        )}
-                        <div className="text-[10px] text-slate-400">
-                          {formatCurrency(prov.earningsPaid)} recebido
-                          {prov.pendingCount > 0 && (
-                            <span className="text-amber-400/90 block font-medium">
-                              + {formatCurrency(prov.earningsPending)} a receber
-                            </span>
-                          )}
-                        </div>
                       </div>
+                      <div className="text-xs font-bold text-white mt-2">{prov.name}</div>
+                      <div className="text-[11px] text-slate-400">{prov.phone}</div>
                     </div>
 
-                    <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between">
-                      <span className="text-[10px] text-slate-500">
-                        {prov.count} atendimento{prov.count > 1 ? 's' : ''} concluído{prov.count > 1 ? 's' : ''}
+                    <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
+                      <span className="text-slate-500 text-[11px]">
+                        {prov.count} concluído{prov.count === 1 ? '' : 's'}
                       </span>
-                      <button
-                        onClick={() => {
-                          setSelectedProviderFilter(prov.name)
-                          setActiveTab('completed')
-                        }}
-                        className="text-xs font-semibold text-orange-400 hover:text-orange-300 inline-flex items-center gap-1 transition-colors"
-                      >
-                        Ver serviços efetuados ➔
-                      </button>
+                      <span className="font-bold text-white">
+                        {formatCurrency(prov.earningsPaid)}
+                      </span>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Top Bairros com Maior Demanda */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <MapPin className="text-cyan-400" size={18} />
-              Concentração por Bairro em Rio Verde
-            </h3>
-
-            {neighborhoodRanking.length === 0 ? (
-              <p className="text-xs text-slate-500 py-6 text-center">
-                Nenhum chamado registrado por geolocalização até o momento.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {neighborhoodRanking.map((hood, index) => (
-                  <div
-                    key={hood.name}
-                    className="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-slate-800/80"
-                  >
-                    <div className="flex items-center gap-2 text-xs font-semibold text-white">
-                      <span className="text-slate-500 text-xs">0{index + 1}.</span>
-                      {hood.name}
-                    </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                      {hood.count} chamados
-                    </span>
                   </div>
                 ))}
               </div>
@@ -643,21 +925,20 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
+      {/* ============================================================ */}
       {/* ABA: SERVIÇOS CONCLUÍDOS / HISTÓRICO DE SERVIÇOS EFETUADOS */}
+      {/* ============================================================ */}
       {activeTab === 'completed' && (
         <div className="space-y-6">
-          {/* Header da aba com filtros rápidos */}
           <div className="flex flex-col gap-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
-            {/* Linha superior: Filtros por status financeiro e busca */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-              {/* Filtro por Status Financeiro (Pago vs Pendente Pix) */}
               <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
                 <span className="text-xs text-slate-400 font-semibold whitespace-nowrap flex items-center gap-1.5 mr-1">
                   <CreditCard size={13} /> Pagamento:
                 </span>
                 <button
                   onClick={() => setPaymentFilter('all')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
                     paymentFilter === 'all'
                       ? 'bg-slate-100 text-slate-900 shadow-sm'
                       : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
@@ -667,7 +948,7 @@ export default function AdminDashboardPage() {
                 </button>
                 <button
                   onClick={() => setPaymentFilter('paid')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
                     paymentFilter === 'paid'
                       ? 'bg-emerald-600 text-white shadow-sm'
                       : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
@@ -677,7 +958,7 @@ export default function AdminDashboardPage() {
                 </button>
                 <button
                   onClick={() => setPaymentFilter('pending')}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
                     paymentFilter === 'pending'
                       ? 'bg-amber-500 text-slate-950 shadow-sm'
                       : metrics.pendingPaymentCount > 0
@@ -689,7 +970,6 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
 
-              {/* Input de Busca */}
               <div className="relative w-full md:w-80">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={15} />
                 <input
@@ -701,65 +981,15 @@ export default function AdminDashboardPage() {
                 />
               </div>
             </div>
-
-            {/* Linha inferior: Chips de Técnicos */}
-            <div className="flex items-center gap-2 overflow-x-auto pt-2 border-t border-slate-800/60 pb-1 md:pb-0">
-              <span className="text-xs text-slate-400 font-semibold whitespace-nowrap flex items-center gap-1.5 mr-1">
-                <Filter size={13} /> Filtrar Técnico:
-              </span>
-              <button
-                onClick={() => setSelectedProviderFilter('')}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                  !selectedProviderFilter
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                }`}
-              >
-                Todos
-              </button>
-              {completedProvidersList.map((provName) => (
-                <button
-                  key={provName}
-                  onClick={() => setSelectedProviderFilter(provName)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors whitespace-nowrap ${
-                    selectedProviderFilter === provName
-                      ? 'bg-orange-500 text-white shadow-sm'
-                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
-                  }`}
-                >
-                  {provName}
-                </button>
-              ))}
-            </div>
           </div>
 
-          {/* Tag de filtro ativo se selecionado */}
-          {selectedProviderFilter && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Filtrando atendimentos executados por:</span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/40">
-                {selectedProviderFilter}
-                <button
-                  onClick={() => setSelectedProviderFilter('')}
-                  className="hover:text-white ml-1"
-                  title="Remover filtro"
-                >
-                  <X size={12} />
-                </button>
-              </span>
-            </div>
-          )}
-
-          {/* Cards ou Tabela de Chamados Concluídos */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
             {completedCalls.length === 0 ? (
               <div className="p-16 text-center text-slate-400">
                 <CheckCircle2 className="mx-auto mb-3 text-slate-600" size={36} />
                 <p className="text-base font-semibold text-slate-300">Nenhum serviço efetuado encontrado</p>
                 <p className="text-xs text-slate-500 mt-1">
-                  {selectedProviderFilter || completedSearchQuery || paymentFilter !== 'all'
-                    ? 'Tente alterar os filtros de status de pagamento ou limpar a busca.'
-                    : 'Ainda não há registros de atendimentos concluídos no sistema.'}
+                  Tente alterar os filtros de status de pagamento ou limpar a busca.
                 </p>
               </div>
             ) : (
@@ -795,14 +1025,13 @@ export default function AdminDashboardPage() {
                       const clientWaUrl = `https://wa.me/55${cleanClientPhone}?text=Ol%C3%A1%20${encodeURIComponent(clientName)}%2C%20falo%20da%20administra%C3%A7%C3%A3o%20do%20Repara%20RV.`
 
                       const totalPrice = Number(call.total_price || 0)
-                      const fee = 12.0 // Regra inegociável R$ 12,00
-                      const providerCut = Number(call.provider_cut || (totalPrice - 12))
+                      const fee = Number(call.platform_fee || 12.0)
+                      const providerCut = Number(call.provider_cut || (totalPrice - fee))
                       const dateStr = call.completed_at || call.created_at
                       const isPaid = call.payment_status === 'paid'
 
                       return (
                         <tr key={call.id} className="hover:bg-slate-800/40 transition-colors">
-                          {/* ID do Chamado & Status do Pagamento */}
                           <td className="py-4 px-4">
                             <div className="font-mono text-xs font-bold text-orange-400">
                               #{call.id.slice(0, 8)}
@@ -813,7 +1042,7 @@ export default function AdminDashboardPage() {
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 mt-1">
-                                <AlertTriangle size={10} className="text-amber-400" /> Não Pago / Pendente Pix ⚠️
+                                <AlertTriangle size={10} className="text-amber-400" /> Aguardando Pix ⚠️
                               </span>
                             )}
                             <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-1">
@@ -822,7 +1051,6 @@ export default function AdminDashboardPage() {
                             </div>
                           </td>
 
-                          {/* Serviço Efetuado & Categoria */}
                           <td className="py-4 px-4">
                             <div className="font-bold text-white text-xs sm:text-sm">
                               {serviceName}
@@ -832,7 +1060,6 @@ export default function AdminDashboardPage() {
                             </span>
                           </td>
 
-                          {/* Prestador */}
                           <td className="py-4 px-4">
                             <div className="font-semibold text-white text-xs">
                               {provName}
@@ -864,7 +1091,6 @@ export default function AdminDashboardPage() {
                             )}
                           </td>
 
-                          {/* Cliente */}
                           <td className="py-4 px-4">
                             <div className="font-semibold text-white text-xs">
                               {clientName}
@@ -884,7 +1110,6 @@ export default function AdminDashboardPage() {
                             )}
                           </td>
 
-                          {/* Localização */}
                           <td className="py-4 px-4 max-w-[200px]">
                             <div className="text-xs font-semibold text-white flex items-center gap-1">
                               <MapPin size={12} className="text-cyan-400 shrink-0" />
@@ -897,7 +1122,6 @@ export default function AdminDashboardPage() {
                             )}
                           </td>
 
-                          {/* Divisão Financeira (Split) */}
                           <td className="py-4 px-4 text-right">
                             <div className="text-xs font-bold text-white">
                               Total: <span className="text-sm font-black">{formatCurrency(totalPrice)}</span>
@@ -923,14 +1147,13 @@ export default function AdminDashboardPage() {
                             )}
                           </td>
 
-                          {/* Gestão de Pagamento & Confirmação */}
                           <td className="py-4 px-4 text-center">
                             {!isPaid ? (
                               <div className="flex flex-col items-center gap-1.5">
                                 <button
                                   onClick={() => handleTogglePaymentStatus(call.id, call.payment_status)}
                                   disabled={updatingPaymentId === call.id}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500/50 shadow-sm transition-colors disabled:opacity-50 whitespace-nowrap"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500/50 shadow-sm transition-colors disabled:opacity-50 whitespace-nowrap cursor-pointer"
                                 >
                                   {updatingPaymentId === call.id ? (
                                     <RefreshCw size={12} className="animate-spin" />
@@ -958,7 +1181,7 @@ export default function AdminDashboardPage() {
                                 <button
                                   onClick={() => handleTogglePaymentStatus(call.id, call.payment_status)}
                                   disabled={updatingPaymentId === call.id}
-                                  className="text-[10px] text-slate-500 hover:text-slate-400 underline transition-colors disabled:opacity-50"
+                                  className="text-[10px] text-slate-500 hover:text-slate-400 underline transition-colors disabled:opacity-50 cursor-pointer"
                                 >
                                   Desmarcar Pix
                                 </button>
@@ -976,14 +1199,15 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
+      {/* ============================================================ */}
       {/* ABA 2: RADAR DE CANCELAMENTOS */}
+      {/* ============================================================ */}
       {activeTab === 'cancellations' && (
         <div className="space-y-4">
-          {/* Sub-filtros Operacionais */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             <button
               onClick={() => setCancelFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                 cancelFilter === 'all'
                   ? 'bg-slate-100 text-slate-900'
                   : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
@@ -993,7 +1217,7 @@ export default function AdminDashboardPage() {
             </button>
             <button
               onClick={() => setCancelFilter('arrived')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                 cancelFilter === 'arrived'
                   ? 'bg-red-500 text-white'
                   : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
@@ -1003,7 +1227,7 @@ export default function AdminDashboardPage() {
             </button>
             <button
               onClick={() => setCancelFilter('allocated')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                 cancelFilter === 'allocated'
                   ? 'bg-amber-500 text-white'
                   : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
@@ -1013,7 +1237,7 @@ export default function AdminDashboardPage() {
             </button>
             <button
               onClick={() => setCancelFilter('searching')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                 cancelFilter === 'searching'
                   ? 'bg-orange-500 text-white'
                   : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
@@ -1023,7 +1247,6 @@ export default function AdminDashboardPage() {
             </button>
           </div>
 
-          {/* Lista de Cancelamentos */}
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
             {cancelledCalls.length === 0 ? (
               <div className="p-12 text-center text-slate-400">
@@ -1113,7 +1336,9 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* ABA 3: LOGS DE AUDITORIA UNIVERSAL (TRIGGER) */}
+      {/* ============================================================ */}
+      {/* ABA 3: LOGS DE AUDITORIA UNIVERSAL */}
+      {/* ============================================================ */}
       {activeTab === 'audit' && (
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
           <div className="p-4 border-b border-slate-800 flex items-center justify-between">
@@ -1166,7 +1391,9 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* ABA 4: CENTRAL DE SEGURANÇA & BOTÃO SOS */}
+      {/* ============================================================ */}
+      {/* ABA 4: CENTRAL DE SEGURANÇA SOS */}
+      {/* ============================================================ */}
       {activeTab === 'sos' && (
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm space-y-4 p-5">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
@@ -1219,6 +1446,173 @@ export default function AdminDashboardPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* MODAL: DESPACHO EMERGENCIAL VIA WHATSAPP (ESTAGNAÇÃO NA FILA) */}
+      {/* ============================================================ */}
+      {dispatchCall && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 animate-scale-up">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-red-600 text-white rounded-xl shadow-lg">
+                  <Send size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Despacho Emergencial no WhatsApp
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Acione um dos prestadores cadastrados para assumir este chamado na fila.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setDispatchCall(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Resumo do Chamado */}
+            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-orange-400 font-mono">
+                  #{dispatchCall.id.slice(0, 8)}
+                </span>
+                <span className="text-xs font-black text-emerald-400">
+                  Mão de Obra: {formatCurrency(Number(dispatchCall.provider_cut || (dispatchCall.total_price - 12)))}
+                </span>
+              </div>
+              <div className="text-sm font-bold text-white">
+                {dispatchCall.service?.name || 'Serviço sob demanda'}
+              </div>
+              <div className="text-xs text-slate-300 flex items-center gap-1.5">
+                <MapPin size={13} className="text-red-400 shrink-0" />
+                <span><strong>{dispatchCall.neighborhood || 'Setor Central'}</strong> · {dispatchCall.client_address || 'Endereço residencial'}</span>
+              </div>
+              <div className="pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Cliente: <strong className="text-white">{dispatchCall.client?.full_name || 'Morador'}</strong></span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const claimUrl = `https://repararv.com/painel?claim=${dispatchCall.id}`
+                    navigator.clipboard.writeText(claimUrl)
+                    setCopiedClaimId(dispatchCall.id)
+                    toast.success('Link de aceite copiado para a área de transferência!')
+                    setTimeout(() => setCopiedClaimId(null), 3000)
+                  }}
+                  className="inline-flex items-center gap-1 text-orange-400 hover:text-orange-300 font-bold transition-colors cursor-pointer"
+                >
+                  <Copy size={12} />
+                  {copiedClaimId === dispatchCall.id ? 'Link Copiado!' : 'Copiar Link de Aceite'}
+                </button>
+              </div>
+            </div>
+
+            {/* Busca de Prestadores */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  Técnicos Cadastrados em Rio Verde ({filteredDispatchProviders.length})
+                </span>
+              </div>
+
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                <input
+                  type="text"
+                  placeholder="Filtrar prestador por nome ou fone..."
+                  value={dispatchSearch}
+                  onChange={(e) => setDispatchSearch(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              {/* Lista com Scroll */}
+              <div className="max-h-60 overflow-y-auto space-y-2 pr-1 divide-y divide-slate-800/50">
+                {filteredDispatchProviders.length === 0 ? (
+                  <p className="text-xs text-slate-500 py-6 text-center">
+                    Nenhum prestador encontrado com o termo pesquisado.
+                  </p>
+                ) : (
+                  filteredDispatchProviders.map((prov) => {
+                    const cleanPhone = prov.phone.replace(/\D/g, '')
+                    const providerCut = Number(dispatchCall.provider_cut || (dispatchCall.total_price - 12))
+                    
+                    // Codificação segura do link WhatsApp com encodeURIComponent
+                    const msg = encodeURIComponent(
+                      `Olá ${prov.full_name}, temos um chamado urgente aguardando no bairro ${dispatchCall.neighborhood || 'Setor Central'} para ${dispatchCall.service?.name || 'Serviço residencial'} (Mão de obra líquida: R$ ${providerCut.toFixed(2)}). Aceite agora pelo link: https://repararv.com/painel?claim=${dispatchCall.id}`
+                    )
+                    const whatsappUrl = `https://wa.me/55${cleanPhone}?text=${msg}`
+
+                    const statusObj = Array.isArray(prov.provider_status)
+                      ? prov.provider_status[0]
+                      : prov.provider_status
+                    const isOnline = Boolean(statusObj?.is_online)
+                    const hasMp = Boolean(prov.mercado_pago_connected || statusObj?.recipient_gateway_id)
+
+                    return (
+                      <div
+                        key={prov.id}
+                        className="pt-2 flex items-center justify-between gap-3 text-xs"
+                      >
+                        <div className="space-y-0.5">
+                          <div className="font-bold text-white flex items-center gap-1.5">
+                            {prov.full_name}
+                            {isOnline ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400">
+                                Online
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-500 font-normal">Offline</span>
+                            )}
+                            {hasMp ? (
+                              <span className="text-[10px] text-emerald-400 font-bold" title="Mercado Pago Conectado">
+                                🟢 MP
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-red-400 font-bold" title="Mercado Pago Pendente">
+                                🔴 MP Pendente
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-slate-400 text-[11px] font-mono">{prov.phone}</div>
+                        </div>
+
+                        <a
+                          href={whatsappUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all shadow-sm whitespace-nowrap cursor-pointer"
+                        >
+                          <MessageCircle size={13} />
+                          Enviar Chamado
+                        </a>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="pt-3 border-t border-slate-800 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setDispatchCall(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
