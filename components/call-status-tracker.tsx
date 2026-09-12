@@ -72,7 +72,7 @@ export function CallStatusTracker({
         {getStatusLabel(status)}
       </h2>
 
-      {providerName && status !== 'cancelled' && (
+      {providerName && status !== 'cancelled' && status !== 'searching' && (
         <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>
           Prestador: <strong style={{ color: 'var(--color-brand-light)' }}>{providerName}</strong>
         </p>
@@ -85,9 +85,14 @@ export function CallStatusTracker({
       )}
 
       {isSearching && (
-        <p className="text-sm animate-pulse mb-4" style={{ color: 'var(--color-text-muted)' }}>
-          Conectando ao profissional mais próximo...
-        </p>
+        <div className="space-y-1 mb-4">
+          <p className="text-sm font-semibold text-orange-500 animate-pulse">
+            Conectando ao profissional mais próximo...
+          </p>
+          <p className="text-xs text-slate-400">
+            Aguardando resposta do técnico no radar (até 30 segundos)
+          </p>
+        </div>
       )}
 
       {/* Stepper de progresso */}

@@ -95,6 +95,51 @@ export default function AcompanharPage() {
     }
   }, [callId, fetchCall, supabase])
 
+  // Timeout automático de 30 segundos no status 'searching':
+  // Se o prestador no radar não responder dentro de 30s, pula automaticamente para o próximo profissional
+  const isSkippingRef = useRef(false)
+  useEffect(() => {
+    if (!call || call.status !== 'searching' || !call.provider_id) return
+
+    const checkSearchingTimeout = async () => {
+      const referenceTime = new Date(call.updated_at || call.created_at).getTime()
+      const elapsedSeconds = Math.floor((Date.now() - referenceTime) / 1000)
+
+      if (elapsedSeconds >= 30 && !isSkippingRef.current) {
+        isSkippingRef.current = true
+        console.log(`⏱ [Timeout 30s] Prestador ${call.provider_id} não atendeu (${elapsedSeconds}s). Buscando próximo...`)
+        try {
+          const res = await fetch('/api/calls/skip-provider', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              call_id: call.id,
+              rejected_provider_id: call.provider_id,
+            }),
+          })
+          const data = await res.json()
+          if (data.status === 'queued') {
+            toast.info('Nenhum prestador atendeu no momento. Chamado enviado para a fila prioritária!')
+          } else if (data.status === 'searching') {
+            toast.info('Buscando o próximo profissional disponível...')
+          }
+          await fetchCall()
+        } catch (err) {
+          console.error('Falha ao repassar chamado por timeout:', err)
+        } finally {
+          setTimeout(() => {
+            isSkippingRef.current = false
+          }, 4000)
+        }
+      }
+    }
+
+    const timeoutInterval = setInterval(checkSearchingTimeout, 2000)
+    checkSearchingTimeout()
+
+    return () => clearInterval(timeoutInterval)
+  }, [call, fetchCall])
+
   const handleConfirmCancel = async (reason: string, note?: string) => {
     if (!call) return
     setCancelling(true)

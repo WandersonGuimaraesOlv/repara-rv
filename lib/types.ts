@@ -100,6 +100,8 @@ export interface ServiceCall {
   completed_at?: string | null
   cancelled_at?: string | null
   expires_at?: string | null
+  updated_at?: string | null
+  cancel_metadata?: Record<string, any>
   neighborhood?: string | null
   // Joins opcionais
   service?: QuickService
