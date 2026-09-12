@@ -15,13 +15,18 @@ Tarefas administrativas, fiscais e legais sob responsabilidade dos fundadores pa
 
 ---
 
-## 2. Gateway de Pagamento & Split de Pix
-- [ ] **Abrir Conta PJ no Gateway Escolhido (Mercado Pago ou Asaas):**
-  - Utilizar a conta jurídica do Repara RV recém-aberta.
-  - Solicitar liberação formal do recurso de **Marketplace / Split de Pagamentos**.
-- [x] **Obter Credenciais de Produção:**
-  - Salvar `ACCESS_TOKEN` de produção e chave secreta do Webhook (`MERCADOPAGO_ACCESS_TOKEN` e `MERCADOPAGO_WEBHOOK_SECRET` configurados no `.env.local`).
-- [ ] **Definir Fluxo do Prestador:** Definir se o profissional receberá via subconta do gateway ou direto por transferência Pix automática gerada pelo backend.
+## 2. Gateway de Pagamento & Automação de Split Pix (Pix In / Pix Out)
+- [ ] **Abrir Conta PJ no Gateway Escolhido (Assim que o CNPJ for emitido):**
+  - Utilizar a conta bancária/PJ do Repara RV recém-aberta.
+  - Solicitar liberação de **Transferências Pix via API (Pix Out)** para automatizar 100% o repasse aos técnicos.
+- [ ] **Ativar API de Pix Out Automático (Envio Pix para a Chave do Prestador):**
+  - **Opção 1 (Recomendada - Efí Bank / antiga Gerencianet):** Criar conta PJ gratuita e gerar credenciais com certificado digital A1. Possui o melhor endpoint oficial de Pix Out do Brasil (`POST /v2/gn/pix`). No mesmo segundo em que o cliente paga o serviço, o backend dispara o Pix líquido direto para a chave do prestador (Nubank, Inter, Caixa, etc.).
+  - **Opção 2 (Asaas):** Habilitar API de transferências Pix (`POST /v3/transfers`) da conta PJ do marketplace.
+  - **Opção 3 (Mercado Pago Payouts):** Solicitar liberação formal do produto **Payouts / Transferências Pix via API** com o suporte comercial PJ do Mercado Pago.
+- [x] **Operação Atual de MVP (Transição Ágil Ativa):**
+  - **Entrada (Pix In):** Morador paga via QR Code Pix dinâmico do Mercado Pago (cai na conta da plataforma).
+  - **Retenção:** Taxa da plataforma (R$ 10 a R$ 20) fica retida na conta Repara RV.
+  - **Repasse Manual/1 Clique:** O fundador copia a Chave Pix cadastrada do técnico no painel admin ([`/admin/usuarios`](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/app/(admin)/admin/usuarios/page.tsx)) e faz o Pix direto pelo app do banco enquanto a API com CNPJ é homologada.
 
 ---
 
