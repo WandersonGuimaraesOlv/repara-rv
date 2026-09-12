@@ -519,20 +519,27 @@ export default function PainelPage() {
 
       {/* Indicador de Alerta Sonoro */}
       <div className="flex items-center justify-between mb-3 px-1">
-        <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-          <Volume2 size={12} className="text-emerald-600" />
+        <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-sm">
+          <Volume2 size={13} className="text-emerald-600" />
           Alerta sonoro ativo
         </span>
         <button
           type="button"
-          onClick={() => {
-            audioAlert.unlockAudio()
-            audioAlert.playCallChime()
-            toast.success('🔊 Teste de alarme reproduzido!')
+          onClick={async () => {
+            try {
+              await audioAlert.unlockAudio()
+              await audioAlert.playCallChime()
+              toast.success('🔊 Som de alerta reproduzido!', {
+                description: 'Dica: aumente o volume de mídia do celular e certifique-se de que o modo silencioso (no iPhone) está desativado.',
+                duration: 5000,
+              })
+            } catch {
+              toast.error('Erro ao acionar som de alerta.')
+            }
           }}
-          className="text-[11px] text-gray-400 hover:text-gray-600 underline cursor-pointer"
+          className="text-[11px] font-bold text-emerald-600 hover:text-emerald-500 underline cursor-pointer flex items-center gap-1 transition-colors"
         >
-          Testar som
+          Testar som 🔔
         </button>
       </div>
 
