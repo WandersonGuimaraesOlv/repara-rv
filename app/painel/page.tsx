@@ -26,6 +26,9 @@ export default function PainelPage() {
   const [connectingMp, setConnectingMp] = useState(false)
   const [queuedCalls, setQueuedCalls] = useState<ServiceCall[]>([])
   const [claimingCallId, setClaimingCallId] = useState<string | null>(null)
+  const [editingPix, setEditingPix] = useState(false)
+  const [newPixKeyInput, setNewPixKeyInput] = useState('')
+  const [savingPix, setSavingPix] = useState(false)
 
   const { lat, lng, error: geoError, getPosition } = useGeolocation(true)
 
@@ -101,19 +104,13 @@ export default function PainelPage() {
             const hasMp = Boolean(status?.recipient_gateway_id || prof.mercado_pago_connected)
             setRecipientGatewayId(status?.recipient_gateway_id ?? null)
 
-            // Regra estrita: prestador sem subconta conectada NÃO pode estar online
-            if (!hasMp && status?.is_online) {
-              setIsOnline(false)
-              await supabase
-                .from('provider_status')
-                .update({ is_online: false, updated_at: new Date().toISOString() })
-                .eq('provider_id', authUser.id)
-            } else {
-              setIsOnline(hasMp && Boolean(status?.is_online))
-            }
+            // Prestador com cadastro ativo pode ficar online se desejar
+            setIsOnline(Boolean(status?.is_online))
 
             if (status?.pix_key) {
               setProviderPixKey(status.pix_key)
+            } else if (prof.phone) {
+              setProviderPixKey(prof.phone)
             }
 
             const today = new Date().toISOString().split('T')[0]
@@ -204,13 +201,43 @@ export default function PainelPage() {
       .then(() => {})
   }, [lat, lng, isOnline, profile, supabase])
 
-  // Toggle online/offline com obtenção ativa de GPS e trava obrigatória do Mercado Pago
+  // Atualização rápida de Chave Pix pelo prestador
+  const handleSavePixKey = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!profile || !newPixKeyInput.trim()) return
+    setSavingPix(true)
+    try {
+      const trimmed = newPixKeyInput.trim()
+      const { error } = await supabase
+        .from('provider_status')
+        .upsert({
+          provider_id: profile.id,
+          pix_key: trimmed,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'provider_id' })
+
+      if (error) {
+        toast.error('Erro ao atualizar Chave Pix.')
+      } else {
+        setProviderPixKey(trimmed)
+        setEditingPix(false)
+        toast.success('Chave Pix atualizada com sucesso!')
+      }
+    } catch {
+      toast.error('Falha de conexão ao salvar Chave Pix.')
+    } finally {
+      setSavingPix(false)
+    }
+  }
+
+  // Toggle online/offline com obtenção ativa de GPS e validação da Chave Pix
   const handleToggleOnline = async () => {
     audioAlert.unlockAudio()
     if (!profile) return
 
-    if (!recipientGatewayId) {
-      toast.error('Para receber chamados e garantir seus repasses automáticos via Pix, conecte sua conta do Mercado Pago acima.')
+    const activePix = providerPixKey || profile.phone || ''
+    if (!activePix || !activePix.trim()) {
+      toast.error('Cadastre sua Chave Pix abaixo para receber chamados e repasses.')
       return
     }
 
@@ -542,63 +569,87 @@ export default function PainelPage() {
         )}
       </section>
 
-      {/* Conexão Mercado Pago Split */}
-      <section className="mb-6 p-4 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-sm animate-slide-up">
-        <div className="flex items-center justify-between mb-2">
+      {/* Card Chave Pix para Recebimento */}
+      <section className="mb-6 p-4 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-sm animate-slide-up space-y-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CreditCard size={18} className="text-cyan-400" />
+            <CreditCard size={18} className="text-emerald-400" />
             <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-              Split Automático Mercado Pago
+              Chave Pix de Recebimento
             </h3>
           </div>
-          {recipientGatewayId ? (
+          {providerPixKey ? (
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-              Conectado ✅
+              Pix Ativo ✅
             </span>
           ) : (
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-              Pendente
+              Chave Pix Obrigatória ⚠️
             </span>
           )}
         </div>
 
-        {recipientGatewayId ? (
+        {editingPix ? (
+          <form onSubmit={handleSavePixKey} className="space-y-3 pt-1">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                Informe sua Chave Pix (CPF, Celular, E-mail ou Aleatória):
+              </label>
+              <input
+                type="text"
+                value={newPixKeyInput}
+                onChange={(e) => setNewPixKeyInput(e.target.value)}
+                placeholder="Ex: 64999999999 ou seu CPF"
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-500 outline-none font-mono"
+                autoFocus
+                required
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="submit"
+                disabled={savingPix}
+                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {savingPix ? 'Salvando...' : 'Salvar Chave Pix'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingPix(false)}
+                disabled={savingPix}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        ) : (
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
             <div className="text-xs text-slate-300">
-              <p>Sua subconta do Mercado Pago está ativa (ID: <strong className="font-mono text-cyan-300">{recipientGatewayId}</strong>).</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Seus recebimentos de serviços são depositados automaticamente na sua conta MP.</p>
+              {providerPixKey ? (
+                <>
+                  <p>
+                    💰 <strong>Chave Pix cadastrada:</strong> <span className="font-mono text-emerald-400 font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-800 ml-1">{providerPixKey}</span>
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Seus repasses líquidos de R$ 50 a R$ 110 por serviço serão transferidos diretamente para esta chave.
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-amber-300">
+                  Cadastre sua chave Pix para poder ficar Online e receber chamados em Rio Verde.
+                </p>
+              )}
             </div>
             <button
               type="button"
-              onClick={handleDisconnectMercadoPago}
-              className="text-[11px] font-bold text-red-400 hover:text-red-300 py-1.5 px-3 rounded-xl border border-red-500/30 hover:bg-red-500/10 transition-colors shrink-0"
+              onClick={() => {
+                setNewPixKeyInput(providerPixKey)
+                setEditingPix(true)
+              }}
+              className="text-[11px] font-bold text-slate-200 hover:text-white py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors shrink-0 cursor-pointer"
             >
-              Desconectar
-            </button>
-          </div>
-        ) : (
-          <div className="pt-1">
-            <p className="text-xs text-slate-300 leading-relaxed">
-              Vincule sua conta do Mercado Pago para receber sua parte de cada atendimento no exato momento da aprovação, sem depender de repasse manual.
-            </p>
-            <button
-              type="button"
-              onClick={handleConnectMercadoPago}
-              disabled={connectingMp}
-              id="btn-connect-mercadopago"
-              className="mt-3 w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white text-xs font-bold shadow-md shadow-sky-500/20 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
-            >
-              {connectingMp ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  <span>Conectando ao Mercado Pago...</span>
-                </>
-              ) : (
-                <>
-                  <Zap size={14} className="text-yellow-300" />
-                  <span>Conectar Conta Mercado Pago ⚡</span>
-                </>
-              )}
+              ✏️ Alterar Chave
             </button>
           </div>
         )}

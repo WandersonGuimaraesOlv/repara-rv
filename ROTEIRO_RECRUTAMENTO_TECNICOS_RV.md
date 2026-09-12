@@ -106,9 +106,9 @@ Faça o cadastro **junto com ele na hora**. Não mande o link para ele fazer em 
 - [ ] **Passo 6:** **Simular o Alerta de Chamado:**
   - Mostre onde fica o botão de ficar Online/Offline.
   - Explique como funciona o som contínuo de toque quando pinta um chamado e mostre o botão verde de **"Atender Chamado"**.
-- [ ] **Passo 7:** **Coleta de Documento:**
-  - Tire uma foto do documento dele (RG ou CNH).
-  - Auxilie-o a emitir ou enviar depois a Certidão Negativa de Antecedentes Criminais da Polícia Civil de Goiás (gratuita e emitida online em 2 minutos pelo portal do Governo de Goiás).
+- [ ] **Passo 7:** **Conferência de Documento e Ativação:**
+  - Confira o documento com foto dele (RG ou CNH) para validação do nome e CPF cadastrados.
+  - Certifique-se de que ele marcou a autodeclaração no app e deixe seu contato salvo no WhatsApp dele para suporte.
 
 ---
 

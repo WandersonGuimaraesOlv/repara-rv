@@ -53,8 +53,16 @@ export default function AdminUsersPage() {
   const [blockingUserId, setBlockingUserId] = useState<string | null>(null)
   const [blockTargetUser, setBlockTargetUser] = useState<AdminUserListItem | null>(null)
 
-  // Feedback de Cópia de Link do Mercado Pago
+  // Feedback de Cópia
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [copiedPixId, setCopiedPixId] = useState<string | null>(null)
+  const handleCopyPix = (pixKey: string, userId: string) => {
+    if (!pixKey) return
+    navigator.clipboard.writeText(pixKey)
+    setCopiedPixId(userId)
+    toast.success('Chave Pix copiada com sucesso!')
+    setTimeout(() => setCopiedPixId(null), 2500)
+  }
 
   // Carregamento inicial de usuários
   const fetchUsers = useCallback(async () => {
@@ -84,8 +92,8 @@ export default function AdminUsersPage() {
     const providers = users.filter((u) => u.role === 'provider')
     const admins = users.filter((u) => u.role === 'admin')
     const onlineProviders = providers.filter((p) => p.provider_status?.is_online)
-    const mpConnectedProviders = providers.filter((p) => p.mercado_pago_connected)
-    const mpPendingProviders = providers.filter((p) => !p.mercado_pago_connected)
+    const mpConnectedProviders = providers.filter((p) => Boolean(p.provider_status?.pix_key && p.provider_status.pix_key.trim().length > 0))
+    const mpPendingProviders = providers.filter((p) => !p.provider_status?.pix_key || !p.provider_status.pix_key.trim())
     const approvedCompliance = providers.filter((p) => p.background_check_status === 'approved')
     const blockedCount = users.filter((u) => u.is_blocked).length
 
@@ -111,14 +119,14 @@ export default function AdminUsersPage() {
         return false
       }
 
-      // Filtro de Mercado Pago (relevante principalmente para prestadores)
-      if (mpFilter === 'connected' && !u.mercado_pago_connected) return false
-      if (mpFilter === 'pending' && u.mercado_pago_connected) return false
+      // Filtro de Chave Pix (prestadores)
+      const hasPix = Boolean(u.provider_status?.pix_key && u.provider_status.pix_key.trim().length > 0)
+      if (mpFilter === 'connected' && !hasPix) return false
+      if (mpFilter === 'pending' && hasPix) return false
 
       // Filtro de Compliance / Bloqueio
-      if (complianceFilter === 'blocked' && !u.is_blocked) return false
-      if (complianceFilter === 'approved' && u.background_check_status !== 'approved') return false
-      if (complianceFilter === 'pending' && u.background_check_status !== 'pending') return false
+      if (complianceFilter === 'blocked' && !u.is_blocked && u.background_check_status !== 'rejected') return false
+      if (complianceFilter === 'approved' && (u.background_check_status === 'rejected' || u.is_blocked)) return false
       if (complianceFilter === 'rejected' && u.background_check_status !== 'rejected') return false
 
       if (!query) return true
@@ -211,11 +219,9 @@ export default function AdminUsersPage() {
       if (res.success) {
         const label =
           newStatus === 'approved'
-            ? 'Aprovado (Segurança Verificada)'
-            : newStatus === 'pending'
-            ? 'Pendente de Verificação'
+            ? 'Aprovado (Liberado)'
             : 'Reprovado / Bloqueado'
-        toast.success(`Compliance atualizado: ${label}`)
+        toast.success(`Status atualizado: ${label}`)
       } else {
         // Reverte se falhou
         setUsers(oldUsers)
@@ -306,35 +312,26 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
-        {/* Split Mercado Pago Conectado */}
+        {/* Chave Pix Cadastrada */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">Split Mercado Pago</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">Pix para Repasse</span>
             <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
               <CreditCard size={18} />
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-emerald-400">
-            {metrics.mpConnectedCount}{' '}
-            <span className="text-sm font-medium text-slate-400">/ {metrics.providersCount}</span>
+            {metrics.mpConnectedCount} <span className="text-sm font-normal text-slate-400">/ {metrics.providersCount}</span>
           </div>
-          <div className="text-xs flex items-center gap-1.5">
-            {metrics.mpPendingCount > 0 ? (
-              <span className="text-amber-400 font-semibold flex items-center gap-1">
-                <AlertCircle size={12} /> {metrics.mpPendingCount} prestador{metrics.mpPendingCount > 1 ? 'es' : ''} com MP pendente
-              </span>
-            ) : (
-              <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                <CheckCircle2 size={12} /> 100% dos técnicos conectados
-              </span>
-            )}
+          <div className="text-xs text-slate-500">
+            Técnicos com chave Pix cadastrada
           </div>
         </div>
 
-        {/* Compliance / Antecedentes */}
+        {/* Homologados / Liberados */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">Homologados</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">Técnicos Aptos</span>
             <div className="p-2 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20">
               <ShieldCheck size={18} />
             </div>
@@ -343,7 +340,7 @@ export default function AdminUsersPage() {
             {metrics.approvedComplianceCount}
           </div>
           <div className="text-xs text-slate-500">
-            Segurança verificada em Rio Verde
+            Liberados via autodeclaração
           </div>
         </div>
 
@@ -431,10 +428,10 @@ export default function AdminUsersPage() {
           </div>
         </div>
 
-        {/* Sub-Filtros de Auditoria (Split Mercado Pago e Compliance) */}
+        {/* Sub-Filtros de Auditoria (Chave Pix e Compliance) */}
         <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-800/60 text-xs">
           <div className="flex items-center gap-2">
-            <span className="text-slate-400 font-medium">Split MP:</span>
+            <span className="text-slate-400 font-medium">Chave Pix:</span>
             <div className="inline-flex rounded-lg bg-slate-950 p-0.5 border border-slate-800">
               <button
                 onClick={() => setMpFilter('all')}
@@ -450,7 +447,7 @@ export default function AdminUsersPage() {
                   mpFilter === 'connected' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:text-emerald-300'
                 }`}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Conectados
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Pix Ativo
               </button>
               <button
                 onClick={() => setMpFilter('pending')}
@@ -458,7 +455,7 @@ export default function AdminUsersPage() {
                   mpFilter === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-amber-300'
                 }`}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Pendentes
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Sem Pix
               </button>
             </div>
           </div>
@@ -480,15 +477,7 @@ export default function AdminUsersPage() {
                   complianceFilter === 'approved' ? 'bg-blue-500/20 text-blue-300' : 'text-slate-400 hover:text-blue-300'
                 }`}
               >
-                Aprovados
-              </button>
-              <button
-                onClick={() => setComplianceFilter('pending')}
-                className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-colors text-amber-400 ${
-                  complianceFilter === 'pending' ? 'bg-amber-500/20 text-amber-300' : 'text-slate-400 hover:text-amber-300'
-                }`}
-              >
-                Pendentes
+                Liberados ({metrics.approvedComplianceCount})
               </button>
               <button
                 onClick={() => setComplianceFilter('blocked')}
@@ -525,8 +514,8 @@ export default function AdminUsersPage() {
                 <tr className="border-b border-slate-800 bg-slate-950/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
                   <th className="py-3.5 px-4">Usuário & Segurança</th>
                   <th className="py-3.5 px-4">WhatsApp & Contato</th>
-                  <th className="py-3.5 px-4">Split Mercado Pago</th>
-                  <th className="py-3.5 px-4">Compliance / Antecedentes</th>
+                  <th className="py-3.5 px-4">Chave Pix & Repasse</th>
+                  <th className="py-3.5 px-4">Status & Liberação</th>
                   <th className="py-3.5 px-4">Performance & Ganhos</th>
                   <th className="py-3.5 px-4 text-right">Controle Operacional</th>
                 </tr>
@@ -650,69 +639,46 @@ export default function AdminUsersPage() {
                         </div>
                       </td>
 
-                      {/* Coluna 3: Auditoria de Split Mercado Pago */}
+                      {/* Coluna 3: Chave Pix & Repasse */}
                       <td className="py-4 px-4">
                         {isProvider ? (
-                          <div className="space-y-2">
-                            {hasMp ? (
-                              <div>
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                                  <CheckCircle2 size={13} />
-                                  MP Conectado
+                          <div className="space-y-1.5">
+                            {user.provider_status?.pix_key ? (
+                              <div className="space-y-1">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                                  <CheckCircle2 size={11} />
+                                  Pix Ativo
                                 </span>
-                                {user.recipient_gateway_id && (
-                                  <div className="text-[10px] font-mono text-slate-400 mt-1">
-                                    Subconta: {user.recipient_gateway_id}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="space-y-1.5">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-red-500/15 text-red-400 border border-red-500/30">
-                                  <AlertTriangle size={13} />
-                                  MP Pendente
-                                </span>
-                                
-                                <div className="flex flex-col gap-1 pt-0.5">
-                                  {/* Botão Copiar Link */}
+                                <div className="flex items-center gap-1.5 pt-0.5">
+                                  <span className="font-mono text-xs font-bold text-slate-100 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
+                                    {user.provider_status.pix_key}
+                                  </span>
                                   <button
-                                    onClick={() => handleCopyMpLink(user)}
-                                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors w-fit"
-                                    title="Copiar link de autorização Mercado Pago"
+                                    onClick={() => handleCopyPix(user.provider_status?.pix_key || '', user.id)}
+                                    className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors cursor-pointer"
+                                    title="Copiar Chave Pix"
                                   >
-                                    {copiedId === user.id ? (
-                                      <>
-                                        <Check size={11} className="text-emerald-400" />
-                                        <span className="text-emerald-400 font-bold">Copiado!</span>
-                                      </>
+                                    {copiedPixId === user.id ? (
+                                      <Check size={12} className="text-emerald-400" />
                                     ) : (
-                                      <>
-                                        <Copy size={11} className="text-slate-400" />
-                                        <span>Copiar Link MP</span>
-                                      </>
+                                      <Copy size={12} />
                                     )}
                                   </button>
-
-                                  {/* Botão Cobrar no WhatsApp */}
-                                  <a
-                                    href={mpWaUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] font-bold bg-amber-500/15 text-amber-300 hover:bg-amber-500 hover:text-slate-950 border border-amber-500/30 transition-colors w-fit"
-                                    title="Enviar lembrete via WhatsApp para conectar o Mercado Pago"
-                                  >
-                                    <MessageCircle size={11} />
-                                    Cobrar Conexão
-                                  </a>
                                 </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                                  <AlertTriangle size={11} />
+                                  Sem Pix
+                                </span>
+                                <p className="text-[10px] text-slate-500 mt-0.5">Chave não informada</p>
                               </div>
                             )}
 
-                            {/* Chave Pix Cadastrada */}
-                            {user.provider_status?.pix_key && (
-                              <div className="text-[10px] text-slate-400 flex items-center gap-1">
-                                <CreditCard size={10} className="text-slate-400" />
-                                Pix: <span className="font-mono text-slate-300">{user.provider_status.pix_key}</span>
+                            {user.recipient_gateway_id && (
+                              <div className="text-[10px] font-mono text-slate-500">
+                                Subconta MP: {user.recipient_gateway_id}
                               </div>
                             )}
                           </div>
@@ -723,32 +689,27 @@ export default function AdminUsersPage() {
                         )}
                       </td>
 
-                      {/* Coluna 4: Auditoria de Compliance & Antecedentes */}
+                      {/* Coluna 4: Auditoria de Compliance & Liberação */}
                       <td className="py-4 px-4">
                         {isProvider ? (
                           <div className="space-y-1.5">
                             <div className="relative inline-block text-left">
                               <select
-                                value={user.background_check_status}
+                                value={user.background_check_status === 'rejected' ? 'rejected' : 'approved'}
                                 onChange={(e) =>
                                   handleChangeCompliance(
                                     user.id,
-                                    e.target.value as 'approved' | 'pending' | 'rejected'
+                                    e.target.value as 'approved' | 'rejected'
                                   )
                                 }
                                 className={`text-xs font-bold rounded-xl px-2.5 py-1.5 border appearance-none pr-7 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500/40 transition-colors ${
-                                  user.background_check_status === 'approved'
-                                    ? 'bg-blue-500/15 text-blue-300 border-blue-500/30 hover:bg-blue-500/25'
-                                    : user.background_check_status === 'pending'
-                                    ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
-                                    : 'bg-red-500/15 text-red-300 border-red-500/30 hover:bg-red-500/25'
+                                  user.background_check_status === 'rejected'
+                                    ? 'bg-red-500/15 text-red-300 border-red-500/30 hover:bg-red-500/25'
+                                    : 'bg-blue-500/15 text-blue-300 border-blue-500/30 hover:bg-blue-500/25'
                                 }`}
                               >
                                 <option value="approved" className="bg-slate-900 text-blue-400">
-                                  🟢 Aprovado (Verificado)
-                                </option>
-                                <option value="pending" className="bg-slate-900 text-amber-400">
-                                  🟡 Pendente (Aguardando Docs)
+                                  🟢 Aprovado (Liberado)
                                 </option>
                                 <option value="rejected" className="bg-slate-900 text-red-400">
                                   🔴 Reprovado (Bloqueado)
@@ -757,17 +718,13 @@ export default function AdminUsersPage() {
                               <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
                             </div>
 
-                            {user.background_check_status === 'approved' ? (
-                              <div className="text-[10px] text-blue-400 flex items-center gap-1 font-semibold">
-                                <ShieldCheck size={11} /> Segurança Verificada
-                              </div>
-                            ) : user.background_check_status === 'rejected' ? (
+                            {user.background_check_status === 'rejected' ? (
                               <div className="text-[10px] text-red-400 flex items-center gap-1 font-semibold">
                                 <ShieldAlert size={11} /> Bloqueado no radar
                               </div>
                             ) : (
-                              <div className="text-[10px] text-amber-400/80 flex items-center gap-1">
-                                <AlertCircle size={11} /> Certidão pendente
+                              <div className="text-[10px] text-blue-400 flex items-center gap-1 font-semibold">
+                                <ShieldCheck size={11} /> Liberado (Sem pendências)
                               </div>
                             )}
 

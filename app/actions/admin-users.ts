@@ -153,8 +153,9 @@ export async function getAdminUsersListAction(): Promise<{
     const usersList: AdminUserListItem[] = profiles.map((p) => {
       const ps = providerMap.get(p.id)
       const rawStatus = (p as Record<string, unknown>).background_check_status
+      // No MVP de Rio Verde, prestadores entram liberados via autodeclaração (sem pendência de docs)
       const backgroundCheckStatus: 'pending' | 'approved' | 'rejected' =
-        rawStatus === 'approved' || rawStatus === 'rejected' ? rawStatus : 'pending'
+        rawStatus === 'rejected' ? 'rejected' : 'approved'
 
       const isBlocked = Boolean((p as Record<string, unknown>).is_blocked)
       const ratingAvg = typeof (p as Record<string, unknown>).rating_avg === 'number'

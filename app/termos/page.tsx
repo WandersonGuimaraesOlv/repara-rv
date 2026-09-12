@@ -117,7 +117,7 @@ export default function TermosPage() {
               Segurança e Checagem de Antecedentes
             </h2>
             <p>
-              Para a tranquilidade dos moradores e famílias de Rio Verde, todo prestador autônomo é submetido à verificação documental, conferência de chave Pix/CPF e apresentação de Certidão Negativa de Antecedentes Criminais antes de ser homologado com o selo de <em>Segurança Verificada</em>.
+              Para a tranquilidade dos moradores e famílias de Rio Verde, todo prestador autônomo é submetido à verificação cadastral, conferência de titularidade da chave Pix/CPF e autodeclaração vinculante de aptidão e idoneidade antes de ser homologado com o selo de <em>Segurança Verificada</em>.
             </p>
           </section>
 

@@ -60,7 +60,7 @@ export default function PrivacidadePage() {
             <p>Para a operacionalização segura dos chamados, coletamos:</p>
             <ul className="list-disc pl-5 space-y-1 text-xs text-slate-300">
               <li><strong>Para Moradores/Clientes:</strong> Nome completo, número de telefone com WhatsApp, endereço do imóvel em Rio Verde e histórico de ordens de serviço.</li>
-              <li><strong>Para Prestadores Parceiros:</strong> Nome completo, telefone WhatsApp, CPF/CNPJ, chave Pix, certidão de antecedentes, localização geográfica em tempo real durante atendimento e comprovantes de residência.</li>
+              <li><strong>Para Prestadores Parceiros:</strong> Nome completo, telefone WhatsApp, CPF/CNPJ, chave Pix, autodeclaração de aptidão e idoneidade, localização geográfica em tempo real durante atendimento e dados de contato.</li>
               <li><strong>Dados de Pagamento:</strong> O Repara RV <strong>não armazena dados de cartão de crédito</strong>. Todas as transações são efetuadas diretamente através do protocolo seguro de Pix do Banco Central e gateway Mercado Pago.</li>
             </ul>
           </section>

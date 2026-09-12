@@ -75,6 +75,7 @@ export default function OnboardingPage() {
       cpf_or_cnpj: cpfOrCnpj.trim(),
       terms_accepted_at: new Date().toISOString(),
       self_declaration_signed: role === 'provider' ? selfDeclaration : true,
+      background_check_status: 'approved',
     }
 
     let { error: profileError } = await supabase
@@ -86,6 +87,7 @@ export default function OnboardingPage() {
       delete profilePayload.cpf_or_cnpj
       delete profilePayload.terms_accepted_at
       delete profilePayload.self_declaration_signed
+      delete profilePayload.background_check_status
       const retry = await supabase.from('profiles').upsert(profilePayload)
       profileError = retry.error
     }

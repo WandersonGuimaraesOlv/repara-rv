@@ -41,19 +41,19 @@ describe('SQA Business Logic & Financial Integrity', () => {
     expect(isValidOtp('12345a')).toBe(false)
   })
 
-  it('strictly validates provider online eligibility: requires Mercado Pago OAuth connection', () => {
+  it('validates provider online eligibility: requires valid Pix key for instant payouts', () => {
     const canProviderGoOnline = (status: {
       is_online: boolean
-      recipient_gateway_id: string | null
+      pix_key: string | null
     }) => {
-      const hasMpConnected = Boolean(status.recipient_gateway_id && status.recipient_gateway_id.trim().length > 0)
-      return hasMpConnected
+      const hasValidPix = Boolean(status.pix_key && status.pix_key.trim().length > 0)
+      return hasValidPix
     }
 
-    expect(canProviderGoOnline({ is_online: false, recipient_gateway_id: null })).toBe(false)
-    expect(canProviderGoOnline({ is_online: false, recipient_gateway_id: '' })).toBe(false)
-    expect(canProviderGoOnline({ is_online: false, recipient_gateway_id: '   ' })).toBe(false)
-    expect(canProviderGoOnline({ is_online: false, recipient_gateway_id: '509128262' })).toBe(true)
+    expect(canProviderGoOnline({ is_online: false, pix_key: null })).toBe(false)
+    expect(canProviderGoOnline({ is_online: false, pix_key: '' })).toBe(false)
+    expect(canProviderGoOnline({ is_online: false, pix_key: '   ' })).toBe(false)
+    expect(canProviderGoOnline({ is_online: false, pix_key: '64999999999' })).toBe(true)
   })
 
   it('guarantees fiscal protection: rejects split charges without connected subaccount', () => {
@@ -153,20 +153,20 @@ describe('SQA Business Logic & Financial Integrity', () => {
     const isProviderEligibleForDispath = (provider: {
       is_blocked: boolean
       background_check_status: 'pending' | 'approved' | 'rejected'
-      has_mp_connected: boolean
+      has_pix_key: boolean
     }) => {
       if (provider.is_blocked) return false
       if (provider.background_check_status === 'rejected') return false
-      if (!provider.has_mp_connected) return false
+      if (!provider.has_pix_key) return false
       return true
     }
 
-    // Aprovado e com MP: 100% elegível
+    // Aprovado e com Chave Pix: 100% elegível
     expect(
       isProviderEligibleForDispath({
         is_blocked: false,
         background_check_status: 'approved',
-        has_mp_connected: true,
+        has_pix_key: true,
       })
     ).toBe(true)
 
@@ -175,25 +175,25 @@ describe('SQA Business Logic & Financial Integrity', () => {
       isProviderEligibleForDispath({
         is_blocked: true,
         background_check_status: 'approved',
-        has_mp_connected: true,
+        has_pix_key: true,
       })
     ).toBe(false)
 
-    // Reprovado em antecedentes criminais: DEVE ser barrado
+    // Reprovado em antecedentes: DEVE ser barrado
     expect(
       isProviderEligibleForDispath({
         is_blocked: false,
         background_check_status: 'rejected',
-        has_mp_connected: true,
+        has_pix_key: true,
       })
     ).toBe(false)
 
-    // Sem Mercado Pago conectado: barrado preventivamente (sem split)
+    // Sem Chave Pix cadastrada: barrado preventivamente (sem canal de repasse)
     expect(
       isProviderEligibleForDispath({
         is_blocked: false,
         background_check_status: 'approved',
-        has_mp_connected: false,
+        has_pix_key: false,
       })
     ).toBe(false)
   })

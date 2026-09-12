@@ -22,10 +22,10 @@ export async function POST(req: NextRequest) {
 
     const supabaseAdmin = await createServiceClient();
 
-    // 1. Validar se o prestador tem Mercado Pago conectado e perfil ativo
+    // 1. Validar se o prestador tem perfil ativo e não está bloqueado
     const { data: provider, error: providerError } = await supabaseAdmin
       .from('profiles')
-      .select('id, full_name, phone, role, mercado_pago_connected')
+      .select('id, full_name, phone, role, is_blocked, mercado_pago_connected')
       .eq('id', providerId)
       .maybeSingle();
 
@@ -33,18 +33,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Prestador não autorizado' }, { status: 403 });
     }
 
-    // Verifica conexão Mercado Pago (em profiles ou em provider_status/gateway_accounts)
+    // 1.1 Verifica se o prestador está suspenso ou sem Chave Pix
     const { data: status } = await supabaseAdmin
       .from('provider_status')
-      .select('recipient_gateway_id, is_online')
+      .select('pix_key, is_online')
       .eq('provider_id', providerId)
       .maybeSingle();
 
-    const isMpConnected = Boolean(provider.mercado_pago_connected || status?.recipient_gateway_id);
-
-    if (!isMpConnected) {
+    if (provider.is_blocked) {
       return NextResponse.json(
-        { error: 'Conecte sua conta do Mercado Pago para aceitar chamados' }, 
+        { error: 'Sua conta de prestador está suspensa temporariamente.' }, 
+        { status: 403 }
+      );
+    }
+
+    const hasPix = Boolean(status?.pix_key && status.pix_key.trim().length > 0) || Boolean(provider.phone && provider.phone.trim().length > 0);
+    if (!hasPix) {
+      return NextResponse.json(
+        { error: 'Cadastre sua Chave Pix no painel para aceitar chamados.' }, 
         { status: 412 }
       );
     }

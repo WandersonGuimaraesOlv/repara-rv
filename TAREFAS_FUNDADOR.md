@@ -41,10 +41,10 @@ Tarefas administrativas, fiscais e legais sob responsabilidade dos fundadores pa
 
 ## 4. Validação e Segurança dos Prestadores (Filtro de Campo)
 - [ ] **Critérios Mínimos de Entrada:**
-  - Cópia do RG/CNH.
-  - Comprovante de residência em Rio Verde.
-  - CNPJ MEI ativo na categoria do serviço prestado.
-  - **Certidão Negativa de Antecedentes Criminais** (orientar o prestador a emitir de graça no site da Polícia Civil de Goiás e da Polícia Federal).
+  - Cópia ou conferência do RG/CNH.
+  - Comprovante ou vínculo de residência em Rio Verde.
+  - Chave Pix vinculada ao titular do cadastro.
+  - **Autodeclaração Vinculante de Aptidão & Idoneidade** (aceita diretamente pelo prestador no primeiro acesso do app, dispensando envio prévio de certidões).
 - [ ] **Canal de Atendimento Local (SAC):**
   - Ativar um número de WhatsApp Business exclusivo para suporte a chamados em andamento e mediação de conflitos.
 
