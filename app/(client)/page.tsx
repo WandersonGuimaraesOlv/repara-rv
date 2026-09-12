@@ -48,6 +48,7 @@ import { formatCurrency } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/logo'
 import { PwaInstallBanner } from '@/components/pwa-install-banner'
+import { performLogout } from '@/lib/auth-logout'
 
 const RIO_VERDE_NEIGHBORHOODS = [
   'Setor Central',
@@ -244,17 +245,9 @@ export default function TriiderClientHomePage() {
 
   const handleLogout = async () => {
     setIsProfileMenuOpen(false)
-    try {
-      localStorage.removeItem('repara_user')
-      document.cookie = 'repara_demo_role=; path=/; max-age=0'
-    } catch {}
-    await fetch('/api/auth/signout', { method: 'POST' }).catch(() => {})
-    const supabase = createClient()
-    await supabase.auth.signOut().catch(() => {})
     setCurrentUser(null)
     toast.success('Você saiu da sua conta.')
-    router.replace('/')
-    router.refresh()
+    await performLogout('/')
   }
 
   // Carrega do Supabase em background se disponível

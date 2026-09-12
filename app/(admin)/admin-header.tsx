@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Logo } from '@/components/logo'
 import { Wrench, BarChart3, Users, ArrowLeft, Shield, LogOut } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { performLogout } from '@/lib/auth-logout'
 
 interface AdminHeaderProps {
   userName?: string
@@ -13,20 +13,10 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ userName }: AdminHeaderProps) {
   const pathname = usePathname()
-  const router = useRouter()
-  const supabase = createClient()
 
   const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut()
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('repara_user')
-      }
-      toast.success('Desconectado com sucesso.')
-      router.replace('/login')
-    } catch {
-      router.replace('/')
-    }
+    toast.success('Desconectado com sucesso.')
+    await performLogout('/login')
   }
 
   const navLinks = [
