@@ -30,6 +30,8 @@ export default function PainelPage() {
   const [newPixKeyInput, setNewPixKeyInput] = useState('')
   const [savingPix, setSavingPix] = useState(false)
 
+  const hasPixKey = Boolean(providerPixKey && providerPixKey.trim().length > 0)
+
   const { lat, lng, error: geoError, getPosition } = useGeolocation(true)
 
   // Dispara pedido de permissão de GPS logo na entrada do painel
@@ -455,8 +457,8 @@ export default function PainelPage() {
   const handleClaimQueued = async (callId: string) => {
     if (!profile) return
     audioAlert.stopAlarm()
-    if (!recipientGatewayId) {
-      toast.error('Para atender chamados e garantir seus repasses via Pix, conecte sua conta do Mercado Pago acima.')
+    if (!hasPixKey) {
+      toast.error('Para atender chamados e receber seus repasses, cadastre sua Chave Pix acima.')
       return
     }
 
@@ -491,14 +493,14 @@ export default function PainelPage() {
 
   // Ativa automaticamente o aceite se o prestador acessou via deep link do WhatsApp (?claim=ID)
   useEffect(() => {
-    if (typeof window === 'undefined' || !profile || !recipientGatewayId) return
+    if (typeof window === 'undefined' || !profile || !hasPixKey) return
     const params = new URLSearchParams(window.location.search)
     const claimId = params.get('claim')
     if (claimId && !claimingCallId) {
       console.log('⚡ [Deep Link] Assumindo chamado via link direto do WhatsApp:', claimId)
       handleClaimQueued(claimId)
     }
-  }, [profile, recipientGatewayId])
+  }, [profile, hasPixKey, claimingCallId])
 
   if (!profile) {
     return (
@@ -725,15 +727,15 @@ export default function PainelPage() {
         </section>
       )}
 
-      {/* Alerta de Obrigatoriedade Mercado Pago */}
-      {!recipientGatewayId && (
+      {/* Alerta de Obrigatoriedade da Chave Pix */}
+      {!hasPixKey && (
         <div className="w-full max-w-md mx-auto mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-start gap-3 animate-slide-up shadow-lg">
           <AlertTriangle size={20} className="text-amber-400 shrink-0 mt-0.5" />
           <div className="text-xs leading-relaxed">
             <strong className="block font-bold text-amber-200 text-sm mb-1">
-              Vínculo do Mercado Pago Obrigatório
+              Chave Pix Obrigatória
             </strong>
-            Para receber chamados e garantir seus repasses automáticos via Pix, conecte sua conta do Mercado Pago acima.
+            Cadastre sua Chave Pix acima para desbloquear sua disponibilidade e receber seus repasses diretamente na sua conta.
           </div>
         </div>
       )}
@@ -747,27 +749,27 @@ export default function PainelPage() {
           <button
             id="btn-toggle-online"
             onClick={handleToggleOnline}
-            disabled={togglingOnline || !recipientGatewayId}
-            aria-disabled={!recipientGatewayId}
+            disabled={togglingOnline || !hasPixKey}
+            aria-disabled={!hasPixKey}
             className={`relative z-10 w-32 h-32 rounded-full flex flex-col items-center justify-center gap-2 transition-all ${
-              !recipientGatewayId
+              !hasPixKey
                 ? 'opacity-60 cursor-not-allowed'
-                : 'active:scale-95 cursor-pointer'
+                : 'active:scale-95 cursor-pointer hover:scale-105'
             }`}
             style={{
-              background: !recipientGatewayId
+              background: !hasPixKey
                 ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))'
                 : isOnline
                 ? 'linear-gradient(135deg, #10B981, #059669)'
                 : 'linear-gradient(135deg, var(--color-surface-alt), var(--color-surface))',
               border: `3px solid ${
-                !recipientGatewayId
+                !hasPixKey
                   ? '#F59E0B'
                   : isOnline
                   ? '#10B981'
                   : 'var(--color-border)'
               }`,
-              boxShadow: !recipientGatewayId
+              boxShadow: !hasPixKey
                 ? '0 0 16px rgba(245, 158, 11, 0.2)'
                 : isOnline
                 ? '0 0 32px rgba(16,185,129,0.4)'
@@ -776,7 +778,7 @@ export default function PainelPage() {
           >
             {togglingOnline ? (
               <Loader2 size={32} className="animate-spin" color="white" />
-            ) : !recipientGatewayId ? (
+            ) : !hasPixKey ? (
               <Lock size={34} className="text-amber-400" />
             ) : (
               <Power size={36} color={isOnline ? 'white' : 'var(--color-text-subtle)'} />
@@ -784,22 +786,22 @@ export default function PainelPage() {
             <span
               className="text-xs font-bold"
               style={{
-                color: !recipientGatewayId
+                color: !hasPixKey
                   ? '#FCD34D'
                   : isOnline
                   ? 'white'
                   : 'var(--color-text-subtle)',
               }}
             >
-              {!recipientGatewayId ? 'BLOQUEADO' : isOnline ? 'ONLINE' : 'OFFLINE'}
+              {!hasPixKey ? 'BLOQUEADO' : isOnline ? 'ONLINE' : 'OFFLINE'}
             </span>
           </button>
         </div>
 
         <p className="text-center text-sm max-w-xs" style={{ color: 'var(--color-text-muted)' }}>
-          {!recipientGatewayId ? (
+          {!hasPixKey ? (
             <span className="text-amber-400 text-xs font-semibold block">
-              🔒 Conecte sua conta do Mercado Pago acima para desbloquear sua disponibilidade.
+              🔒 Cadastre sua Chave Pix acima para desbloquear sua disponibilidade.
             </span>
           ) : isOnline ? (
             '🟢 Você está visível para clientes próximos.\nMantendo GPS ativo...'
