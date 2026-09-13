@@ -6,10 +6,11 @@ import { createClient } from '@/lib/supabase/client'
 import { Profile, ServiceCall } from '@/lib/types'
 import { CallAlertModal } from '@/components/call-alert-modal'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { Power, Loader2, MapPin, CreditCard, Zap, Lock, AlertTriangle, Volume2 } from 'lucide-react'
+import { Power, Loader2, MapPin, CreditCard, Zap, Lock, AlertTriangle, Volume2, LogOut } from 'lucide-react'
 import { toast } from 'sonner'
 import { PanelHeader } from '@/components/provider/panel-header'
 import { audioAlert } from '@/lib/audio-alert'
+import { performLogout } from '@/lib/auth-logout'
 
 export default function PainelPage() {
   const router = useRouter()
@@ -856,6 +857,21 @@ export default function PainelPage() {
           </div>
         </div>
       )}
+
+      {/* Botão Sair da Conta no Painel */}
+      <div className="mt-8 mb-6 pt-4 border-t border-slate-800 text-center">
+        <button
+          type="button"
+          onClick={async () => {
+            toast.success('Desconectando da conta...')
+            await performLogout('/login')
+          }}
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold text-red-400 hover:text-red-300 bg-red-950/40 hover:bg-red-950/70 border border-red-900/60 transition-all cursor-pointer active:scale-95 shadow-sm"
+        >
+          <LogOut size={16} />
+          <span>Encerrar Turno & Sair da Conta</span>
+        </button>
+      </div>
 
       {/* Modal de alerta de chamado com som, vibração e timer */}
       {pendingCall && (

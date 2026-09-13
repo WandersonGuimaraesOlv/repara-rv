@@ -48,6 +48,7 @@ import { formatCurrency } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/logo'
 import { PwaInstallBanner } from '@/components/pwa-install-banner'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { performLogout } from '@/lib/auth-logout'
 
 const RIO_VERDE_NEIGHBORHOODS = [
@@ -123,18 +124,20 @@ export default function TriiderClientHomePage() {
   const [userOrders, setUserOrders] = useState<any[]>([])
   const [loadingOrders, setLoadingOrders] = useState<boolean>(false)
 
-  // Fecha o menu de perfil ao clicar fora (sem precisar de div backdrop bloqueante)
+  // Fecha o dropdown desktop ao clicar fora
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
-        setIsProfileMenuOpen(false)
+      if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+        if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+          setIsProfileMenuOpen(false)
+        }
       }
     }
     if (isProfileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('click', handleClickOutside)
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('click', handleClickOutside)
     }
   }, [isProfileMenuOpen])
 
@@ -246,8 +249,8 @@ export default function TriiderClientHomePage() {
   const handleLogout = async () => {
     setIsProfileMenuOpen(false)
     setCurrentUser(null)
-    toast.success('Você saiu da sua conta.')
-    await performLogout('/')
+    toast.success('Desconectando da conta...')
+    await performLogout('/login')
   }
 
   // Carrega do Supabase em background se disponível
@@ -348,6 +351,9 @@ export default function TriiderClientHomePage() {
                 <ClipboardList size={15} />
                 <span>Meus Pedidos</span>
               </button>
+
+              {/* Botão de tema claro/escuro */}
+              <ThemeToggle />
 
               {currentUser?.role === 'provider' ? (
                 <Link
@@ -879,13 +885,17 @@ export default function TriiderClientHomePage() {
               <div className="pt-2 text-[11px] text-slate-500 border-t border-slate-800 space-y-1">
                 <p className="font-semibold text-slate-400">Repara RV Tecnologia e Intermediação Ltda</p>
                 <p>CNAE 7490-1/04 • Sede em Rio Verde - GO • CEP 75901-000</p>
-                <div className="flex items-center gap-3 pt-1 text-slate-400">
+                <div className="flex items-center gap-3 pt-1 text-slate-400 flex-wrap">
                   <Link href="/termos" className="hover:text-white underline transition-colors">
                     Termos de Uso
                   </Link>
                   <span>•</span>
                   <Link href="/privacidade" className="hover:text-white underline transition-colors">
                     Privacidade (LGPD)
+                  </Link>
+                  <span>•</span>
+                  <Link href="/contrato" className="hover:text-white underline transition-colors">
+                    Contrato Técnico
                   </Link>
                 </div>
                 <p className="pt-0.5">© {new Date().getFullYear()} Repara RV • Todos os direitos reservados.</p>
@@ -1014,8 +1024,18 @@ export default function TriiderClientHomePage() {
           MODAL DE PERFIL NO MOBILE
           ──────────────────────────────────────────────────────── */}
       {isProfileMenuOpen && currentUser && (
-        <div className="md:hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end justify-center p-0 animate-in fade-in">
-          <div className="w-full bg-white rounded-t-3xl p-6 shadow-2xl border-t border-slate-200 animate-in slide-in-from-bottom-6">
+        <div
+          className="md:hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center p-0 animate-in fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsProfileMenuOpen(false)
+            }
+          }}
+        >
+          <div
+            className="w-full bg-white rounded-t-3xl p-6 shadow-2xl border-t border-slate-200 animate-in slide-in-from-bottom-6"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center text-sm font-black uppercase">
@@ -1070,7 +1090,7 @@ export default function TriiderClientHomePage() {
                 <ClipboardList size={18} className="text-slate-600" />
                 <span>Meus Chamados & Histórico</span>
               </button>
-              <div className="flex items-center justify-center gap-4 py-2 text-[11px] text-slate-500 border-t border-slate-100 mt-2">
+              <div className="flex items-center justify-center gap-3 py-2 text-[11px] text-slate-500 border-t border-slate-100 mt-2 flex-wrap">
                 <Link
                   href="/termos"
                   onClick={() => setIsProfileMenuOpen(false)}
@@ -1086,14 +1106,26 @@ export default function TriiderClientHomePage() {
                 >
                   Privacidade (LGPD)
                 </Link>
+                <span>•</span>
+                <Link
+                  href="/contrato"
+                  onClick={() => setIsProfileMenuOpen(false)}
+                  className="hover:text-slate-800 underline transition-colors"
+                >
+                  Contrato Técnico
+                </Link>
               </div>
             </div>
 
             <button
               type="button"
               id="btn-mobile-logout"
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 p-3 rounded-xl font-bold text-xs text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors"
+              onClick={async (e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                await handleLogout()
+              }}
+              className="w-full flex items-center justify-center gap-2 p-3.5 rounded-xl font-bold text-xs text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer active:scale-95 shadow-sm"
             >
               <LogOut size={16} />
               <span>Sair da Conta</span>

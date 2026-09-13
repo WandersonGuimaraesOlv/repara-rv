@@ -8,222 +8,307 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Repara RV — Documentação Arquitetural e Diretrizes de Engenharia (AI_CONTEXT)
+# Repara RV — Instruções Completas de Engenharia, Segurança e Controle de Alucinações
 
-Documento mestre de arquitetura, padrões de engenharia, diretrizes de Garantia de Qualidade de Software (SQA - Sommerville & Pressman) e especificações técnicas de campo para o ecossistema **Repara RV**.
+Documento operacional para desenvolvimento, auditoria, refatoração, compliance e evolução segura da plataforma Repara RV.
 
----
-
-## 1. Visão Geral do Produto
-
-O **Repara RV** é um Progressive Web App (PWA) sob demanda estilo Uber voltado para serviços manuais e reparos residenciais em **Rio Verde (GO)**. O sistema conecta moradores a profissionais autônomos locais com geolocalização em tempo real, catálogo padronizado com preço fixo fechado, zero burocracia de orçamentos e repasse financeiro automatizado via Pix.
-
-### Proposta de Valor
-* **Sem Orçamento Demorado:** Catálogo de serviços essenciais tabelados (troca de chuveiro, torneira, tomada, desentupimento, etc.).
-* **Chamada Instantânea no Radar:** Busca do profissional online mais próximo via PostGIS (operador `<->`).
-* **Modelo estilo Uber:** O prestador mais próximo recebe o alerta com som e vibração e tem 45 segundos para aceitar.
-* **Transparência de Custos:** Avisos ostensivos de que peças e insumos correm por conta do cliente (mão de obra pura).
-* **Zero Moedas / Sem Venda de Leads:** O profissional não paga para orçar. Cobrança de taxa de intermediação fixa retida no ato do pagamento Pix final.
+**Ambiente:** Produção (https://repararv.com)  
+**Praça de Atuação:** Rio Verde — GO  
+**Stack Principal:** Next.js (App Router), TypeScript Estrito, Tailwind CSS, Supabase (PostgreSQL / PostGIS / Realtime), Cloudflare Workers via OpenNext (@opennextjs/cloudflare).
 
 ---
 
-## 2. Stack Tecnológica
+## 1. Princípio Central e Filosofia de Engenharia
 
-| Camada | Tecnologia | Justificativa Técnica |
+O Repara RV conecta moradores de Rio Verde (GO) a prestadores de serviços residenciais de reparo rápido sob demanda (eletricistas, encanadores, montadores e chaveiros).
+
+A meta da engenharia não é volume de código, mas **corretude estrita, estabilidade em produção, rastreabilidade e eliminação de alucinações técnicas**.
+
+> **Regra de Ouro (Zero Alucinação):** Se uma tabela, coluna, enum, rota de API, variável de ambiente ou método de biblioteca não existe no repositório, nos schemas de migration, em `types/supabase.ts` ou no `package.json`, o agente está **proibido de supor sua existência**.
+
+> **Proibição de Código Preguiçoso:** É vedado o uso de comentários como `// ... restante do código continua aqui` ou blocos incompletos. Toda alteração deve manter a integridade sintática do arquivo modificado.
+
+> **Critério de Aceite Técnico:** Nenhuma alteração é considerada concluída se falhar em `npm run check:types`, na suíte de testes (`npx vitest run`) ou no build (`npm run build`).
+
+---
+
+## 2. Decisões de Negócio Consolidadas em Produção
+
+Conflitos de versões anteriores foram superados e validados nas migrations e deploys ativos:
+
+| Tema | Definição Oficial em Produção | Justificativa / Implementação |
 | :--- | :--- | :--- |
-| **Framework Web** | Next.js 16 (App Router + Turbopack) | Server Components, Server Actions e máxima velocidade de compilação. |
-| **Linguagem** | TypeScript 5 (Modo Estrito) | `"strict": true`, tipagem centralizada em `lib/types.ts` sem uso de `any`. |
-| **Estilização & UI** | Tailwind CSS 4 + Lucide Icons | Design system limpo inspirado na **Triider**, responsivo e mobile-first. |
-| **Banco de Dados** | Supabase (PostgreSQL 15 em São Paulo `sa-east-1`) | Menor latência para Goiás ($\approx 15\text{ms}$), escalabilidade e segurança. |
-| **Motor Geoespacial** | PostGIS (`GEOMETRY(Point, 4326)`) | Indexação GIST com busca KNN (`<->`) para matching instantâneo de raio. |
-| **Mensageria Realtime** | Supabase Realtime (WebSockets) | Alertas push imediatos para o radar do prestador sem necessidade de polling. |
-| **Pagamentos & Split** | Mercado Pago SDK (Pix) | Geração de QR Code dinâmico, Copia e Cola e Webhook com idempotência bancária. |
-| **Qualidade & Testes** | Vitest | Execução ultrarrápida em ESM nativo com fake timers e cobertura de regras críticas. |
+| **Split de Pagamentos** | Via Chave Pix (Sem trava OAuth do Mercado Pago) | O morador paga via Pix no QR Code dinâmico do MP gerado pela plataforma; a Repara RV retém o Take Rate (R$ 10 a R$ 20) e repassa o valor líquido diretamente para a `pix_key` do prestador. A trava de OAuth foi removida. |
+| **Garantia de Serviço** | 7 Dias Corridos | Reexecução gratuita da mão de obra em caso de falha de aperto, vedação ou fixação, expressa em `/termos` e no Comprovante de Manutenção. |
+| **Responsabilidade de Peças** | Morador fornece peças e insumos | Blocos de escopo obrigatórios na interface: 🟢 Incluso (Mão de obra e testes técnicos) vs. 🔴 Não Incluso (Chuveiro novo, torneira, fiação, sifão). |
+| **Piso de Remuneração** | Mínimo R$ 50,00 líquidos ao prestador | Nenhum serviço ativo no catálogo remunera o técnico com menos de R$ 50 líquidos. A taxa da plataforma varia de R$ 10 a R$ 20 por chamado. |
+| **Fila e Atribuição** | Fila Atômica (`queued`) com TTL de 2h | Chamados sem técnico imediato entram em `status = 'queued'` com `expires_at = NOW() + INTERVAL '2 hours'`. O aceite concorrente é travado no PostgreSQL via RPC `claim_queued_call`. |
+| **Radar de Ociosidade** | Alerta Vermelho > 5 minutos no Dashboard | Chamados na fila há mais de 5 minutos acionam o card de emergência em `/admin/dashboard` para acionamento manual via WhatsApp (`wa.me`). |
+| **LGPD e Privacidade** | Mascaramento pré-aceite | Antes do aceite, o radar exibe apenas Bairro, Distância aproximada, Serviço e Valor Líquido. Endereço completo só é liberado após `status accepted`. |
+| **Taxa de Deslocamento (No-Show)** | R$ 25,00 | Cobrada caso o morador não atenda o técnico no portão após 10 minutos de espera no local. |
 
 ---
 
-## 3. Diretrizes de Design & Identidade Visual (Estilo Triider)
+## 3. Modelo de Dados e Banco (PostgreSQL / PostGIS / Supabase)
 
-A interface segue rigorosamente a estética limpa, confiável e humanizada da **Triider**:
+O schema remoto no projeto Supabase (`lvjahufllclmkqcbbrcu`) é a **única fonte da verdade**.
 
-* **Paleta de Cores:**
-  * **Fundo:** Slate 50 ultra limpo (`#F8FAFC`) e branco puro (`#FFFFFF`) para os cards.
-  * **Tipografia:** Slate 900 (`#0F172A`) para títulos e `slate-600` para descrições.
-  * **Ação Primária / CTA:** Laranja/Coral vibrante (`#F97316` / `#EA580C`).
-  * **Selos de Segurança:** Verde esmeralda (`#10B981`) para garantias e verificações.
-* **Geometria & Espaçamento:** Cantos arredondados generosos (`rounded-2xl` a `rounded-3xl`), sombras discretas (`shadow-sm` a `shadow-md`) e breathing room de 16 a 24px entre módulos.
-* **Mobile-First Real:** O container do cliente é restrito e centrado (`max-w-md mx-auto`), emulando um aplicativo nativo instalado com barra de navegação inferior fixa.
+### Estrutura das Tabelas Críticas
 
----
+**`service_calls`:**
+- `id`: UUID (PK)
+- `status`: Enum `ride_status` (`searching`, `queued`, `accepted`, `on_the_way`, `in_progress`, `completed`, `cancelled`, `expired`)
+- `expires_at`: TIMESTAMPTZ (padrão de 2 horas para fila)
+- `provider_id`: UUID (FK `profiles.id`, anulável enquanto na fila)
+- `cancellation_reason`: TEXT (motivo registrado para alimentar métricas do dashboard)
+- `total_price`: NUMERIC(10,2)
+- `platform_fee`: NUMERIC(10,2) (taxa retida de R$ 10 a R$ 20)
+- `provider_cut`: NUMERIC(10,2) (`total_price - platform_fee`)
+- `neighborhood`, `client_address`, `latitude`, `longitude`
 
-## 4. Arquitetura da Home Page (`app/(client)/page.tsx`)
+**`quick_services`:**
+- `id`: UUID (PK)
+- `name`, `category`, `fixed_price`, `platform_fee`, `is_active`
+- `included`: TEXT[] (chips de escopo coberto)
+- `not_included`: TEXT[] (chips de escopo não coberto)
+- `duration_est`: TEXT (ex: `'40 min'`)
 
-A tela inicial do cliente foi estruturada nos 6 blocos canônicos da Triider:
+**`profiles`:**
+- `id`: UUID (PK, vinculado a `auth.users`)
+- `role`: `'client' | 'provider' | 'admin'`
+- `pix_key`: TEXT (obrigatória para o técnico ficar online e receber chamados)
+- `pix_key_type`: `'cpf' | 'cnpj' | 'email' | 'phone' | 'random'`
+- `background_check_status`: `'pending' | 'approved' | 'rejected'`
+- `is_blocked`: BOOLEAN (bloqueio preventivo imediato)
+- `rating_avg`: NUMERIC(3,2) (padrão 5.00)
+- `completed_orders_count`: INT
 
-1. **Header com Localizador Regional:** Logotipo Repara RV + seletor dinâmico com modal para os 13 principais bairros de Rio Verde (Setor Central, Bairro Popular, Promissão, Morada do Sol, Santo Agostinho, etc.) + atalho discreto "Sou Profissional".
-2. **Hero com Busca Instantânea:** Título acolhedor (*"O que você precisa consertar hoje?"*) + campo de busca com autocomplete em tempo real e chips de atalho rápido.
-3. **Grid de Categorias:** 6 categorias visuais (⚡ Elétrica, 💧 Hidráulica, 🔨 Pequenos Reparos, 🛋️ Montagem, 🎨 Pintura, 🚨 Emergência 24h) com filtro reativo.
-4. **Grid de Serviços Mais Pedidos:** Cards verticais com SLA estimado (*"Até 40 min"*), tag de garantia de 30 dias, preço transparente (*"A partir de R$ 70,00"*) e botão de ação direta *"Chamar Agora"*.
-5. **Banner de Confiança e Garantia (Pilar Triider):** Card reforçando garantia de 30 dias, profissionais 100% verificados com antecedentes checados e pagamento seguro via Pix retido até o término.
-6. **Bottom Navigation Fixa:** Barra inferior com 4 abas essenciais (🏠 Início, 📋 Meus Pedidos, 💬 Suporte WhatsApp, 👤 Perfil).
+**`provider_status`:**
+- `provider_id`: UUID (PK)
+- `is_online`: BOOLEAN
+- `location`: GEOGRAPHY(Point, 4326)
 
----
+### Funções e Triggers Homologadas
 
-## 5. Os 5 Requisitos de Sobrevivência de Campo (Operação Real da Moto)
+**Aceite Atômico Anti-Corrida (`claim_queued_call`):**
 
-Desenvolvidos para a realidade de Rio Verde, onde o prestador está em trânsito de moto e o cliente precisa de socorro imediato:
-
-```mermaid
-graph TD
-    A["Chamado Criado (Searching)"] --> B["Supabase Realtime toca Alerta"]
-    B --> C["Prestador: Alerta Sonoro Repetitivo + Vibração"]
-    C --> D{"Timer de 45s"}
-    D -- "Aceitou em < 45s" --> E["Status: Accepted"]
-    D -- "Tempo Esgotado / Recusado" --> F["/api/calls/skip-provider -> Próximo Prestador"]
-    E --> G["Deep Link Direto: Waze (&navigate=yes) / Maps"]
-    G --> H["Aviso Obrigatório de Peças Visível"]
-    H --> I["Concluir Serviço -> Gera QR Code Pix"]
-    E -- "Imprevisto / Cliente Ausente" --> J["Botão de Cancelamento com Justificativa"]
+```sql
+CREATE OR REPLACE FUNCTION claim_queued_call(p_call_id UUID, p_provider_id UUID)
+RETURNS SETOF service_calls AS $$
+BEGIN
+  RETURN QUERY
+  UPDATE service_calls
+  SET 
+    provider_id = p_provider_id,
+    status = 'accepted',
+    accepted_at = NOW(),
+    updated_at = NOW()
+  WHERE id = p_call_id 
+    AND status = 'queued'
+    AND (expires_at IS NULL OR expires_at > NOW())
+  RETURNING *;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 ```
 
-1. **Áudio e Vibração Contínuos ([`hooks/useCallAlert.ts`](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/hooks/useCallAlert.ts)):**
-   * Sintetizador via Web Audio API com toque estilo sirene/corrida que toca em loop repetitivo mesmo com o celular no bolso ou suporte da moto.
-   * Acionamento da API nativa de vibração: `navigator.vibrate([300, 100, 300])`.
-2. **Janela de Aceite de 45 Segundos ([`hooks/useAcceptTimer.ts`](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/hooks/useAcceptTimer.ts) & [`components/call-alert-modal.tsx`](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/components/call-alert-modal.tsx)):**
-   * Cronômetro SVG circular animado com contagem regressiva de 45s.
-   * Se o prestador não responder a tempo, dispara automaticamente `/api/calls/skip-provider`, adicionando o prestador ao array de `excluded_ids` e repassando o chamado para o próximo profissional mais próximo.
-3. **Deep Link Direto para GPS ([`components/navigation-buttons.tsx`](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/components/navigation-buttons.tsx)):**
-   * Link nativo para o Waze com navegação imediata: `https://waze.com/ul?ll={lat},{lng}&navigate=yes`.
-   * Link nativo para o Google Maps com coordenadas e contexto de Rio Verde (GO).
-4. **Alerta Ostensivo sobre Peças e Materiais:**
-   * Inserido em 3 camadas: no catálogo, na tela de confirmação do cliente com **checkbox obrigatório** para poder enviar o chamado, e na tela de execução do prestador para evitar conflitos no imóvel.
-5. **Botão de Cancelamento Estruturado ([`app/api/calls/cancel/route.ts`](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/app/api/calls/cancel/route.ts)):**
-   * Cancelamento gratuito para o cliente enquanto estiver em busca (`searching`).
-   * Cancelamento documentado para o prestador com 4 motivos operacionais (`provider_absent`, `wrong_address`, `technical_issue`, `other`).
+**Busca Geoespacial Otimizada (`find_nearest_provider`):**
+Exige estritamente `is_online = true`, GPS válido, `is_blocked = false` e `pix_key` preenchida.
 
----
-
-## 6. Garantia de Qualidade de Software (SQA - Pressman & Sommerville)
-
-### A. Matriz de Métricas e Aferição
-
-| Categoria | Métrica | Alvo / Meta | Status Atual |
-| :--- | :--- | :--- | :--- |
-| **Previsão** | Tipagem Estrita TypeScript | 0 erros de compilação, 0 tipos `any` | ✅ Aprovado (13 rotas compiladas) |
-| **Previsão** | Complexidade Ciclomática | $< 10$ caminhos por função | ✅ Aprovado |
-| **Previsão** | Invariante Financeira | `provider_cut + platform_fee === total` | ✅ Validado via Vitest |
-| **Previsão** | Janela de Aceite (Timer) | Exatamente 45 segundos com callback | ✅ Validado via Fake Timers |
-| **Controle** | Tempo de Execução de Testes | $< 500\text{ms}$ para suíte unitária | ✅ 15 testes em 226ms |
-| **Controle** | RLS e Integridade de Dados | Isolamento de dados por usuário | ✅ Configurado no PostgreSQL |
-
-### B. Suíte de Testes Automatizados ([Vitest](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/package.json))
-Execução: `npm test`
-
-* **[`__tests__/utils.test.ts`](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/__tests__/utils.test.ts):** Formatação de moeda brasileira (BRL), geração de links geoespaciais Waze/Google Maps e mapeamento de badges de status.
-* **[`__tests__/business_logic.test.ts`](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/__tests__/business_logic.test.ts):** Repasse financeiro mínimo de 70% para o trabalhador em todos os serviços e validação de telefones com DDD 64/62 e OTPs de 6 dígitos.
-* **[`__tests__/timer.test.ts`](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/__tests__/timer.test.ts):** Ciclo de vida da contagem de 45 segundos, cálculo de percentual circular e prevenção de race conditions.
-
----
-
-## 7. Modelo de Dados e Banco Relacional ([`supabase/schema.sql`](file:///c:/Users/kravb/Downloads/REPARA%20RV/repara-rv/supabase/schema.sql))
-
-O banco de dados é hospedado no Supabase em **São Paulo (`sa-east-1`)**, projeto `lvjahufllclmkqcbbrcu`:
-
-```
-┌─────────────────────────────────┐
-│           auth.users            │
-└────────────────┬────────────────┘
-                 │ 1:1
-┌────────────────▼────────────────┐         1:1         ┌───────────────────────────────┐
-│            profiles             ├─────────────────────┤        provider_status        │
-│  id, role, full_name, phone...  │                     │ provider_id, is_online,       │
-└────────────────┬────────────────┘                     │ current_location (POINT 4326) │
-                 │ 1:N (client/provider)                │ pix_key, pix_key_type...      │
-┌────────────────▼────────────────┐                     └───────────────────────────────┘
-│         service_calls           │
-│  id, client_id, provider_id     │         N:1         ┌───────────────────────────────┐
-│  service_id, total_price,       ├─────────────────────┤        quick_services         │
-│  status, client_location,       │                     │ id, name, category,           │
-│  cancel_reason, payment_status..│                     │ fixed_price, platform_fee...  │
-└────────────────┬────────────────┘                     └───────────────────────────────┘
-                 │ 1:1
-┌────────────────▼────────────────┐
-│        service_ratings          │
-│  id, call_id, rating, comment   │
-└─────────────────────────────────┘
+```sql
+CREATE OR REPLACE FUNCTION find_nearest_provider(
+  p_lat DOUBLE PRECISION,
+  p_lng DOUBLE PRECISION,
+  p_service_id UUID DEFAULT NULL,
+  p_radius_km DOUBLE PRECISION DEFAULT 25.0
+)
+RETURNS TABLE (
+  provider_id UUID,
+  distance_km DOUBLE PRECISION,
+  full_name TEXT,
+  phone TEXT,
+  pix_key TEXT
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    ps.provider_id,
+    (ST_Distance(ps.location, ST_SetSRID(ST_MakePoint(p_lng, p_lat), 4326)::geography) / 1000.0) AS distance_km,
+    p.full_name,
+    p.phone,
+    p.pix_key
+  FROM provider_status ps
+  JOIN profiles p ON p.id = ps.provider_id
+  WHERE ps.is_online = TRUE
+    AND ps.location IS NOT NULL
+    AND p.is_blocked = FALSE
+    AND p.pix_key IS NOT NULL 
+    AND TRIM(p.pix_key) <> ''
+    AND ST_DWithin(ps.location, ST_SetSRID(ST_MakePoint(p_lng, p_lat), 4326)::geography, p_radius_km * 1000.0)
+  ORDER BY distance_km ASC
+  LIMIT 1;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 ```
 
-### Principais Objetos de Banco:
-* **`find_nearest_provider(call_location, excluded_ids)`:** Função PostgreSQL em PL/pgSQL com operador `<->` (K-Nearest Neighbors) sobre índice GIST para ordenação instantânea por distância.
-* **Políticas RLS Não-Recursivas:** Leitura segura de perfis e catálogos e permissão estrita de update para donos de registros (`auth.uid() = id`).
-* **Realtime Ativo:** Publicação configurada em `service_calls` e `provider_status`.
+**Comando Obrigatório após Alteração de Schema:**
+
+```sql
+NOTIFY pgrst, 'reload schema';
+```
 
 ---
 
-## 8. Estrutura Real do Repositório
+## 4. Arquitetura de Aplicação e Runtime
+
+A hospedagem é executada no Cloudflare Workers via OpenNext. As seguintes limitações de runtime são **inegociáveis**:
+
+- **Incompatibilidade com Módulos Nativos do Node:** É proibido usar `fs`, `child_process`, `net`, `tls` ou sockets TCP brutos em rotas e ações.
+- **Fetch Nativo:** Todas as requisições HTTP para APIs externas (Mercado Pago, provedores de WhatsApp Z-API/Evolution) devem usar o `fetch()` nativo global.
+- **Persistência e Expiração de Sessão SSR (`lib/auth-logout.ts`):** O encerramento de sessão deve sempre executar o ciclo triplo:
+  1. Expiração forçada de cookies no `document.cookie` (`max-age=0`);
+  2. Purga de chaves locais no `localStorage` e `sessionStorage` (`sb-*`, dados do usuário);
+  3. Chamada à rota `/api/auth/signout` com resposta que aplica `Set-Cookie` expirados;
+  4. Redirecionamento forçado via `window.location.href = '/'` para invalidar a memória em cache do PWA.
+- **Suporte a Tema (Light / Dark Mode):** Gerenciado via `next-themes` com atributo de classe (`<html class="dark">`), com supressão de aviso de hidratação (`suppressHydrationWarning`) no layout raiz e verificação de montagem no componente de toggle.
+
+---
+
+## 5. A Trinca da Torre de Controle Operacional (`/admin`)
+
+Toda manutenção ou adição ao módulo administrativo deve respeitar os seguintes contratos:
+
+### `/admin/dashboard`
+- **Radar de Chamados Estagnados:** Monitora chamados em `queued`. Se `Date.now() - created_at > 5 minutos`, exibe o alerta visual pulsante e botão de ação rápida para despacho emergencial.
+- **Despacho via WhatsApp Seguro:** Monta links para `wa.me/5564...` higienizados com `encodeURIComponent()` contendo o link de resgate direto: `https://repararv.com/painel?claim=[CALL_ID]`.
+- **Segregação Financeira:** Divide estritamente GMV (volume total transacionado), Receita da Plataforma (soma das taxas) e Repasse aos Prestadores.
+- **Diagnóstico de Cancelamento:** Consolida os motivos de cancelamento prevenindo divisão por zero (`totalCancelled > 0 ? (count / totalCancelled) * 100 : 0`). Dispara alerta se "Demora" exceder 40%.
+- **Cleanup do Supabase Realtime:** Todo listener em canal WebSocket da tabela `service_calls` deve obrigatoriamente chamar `supabase.removeChannel(channel)` no retorno do `useEffect`.
+
+### `/admin/servicos`
+- **Calculadora de Repasse:** Exibe em tempo real o valor líquido `Preço Fixo - Taxa da Plataforma`.
+- **Trava do Piso de R$ 50:** Se o repasse resultar em valor inferior a R$ 50,00, exibe aviso âmbar alertando o risco de rejeição em Rio Verde.
+- **Toggle Instantâneo (`is_active`):** Permite pausar serviços sem técnicos no plantão, ocultando-os imediatamente do catálogo do cliente.
+- **Gestão de Escopo:** Permite manipular arrays de tags `included` e `not_included` que alimentam as caixas verde e vermelha no portão do cliente.
+
+### `/admin/usuarios`
+- **Gestão de Chave Pix:** Exibe a Chave Pix com botão de cópia rápida e badge "Pix Ativo".
+- **Compliance e Antecedentes:** Seletor com persistência em `background_check_status` (`approved`, `pending`, `rejected`).
+- **Bloqueio Preventivo:** Chave de suspensão direta (`is_blocked = true`), derrubando o prestador do radar em tempo real.
+- **Comunicação 1-Clique:** Botão para abrir conversa administrativa pré-formatada no WhatsApp do prestador (DDD 64).
+
+---
+
+## 6. Diretrizes Anti-Alucinação e Rigor de Código
+
+### TypeScript e Tipagem
+- **Proibição de Tipos Fracos:** Vetado o uso de `any`, `as any`, `as unknown as T` ou interfaces duplicadas. Se um tipo não existe, deve ser inferido do schema do Supabase (`types/supabase.ts`) ou gerado via Zod.
+- **Discriminated Unions:** Estados de chamados (`ride_status`) e pagamentos devem ser tratados exaustivamente. Não mascarar estados inexistentes com encadeamentos opcionais aleatórios (`call?.provider?.status?.something`).
+
+### Validação de Entrada (Defesa na Borda)
+Toda Server Action, Route Handler e Webhook deve validar parâmetros de entrada com esquemas Zod antes de qualquer chamada ao banco:
+
+```typescript
+import { z } from 'zod';
+
+export const claimCallSchema = z.object({
+  callId: z.string().uuid('ID do chamado inválido'),
+  providerId: z.string().uuid('ID do prestador inválido'),
+});
+```
+
+Respostas de erro devem ser semânticas (`400`, `401`, `403`, `404`, `409`, `422`, `500`) sem vazar detalhes internos do banco, tokens ou stack traces para o frontend.
+
+---
+
+## 7. Documentos Legais e Compliance (Atualizados em 13/09/2026)
+
+| Documento | Rota | Arquivo |
+| :--- | :--- | :--- |
+| Termos de Uso (18 cláusulas) | `/termos` | `app/termos/page.tsx` |
+| Política de Privacidade LGPD (10 seções) | `/privacidade` | `app/privacidade/page.tsx` |
+| Contrato do Técnico Parceiro (9 cláusulas) | `/contrato` | `app/contrato/page.tsx` |
+
+**Regras de compliance obrigatórias:**
+- Checkbox de aceite de termos no cadastro: **sempre iniciar desmarcado** (`useState(false)`). Nunca pré-marcar.
+- Os links de Termos, Privacidade e Contrato devem estar clicáveis e abrir em nova aba.
+- O botão de submissão do cadastro deve bloquear enquanto `!termsAccepted`.
+- A trilha de auditoria de aceite (`terms_accepted_at`) deve ser gravada no backend no momento do registro.
+
+---
+
+## 8. Protocolo de Auditoria e Limpeza em Duas Fases
+
+### Fase 1 — Auditoria Somente Leitura
+O agente não remove, move ou renomeia nenhum arquivo. Executa a análise de código morto, dependências órfãs no `package.json`, resquícios de migrações ou lógicas antigas (ex: travas antigas de OAuth do MP). Pode utilizar ferramentas de suporte como `npx knip`.
+
+Produz um relatório categorizado em:
+- `[Seguro para remover]`
+- `[Requer confirmação]`
+- `[Preservar]`
+- `[Risco de produção]`
+
+### Fase 2 — Execução Controlada
+Só inicia após aprovação explícita do desenvolvedor humano. Deve ser executada em branch dedicada:
+
+```bash
+git checkout -b chore/code-cleanup-audit
+```
+
+Após cada lote de remoção, os seguintes testes devem ser validados sequencialmente:
+
+```bash
+npm run check:types
+npx vitest run
+npm run build
+```
+
+Se qualquer comando falhar, a remoção deve ser **revertida imediatamente**.
+
+---
+
+## 9. Checklist de Homologação Pré-Deploy
+
+Antes de subir qualquer versão para o Cloudflare Workers, valide:
+
+- [ ] `npm run check:types` executou com **0 erros**.
+- [ ] `npx vitest run` passou em **100%** dos testes unitários e de integração.
+- [ ] Nenhuma credencial ou chave privada está exposta em commits, arquivos `.env` commitados ou textos públicos.
+- [ ] As alterações no banco foram salvas em arquivo de migration (`supabase/migrations/YYYYMMDD_*.sql`).
+- [ ] A rotação de schema cache (`NOTIFY pgrst, 'reload schema'`) foi incluída caso novas colunas ou enums tenham sido criados.
+- [ ] O radar de privacidade mascara o endereço completo e coordenadas antes do aceite do chamado (`status = 'accepted'`).
+- [ ] O botão de logout realiza a purga completa de storage e cookies com redirecionamento limpo.
+- [ ] O PWA manifesta comportamento estável em `standalone` (iOS Safari e Android Chrome).
+
+---
+
+## 10. Stack Tecnológica e Estrutura do Repositório
+
+| Camada | Tecnologia |
+| :--- | :--- |
+| **Framework Web** | Next.js (App Router + Turbopack) |
+| **Linguagem** | TypeScript 5 (Modo Estrito — `strict: true`) |
+| **Estilização** | Tailwind CSS 4 + Lucide Icons |
+| **Banco de Dados** | Supabase (PostgreSQL 15 / PostGIS / Realtime) — `sa-east-1` |
+| **Hospedagem** | Cloudflare Workers via `@opennextjs/cloudflare` |
+| **Pagamentos** | Mercado Pago Pix (QR Code dinâmico + Webhook) |
+| **Testes** | Vitest (ESM nativo, fake timers, 15+ testes) |
 
 ```text
 repara-rv/
-├── __tests__/                  # Suíte de testes automatizados Vitest (SQA)
-│   ├── business_logic.test.ts  # Testes de split de taxas e validação
-│   ├── timer.test.ts           # Testes da janela de aceite de 45s
-│   └── utils.test.ts           # Testes de moeda, Waze e Maps
+├── AGENTS.md                   # Este arquivo — lido por todo agente ao iniciar
+├── AI_CONTEXT.md               # Contexto adicional de produto e schema SQL
+├── AI_GUARDRAILS.md            # Guardrails técnicos e padrões de código
+├── TAREFAS_FUNDADOR.md         # Checklist operacional e jurídico dos fundadores
 ├── app/
-│   ├── (client)/
-│   │   └── page.tsx            # Home estilo Triider (busca, categorias, garantias)
-│   ├── acompanhar/[callId]/    # Tracker em tempo real para o cliente com modal Pix
-│   ├── chamado/[callId]/       # Painel do chamado aceito pelo prestador com Waze
-│   ├── chamar/[serviceId]/     # Seleção de endereço + checkbox obrigatório de peças
-│   ├── login/                  # Autenticação OTP + atalhos para modo demonstração
-│   ├── onboarding/             # Cadastro de perfil (cliente ou prestador com chave Pix)
-│   ├── painel/                 # Dashboard do prestador com toggle online e radar
-│   ├── api/
-│   │   ├── calls/create/       # Criação de chamado com matching PostGIS
-│   │   ├── calls/skip-provider/# Pulo para próximo prestador (rejeição ou 45s timeout)
-│   │   ├── calls/cancel/       # Cancelamento auditado com motivo
-│   │   ├── pix/create/         # Criação de cobrança Mercado Pago + fallback mock
-│   │   ├── pix/webhook/        # Webhook bancário com idempotência
-│   │   └── auth/signout/       # Encerramento de sessão
-│   ├── globals.css             # Design system completo da Triider
-│   └── layout.tsx              # Metadados PWA, fontes e Toaster
-├── components/
-│   ├── call-alert-modal.tsx    # Modal com timer 45s, áudio e vibração
-│   ├── call-status-tracker.tsx # Tracker com anéis pulsantes de radar
-│   ├── navigation-buttons.tsx  # Botões do Waze e Google Maps com deep link
-│   ├── pix-payment-modal.tsx   # Modal com QR Code Pix dinâmico e Copia e Cola
-│   └── service-card.tsx        # Card individual de serviço com aviso de peças
-├── hooks/
-│   ├── useAcceptTimer.ts       # Contador regressivo de 45 segundos
-│   ├── useCallAlert.ts         # Sintetizador de áudio contínuo e vibração
-│   └── useGeolocation.ts       # GPS do celular (one-shot e watch contínuo)
+│   ├── (client)/page.tsx       # Home estilo Triider
+│   ├── termos/page.tsx         # Termos de Uso (18 cláusulas)
+│   ├── privacidade/page.tsx    # Política de Privacidade LGPD (10 seções)
+│   ├── contrato/page.tsx       # Contrato do Técnico Parceiro (9 cláusulas)
+│   ├── cadastro/page.tsx       # Cadastro com aceite clickwrap LGPD
+│   └── api/                   # Route Handlers (Zod validado, sem módulos Node)
 ├── lib/
-│   ├── catalog.ts              # Catálogo padronizado de Rio Verde
-│   ├── types.ts                # Tipos TypeScript centrais
-│   ├── utils.ts                # Utilitários de moeda, geolocalização e classes
-│   └── supabase/
-│       ├── client.ts           # Cliente Supabase para o navegador
-│       ├── server.ts           # Cliente Supabase com Service Role para APIs
-│       └── middleware.ts       # Verificação de sessão e rotas protegidas
-├── public/
-│   ├── manifest.json           # Manifesto PWA instalável
-│   ├── icons/                  # Ícones em 192px e 512px
-│   └── sounds/alert.mp3        # Áudio de alerta de corrida
-├── supabase/
-│   └── schema.sql              # Schema PostgreSQL idempotente com PostGIS e RLS
-├── proxy.ts                    # Middleware do Next.js 16 com proteção de rotas
-├── .env.local                  # Credenciais reais do Supabase e Mercado Pago
-└── package.json                # Dependências, scripts dev, build e test
+│   ├── catalog.ts             # Catálogo de serviços com escopo incluso/não incluso
+│   ├── types.ts               # Tipos centrais TypeScript
+│   └── supabase/              # Clientes browser, server e admin
+└── types/supabase.ts          # Tipos gerados do banco — ÚNICA fonte de verdade
 ```
-
----
-
-## 9. Status Real de Implementação
-
-* [x] **Arquitetura de Negócio e Catálogo:** Catálogo padronizado com preço fechado para Rio Verde.
-* [x] **Banco Relacional & PostGIS:** Supabase provisionado em São Paulo (`lvjahufllclmkqcbbrcu`) com PostGIS e RLS.
-* [x] **PWA & Next.js 16 App Router:** Setup completo com `proxy.ts`, Turbopack e manifest PWA.
-* [x] **5 Requisitos Operacionais de Campo:** Áudio, vibração, timer 45s, deep links Waze/Maps e aviso de materiais.
-* [x] **Layout & UX Triider:** Home redesenhada com busca instantânea, categorias, garantias e bottom navigation.
-* [x] **Garantia de Qualidade (SQA):** Vitest configurado e 15 testes unitários aprovados com 100% de sucesso.
-* [x] **Integração Financeira Pix:** Mercado Pago configurado com split automático e fallback de desenvolvimento.
-* [x] **Modo Demonstração / Sandbox:** Acesso imediato em 1 clique para testar fluxos sem dependência de SMS.

@@ -10,10 +10,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'call_id obrigatório' }, { status: 400 })
     }
 
-    // Busca o chamado atual
+    // Busca o chamado atual (inclui client_id para blindagem de auto-atribuição)
     const { data: call } = await supabase
       .from('service_calls')
-      .select('id, client_location, status, provider_id, cancel_metadata')
+      .select('id, client_id, client_location, status, provider_id, cancel_metadata')
       .eq('id', call_id)
       .single()
 
@@ -25,11 +25,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Chamado não pode ser reencaminhado neste status' }, { status: 400 })
     }
 
-    // Histórico cumulativo de prestadores já tentados para evitar loop infinito
+    // Histórico cumulativo de prestadores já tentados para evitar loop infinito.
+    // ⚠️ O client_id é SEMPRE excluído: quem solicita JAMAIS pode executar o próprio chamado.
     const prevExclusions = (call.cancel_metadata as any)?.rejected_providers || []
     const excludedIds = Array.from(
       new Set([
         ...prevExclusions,
+        call.client_id,       // Blindagem absoluta: cliente nunca vira prestador do próprio chamado
         call.provider_id,
         rejected_provider_id,
       ].filter(Boolean))

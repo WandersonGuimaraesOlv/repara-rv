@@ -89,9 +89,10 @@ export async function POST(request: NextRequest) {
     const lng = client_lng ?? -50.9192
 
     // 3. Busca prestador mais próximo via PostGIS RPC
+    //    ⚠️ O client_id é sempre excluído: quem solicita JAMAIS pode executar o próprio chamado.
     const { data: nearestProvider, error: rpcError } = await supabase.rpc('find_nearest_provider', {
       call_location: `SRID=4326;POINT(${lng} ${lat})`,
-      excluded_ids: [],
+      excluded_ids: [user.id], // client_id bloqueado por regra de negócio absoluta
     })
 
     if (rpcError) {

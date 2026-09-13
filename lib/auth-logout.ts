@@ -14,7 +14,13 @@ export async function performLogout(redirectTo: string = '/login') {
       const keysToRemove: string[] = []
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i)
-        if (key && (key.startsWith('sb-') || key.includes('supabase') || key.includes('auth') || key.startsWith('repara'))) {
+        if (
+          key &&
+          (key.startsWith('sb-') ||
+            key.includes('supabase') ||
+            key.includes('auth') ||
+            key.startsWith('repara'))
+        ) {
           keysToRemove.push(key)
         }
       }
@@ -27,12 +33,18 @@ export async function performLogout(redirectTo: string = '/login') {
   // 2. Limpa todos os cookies via document.cookie no navegador
   try {
     if (typeof document !== 'undefined') {
-      document.cookie = 'repara_demo_role=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+      document.cookie =
+        'repara_demo_role=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT'
       const cookies = document.cookie.split(';')
       for (const cookie of cookies) {
         const eqPos = cookie.indexOf('=')
         const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim()
-        if (name.startsWith('sb-') || name.includes('auth') || name.includes('token') || name.startsWith('repara')) {
+        if (
+          name.startsWith('sb-') ||
+          name.includes('auth') ||
+          name.includes('token') ||
+          name.startsWith('repara')
+        ) {
           document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0`
           if (typeof window !== 'undefined') {
             document.cookie = `${name}=; path=/; domain=${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0`
@@ -44,9 +56,12 @@ export async function performLogout(redirectTo: string = '/login') {
     console.warn('[Logout] Aviso ao limpar document.cookie:', e)
   }
 
-  // 3. Notifica o backend para revogar sessão e limpar cookies de servidor
+  // 3. Notifica o backend com timeout agressivo de 1.2s para revogar sessão no Supabase e limpar cookies de servidor
   try {
-    await fetch('/api/auth/signout', { method: 'POST' }).catch(() => {})
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 1200)
+    await fetch('/api/auth/signout', { method: 'POST', signal: controller.signal }).catch(() => {})
+    clearTimeout(timer)
   } catch {}
 
   // 4. Invoca signOut do SDK do Supabase localmente para resetar listeners
@@ -55,8 +70,8 @@ export async function performLogout(redirectTo: string = '/login') {
     await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
   } catch {}
 
-  // 5. Redirecionamento forçado (Hard Navigation) para resetar todo o estado da memória
+  // 5. Redirecionamento forçado (Hard Navigation) para resetar todo o estado da memória do PWA
   if (typeof window !== 'undefined') {
-    window.location.href = redirectTo
+    window.location.replace(redirectTo)
   }
 }

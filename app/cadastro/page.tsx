@@ -22,7 +22,7 @@ export default function CadastroPage() {
   const [pixKey, setPixKey] = useState('')
   const [pixKeyType, setPixKeyType] = useState('phone')
   const [selfDeclaration, setSelfDeclaration] = useState(false)
-  const [termsAccepted, setTermsAccepted] = useState(true)
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const [loading, setLoading] = useState(false)
 
   // Lê papel inicial da URL (?role=provider ou ?tipo=prestador)
@@ -409,9 +409,20 @@ export default function CadastroPage() {
               checked={termsAccepted}
               onChange={e => setTermsAccepted(e.target.checked)}
               className="mt-0.5 w-4 h-4 rounded text-orange-600 focus:ring-orange-500 border-slate-300"
+              id="terms-checkbox"
             />
             <span className="text-xs text-slate-600 leading-snug">
-              Concordo com os <strong>Termos de Uso</strong> e <strong>Política de Privacidade</strong> do Repara RV.
+              Li e concordo com os{' '}
+              <a href="/termos" target="_blank" rel="noopener noreferrer" className="font-bold text-orange-600 hover:text-orange-700 hover:underline">Termos de Uso</a>
+              {', '}
+              <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="font-bold text-orange-600 hover:text-orange-700 hover:underline">Política de Privacidade</a>
+              {role === 'provider' && (
+                <>
+                  {' e '}
+                  <a href="/contrato" target="_blank" rel="noopener noreferrer" className="font-bold text-orange-600 hover:text-orange-700 hover:underline">Contrato de Técnico Parceiro</a>
+                </>
+              )}
+              {' '}da Plataforma Repara RV.
             </span>
           </label>
 
@@ -419,7 +430,7 @@ export default function CadastroPage() {
           <button
             type="submit"
             id="btn-submit-cadastro"
-            disabled={loading || phone.length < 10 || pin.length < 4 || !fullName.trim()}
+            disabled={loading || phone.length < 10 || pin.length < 4 || !fullName.trim() || !termsAccepted}
             className="w-full py-3.5 px-6 rounded-2xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-sm font-bold shadow-lg shadow-orange-600/25 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:pointer-events-none"
           >
             {loading ? (

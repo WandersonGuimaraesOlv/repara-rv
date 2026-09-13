@@ -49,6 +49,40 @@
 }
 
 /* ──────────────────────────────────────────────────────────
+   DARK MODE — tokens sobrepostos pela classe .dark no <html>
+   (gerenciado pelo next-themes)
+   ────────────────────────────────────────────────────────── */
+.dark {
+  --color-bg:           #0A0F1E;
+  --color-surface:      #111827;
+  --color-surface-alt:  #1F2937;
+  --color-border:       #1E293B;
+  --color-border-light: #334155;
+
+  --color-brand:        #F97316;
+  --color-brand-light:  #FB923C;
+  --color-brand-dark:   #EA580C;
+  --color-brand-glow:   rgba(249, 115, 22, 0.20);
+
+  --color-cta:          #F97316;
+  --color-cta-light:    #FB923C;
+  --color-cta-dark:     #EA580C;
+  --color-cta-glow:     rgba(249, 115, 22, 0.30);
+
+  --color-success:      #10B981;
+  --color-warning:      #F59E0B;
+  --color-danger:       #EF4444;
+  --color-info:         #3B82F6;
+
+  --color-text:         #F1F5F9;
+  --color-text-muted:   #94A3B8;
+  --color-text-subtle:  #475569;
+
+  --shadow-card:        0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover:  0 12px 24px -6px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+}
+
+/* ──────────────────────────────────────────────────────────
    BASE
    ────────────────────────────────────────────────────────── */
 *, *::before, *::after {

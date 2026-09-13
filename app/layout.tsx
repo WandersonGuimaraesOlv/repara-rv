@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Toaster } from 'sonner'
+import { ThemeProvider } from '@/components/theme-provider'
 
 export const viewport: Viewport = {
   themeColor: '#0F172A',
@@ -56,7 +57,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -67,21 +68,27 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/icons/icon-192.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body>
-        {children}
-        <Toaster
-          position="top-center"
-          richColors
-          theme="dark"
-          toastOptions={{
-            style: {
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              color: 'var(--color-text)',
-              fontFamily: 'Inter, sans-serif',
-            },
-          }}
-        />
+      <body className="bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors duration-200">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange={false}
+        >
+          {children}
+          <Toaster
+            position="top-center"
+            richColors
+            toastOptions={{
+              style: {
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text)',
+                fontFamily: 'Inter, sans-serif',
+              },
+            }}
+          />
+        </ThemeProvider>
       </body>
     </html>
   )
