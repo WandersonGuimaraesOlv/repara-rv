@@ -110,7 +110,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState<boolean>(true)
   
   // Ticker de tempo em tempo real para recalcular estagnação na fila
-  const [currentTime, setCurrentTime] = useState<number>(Date.now())
+  const [currentTime, setCurrentTime] = useState<number>(() => Date.now())
   
   // Modal de Despacho Rápido via WhatsApp
   const [dispatchCall, setDispatchCall] = useState<ServiceCallRecord | null>(null)
