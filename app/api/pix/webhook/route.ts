@@ -8,13 +8,116 @@ import { PixWebhookPayload } from '@/lib/types'
  * Para configurar:
  * 1. No painel do Mercado Pago, adicione a URL de notificação:
  *    https://seu-dominio.com/api/pix/webhook
- * 2. Configure MERCADOPAGO_WEBHOOK_SECRET no .env.local
+ * 2. Configure MERCADOPAGO_WEBHOOK_SECRET no .env.local E no painel
+ *    (Suas integrações → aplicação → Webhooks → Configurar notificação)
+ *    — os dois lados precisam ter o MESMO valor.
  *
  * Referência: https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks
+ *
+ * Validação de assinatura (achado em 14/09/2026: nunca tinha sido implementada, apesar da
+ * variável já estar prevista no .env desde sempre): o Mercado Pago assina cada notificação
+ * com HMAC-SHA256 no cabeçalho `x-signature` (formato "ts=<timestamp>,v1=<hash hex>"),
+ * calculado sobre o manifesto "id:[data.id];request-id:[x-request-id];ts:[ts];" (campo
+ * inteiro removido se o valor não vier). Usa exclusivamente a Web Crypto API nativa
+ * (crypto.subtle), igual ao resto do projeto (ver modules/notifications/services/
+ * webcrypto-vapid.ts) — zero dependência do módulo `crypto` do Node, compatível com
+ * Cloudflare Workers.
+ *
+ * Rollout gradual e seguro: se MERCADOPAGO_WEBHOOK_SECRET ainda não estiver configurado,
+ * o webhook continua funcionando exatamente como antes (não bloqueia confirmação de
+ * pagamento de verdade por engano), mas grita em alto e bom som no log. Assim que o
+ * segredo estiver configurado, toda notificação sem assinatura válida é rejeitada (401).
  */
+
+function hexToBytes(hex: string): Uint8Array | null {
+  const clean = hex.trim()
+  if (clean.length === 0 || clean.length % 2 !== 0) return null
+  const bytes = new Uint8Array(clean.length / 2)
+  for (let i = 0; i < bytes.length; i++) {
+    const byte = parseInt(clean.substring(i * 2, i * 2 + 2), 16)
+    if (Number.isNaN(byte)) return null
+    bytes[i] = byte
+  }
+  return bytes
+}
+
+interface SignatureCheck {
+  ok: boolean
+  reason: string
+  secretConfigured: boolean
+}
+
+async function verifyMercadoPagoSignature(request: NextRequest, dataId: string | null): Promise<SignatureCheck> {
+  const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET
+  if (!secret) {
+    return { ok: false, reason: 'MERCADOPAGO_WEBHOOK_SECRET não configurado', secretConfigured: false }
+  }
+
+  const xSignature = request.headers.get('x-signature')
+  const xRequestId = request.headers.get('x-request-id')
+  if (!xSignature) {
+    return { ok: false, reason: 'cabeçalho x-signature ausente', secretConfigured: true }
+  }
+
+  const signatureParts: Record<string, string> = {}
+  for (const part of xSignature.split(',')) {
+    const [key, ...rest] = part.trim().split('=')
+    if (key && rest.length > 0) signatureParts[key.trim()] = rest.join('=').trim()
+  }
+  const ts = signatureParts['ts']
+  const v1 = signatureParts['v1']
+  if (!ts || !v1) {
+    return { ok: false, reason: 'x-signature malformado (faltando ts ou v1)', secretConfigured: true }
+  }
+
+  const signatureBytes = hexToBytes(v1)
+  if (!signatureBytes) {
+    return { ok: false, reason: 'v1 não é hexadecimal válido', secretConfigured: true }
+  }
+
+  // Manifesto oficial: campo inteiro removido (não só vazio) quando o valor não existe.
+  const manifestParts: string[] = []
+  if (dataId) manifestParts.push(`id:${dataId}`)
+  if (xRequestId) manifestParts.push(`request-id:${xRequestId}`)
+  manifestParts.push(`ts:${ts}`)
+  const manifest = manifestParts.join(';') + ';'
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['verify']
+  )
+
+  const valid = await crypto.subtle.verify(
+    'HMAC',
+    key,
+    signatureBytes.buffer as ArrayBuffer,
+    new TextEncoder().encode(manifest).buffer as ArrayBuffer
+  )
+
+  return valid
+    ? { ok: true, reason: '', secretConfigured: true }
+    : { ok: false, reason: 'assinatura não confere', secretConfigured: true }
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const dataIdFromQuery = request.nextUrl.searchParams.get('data.id')
     const body: PixWebhookPayload = await request.json()
+    const dataId = dataIdFromQuery || (body.data?.id ? String(body.data.id) : null)
+
+    const signatureCheck = await verifyMercadoPagoSignature(request, dataId)
+    if (!signatureCheck.ok) {
+      if (signatureCheck.secretConfigured) {
+        console.error('[Webhook Pix] Assinatura inválida — notificação rejeitada:', signatureCheck.reason)
+        return NextResponse.json({ error: 'Assinatura inválida' }, { status: 401 })
+      }
+      // Segredo ainda não configurado dos dois lados: não bloqueia a confirmação de
+      // pagamento de verdade por engano, mas avisa alto que está sem proteção nenhuma.
+      console.error('[Webhook Pix] ⚠️ RODANDO SEM VALIDAÇÃO DE ASSINATURA — configure MERCADOPAGO_WEBHOOK_SECRET no .env.local e no painel do Mercado Pago. Motivo:', signatureCheck.reason)
+    }
 
     // Ignora eventos que não são de pagamento
     if (body.action !== 'payment.updated' && body.action !== 'payment.created') {

@@ -21,7 +21,6 @@ import {
   Plus,
   Trash2,
   CheckCircle2,
-  XCircle,
   DollarSign,
   Clock,
   Sparkles
@@ -90,7 +89,7 @@ export default function AdminServicesPage() {
         if (!error && data && data.length > 0) {
           // Garante que todo serviço tenha arrays de escopo (do banco ou do catálogo)
           const populated = (data as QuickService[]).map(s => {
-            const defaultScope = getServiceScope(s.name, s.category)
+            const defaultScope = getServiceScope(s.name)
             return {
               ...s,
               included: (s.included && s.included.length > 0) ? s.included : defaultScope.included,
@@ -154,7 +153,7 @@ export default function AdminServicesPage() {
 
   // Abertura do modal de edição com preenchimento de escopo
   const handleOpenEdit = (service: QuickService) => {
-    const defaultScope = getServiceScope(service.name, service.category)
+    const defaultScope = getServiceScope(service.name)
     setEditingService(service)
     setEditName(service.name)
     setEditCategory(service.category)

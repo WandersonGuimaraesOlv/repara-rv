@@ -299,16 +299,16 @@ export default function TriiderClientHomePage() {
   }, [services, searchQuery])
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col selection:bg-orange-100 selection:text-orange-900 w-full">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col selection:bg-orange-100 selection:text-orange-900 w-full max-w-full overflow-x-hidden transition-colors duration-200">
 
       {/* ────────────────────────────────────────────────────────
           1. HEADER RESPONSIVO (DESKTOP + MOBILE)
           ──────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 transition-all w-full max-w-full">
+      <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-all w-full max-w-full">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
+          <div className="flex items-center justify-between h-14 sm:h-20 gap-2 sm:gap-4">
             
-            {/* Esquerda: Logo + Seletor de Bairro */}
+            {/* Esquerda: Logo + Seletor de Bairro (Desktop) */}
             <div className="flex items-center gap-2 sm:gap-6 min-w-0 shrink-0">
               <Link href="/" className="flex items-center group transition-transform hover:opacity-95 shrink-0">
                 <Logo variant="full" width={168} height={42} className="hidden sm:block" />
@@ -319,83 +319,88 @@ export default function TriiderClientHomePage() {
               <button
                 type="button"
                 onClick={() => setIsAddressModalOpen(true)}
-                className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-orange-50/80 border border-slate-200/80 hover:border-orange-200 text-xs text-slate-700 transition-all group"
+                className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-orange-50/80 dark:hover:bg-slate-700/80 border border-slate-200/80 dark:border-slate-700 hover:border-orange-200 text-xs text-slate-700 dark:text-slate-300 transition-all group cursor-pointer"
               >
                 <MapPin size={14} className="text-orange-600 shrink-0 group-hover:scale-110 transition-transform" />
-                <span className="text-slate-500 font-medium">Bairro:</span>
-                <strong className="font-bold text-slate-900">{selectedNeighborhood}</strong>
+                <span className="text-slate-500 dark:text-slate-400 font-medium">Bairro:</span>
+                <strong className="font-bold text-slate-900 dark:text-white">{selectedNeighborhood}</strong>
                 <ChevronDown size={14} className="text-slate-400 ml-0.5" />
               </button>
             </div>
 
             {/* Centro: Links de Navegação (Desktop) */}
-            <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-600">
-              <a href="#categorias" className="hover:text-orange-600 transition-colors">
+            <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <a href="#categorias" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
                 Categorias
               </a>
-              <a href="#servicos" className="hover:text-orange-600 transition-colors">
+              <a href="#servicos" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
                 Serviços Populares
               </a>
-              <a href="#garantia" className="hover:text-orange-600 transition-colors">
+              <a href="#garantia" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
                 Garantia 30 Dias
               </a>
             </nav>
 
-            {/* Direita: Ações & Perfil */}
+            {/* Direita: Ações & Perfil (Ultra responsivo para evitar qualquer overflow no mobile) */}
             <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               <button
                 type="button"
                 onClick={handleMyOrders}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <ClipboardList size={15} />
                 <span>Meus Pedidos</span>
               </button>
 
-              {/* Botão de tema claro/escuro */}
+              {/* Alternador de tema */}
               <ThemeToggle />
 
+              {/* Botão de Prestador / Painel */}
               {currentUser?.role === 'provider' ? (
                 <Link
                   href="/painel"
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-300 shadow-sm transition-all shrink-0"
+                  aria-label="Painel do Prestador"
+                  title="Painel do Prestador"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/50 border border-emerald-300 dark:border-emerald-800 shadow-sm transition-all shrink-0"
                 >
-                  <Bike size={14} className="text-emerald-600 shrink-0" />
-                  <span>Painel</span>
+                  <Bike size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span className="hidden xs:inline">Painel</span>
                 </Link>
               ) : (
                 <Link
                   href={currentUser ? "/onboarding?role=provider" : "/cadastro?role=provider"}
-                  className="flex items-center gap-1 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold text-orange-700 bg-orange-50 hover:bg-orange-100/80 border border-orange-200/60 shadow-sm transition-all shrink-0"
+                  aria-label="Sou Profissional"
+                  title="Sou Profissional / Prestador"
+                  className="hidden sm:flex items-center gap-1 px-3.5 py-2 rounded-full text-xs font-bold text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100/80 dark:hover:bg-orange-900/50 border border-orange-200/60 dark:border-orange-800/60 shadow-sm transition-all shrink-0"
                 >
-                  <Bike size={14} className="text-orange-600 shrink-0" />
-                  <span className="hidden sm:inline">Sou Profissional</span>
-                  <span className="sm:hidden">Prestador</span>
+                  <Bike size={14} className="text-orange-600 dark:text-orange-400 shrink-0" />
+                  <span>Sou Profissional</span>
                 </Link>
               )}
 
+              {/* Perfil ou Login */}
               {currentUser ? (
                 <div ref={profileMenuRef} className="relative shrink-0">
                   <button
                     type="button"
                     id="btn-user-profile-menu"
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                    className="flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 rounded-full text-xs font-bold text-slate-800 bg-white hover:bg-slate-50 border border-slate-200 shadow-sm transition-all cursor-pointer shrink-0"
+                    className="flex items-center gap-1.5 sm:gap-2 p-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-sm transition-all cursor-pointer shrink-0"
                   >
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center text-[10px] font-black uppercase shadow-xs shrink-0">
+                    <div className="w-7 h-7 sm:w-6 sm:h-6 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center text-xs sm:text-[10px] font-black uppercase shadow-xs shrink-0">
                       {currentUser.full_name ? currentUser.full_name.charAt(0) : 'U'}
                     </div>
-                    <span className="max-w-[70px] sm:max-w-[160px] truncate">
+                    <span className="hidden sm:inline max-w-[120px] truncate">
                       {currentUser.full_name?.split(' ')[0] || 'Minha Conta'}
                     </span>
-                    <ChevronDown size={13} className={`text-slate-400 shrink-0 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={13} className={`text-slate-400 hidden sm:block shrink-0 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
 
-                  {/* Dropdown Menu do Usuário */}
+                  {/* Dropdown Menu do Usuário (Desktop) */}
                   {isProfileMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl border border-slate-200 shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 text-left">
-                      <div className="px-4 py-3 border-b border-slate-100">
-                        <p className="text-xs font-bold text-slate-900 truncate">
+                    <div className="hidden md:block absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 text-left">
+                      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
                           {currentUser.full_name || 'Usuário Repara RV'}
                         </p>
                         {currentUser.phone && (
@@ -413,7 +418,7 @@ export default function TriiderClientHomePage() {
                           <Link
                             href="/admin/dashboard"
                             onClick={() => setIsProfileMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-orange-600 hover:bg-orange-50 transition-colors"
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-slate-700/60 transition-colors"
                           >
                             <Shield size={15} />
                             <span>Torre de Controle Admin</span>
@@ -423,28 +428,28 @@ export default function TriiderClientHomePage() {
                         <Link
                           href="/painel"
                           onClick={() => setIsProfileMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-orange-50 dark:hover:bg-slate-700/60 hover:text-orange-700 dark:hover:text-orange-300 transition-colors"
                         >
-                          <Bike size={15} className="text-orange-600" />
+                          <Bike size={15} className="text-orange-600 dark:text-orange-400" />
                           <span>Acessar Painel do Prestador</span>
                         </Link>
 
                         <button
                           type="button"
                           onClick={handleMyOrders}
-                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-orange-50 hover:text-orange-700 transition-colors cursor-pointer text-left"
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-orange-50 dark:hover:bg-slate-700/60 hover:text-orange-700 dark:hover:text-orange-300 transition-colors cursor-pointer text-left"
                         >
-                          <ClipboardList size={15} className="text-slate-500" />
+                          <ClipboardList size={15} className="text-slate-500 dark:text-slate-400" />
                           <span>Meus Chamados & Histórico</span>
                         </button>
                       </div>
 
-                      <div className="border-t border-slate-100 pt-1">
+                      <div className="border-t border-slate-100 dark:border-slate-700 pt-1">
                         <button
                           type="button"
                           id="btn-logout"
                           onClick={handleLogout}
-                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors cursor-pointer text-left"
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer text-left"
                         >
                           <LogOut size={15} />
                           <span>Sair da Conta</span>
@@ -458,15 +463,15 @@ export default function TriiderClientHomePage() {
                   <Link
                     href="/login"
                     id="btn-nav-login"
-                    className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 transition-colors shrink-0"
                   >
-                    <User size={14} className="text-slate-600" />
+                    <User size={14} className="text-slate-600 dark:text-slate-400" />
                     <span>Entrar</span>
                   </Link>
                   <Link
                     href="/cadastro"
                     id="btn-nav-cadastro"
-                    className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 shadow-sm shadow-orange-600/20 transition-all hover:scale-[1.02] active:scale-95"
+                    className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 shadow-sm shadow-orange-600/20 transition-all hover:scale-[1.02] active:scale-95 shrink-0"
                   >
                     <Sparkles size={13} className="text-orange-200" />
                     <span>Cadastre-se</span>
@@ -477,17 +482,17 @@ export default function TriiderClientHomePage() {
 
           </div>
 
-          {/* Seletor de Bairro para Mobile (linha dedicada) */}
-          <div className="md:hidden pb-3 pt-1 border-t border-slate-100 flex items-center justify-between text-xs w-full min-w-0">
+          {/* Seletor de Bairro para Mobile (linha dedicada com min-w-0 e truncate) */}
+          <div className="md:hidden pb-2.5 pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs w-full min-w-0">
             <button
               type="button"
               onClick={() => setIsAddressModalOpen(true)}
-              className="flex items-center gap-1.5 text-left text-slate-600 hover:text-slate-900 group w-full min-w-0"
+              className="flex items-center gap-1.5 text-left text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white group w-full min-w-0 py-0.5"
             >
               <MapPin size={14} className="text-orange-600 shrink-0 group-hover:scale-110 transition-transform" />
-              <div className="truncate flex-1 min-w-0">
-                <span className="text-slate-400 font-medium">Você está em: </span>
-                <strong className="text-slate-900 font-bold underline underline-offset-2 decoration-orange-300">
+              <div className="truncate flex-1 min-w-0 text-xs">
+                <span className="text-slate-400 dark:text-slate-500 font-medium">Você está em: </span>
+                <strong className="text-slate-900 dark:text-white font-bold underline underline-offset-2 decoration-orange-300">
                   {selectedNeighborhood}, Rio Verde
                 </strong>
               </div>
@@ -501,18 +506,18 @@ export default function TriiderClientHomePage() {
       {/* ────────────────────────────────────────────────────────
           2. HERO SECTION RESPONSIVA (ESTILO TRIIDER MODERNO)
           ──────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-white via-orange-50/20 to-slate-50 border-b border-slate-200/60 pt-8 pb-12 sm:pt-14 sm:pb-20">
+      <section className="relative overflow-hidden bg-gradient-to-b from-white via-orange-50/20 to-slate-50 dark:from-slate-900 dark:via-slate-900/80 dark:to-slate-950 border-b border-slate-200/60 dark:border-slate-800 pt-6 pb-10 sm:pt-14 sm:pb-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
             
             {/* Selo Local */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-100/80 border border-orange-200 text-orange-800 text-xs font-bold tracking-wide uppercase mb-4 shadow-sm">
-              <Sparkles size={14} className="text-orange-600" />
-              <span>Serviços Residenciais Sob Demanda • Rio Verde (GO)</span>
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:py-1.5 rounded-full bg-orange-100/80 dark:bg-orange-950/60 border border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-300 text-[11px] sm:text-xs font-bold tracking-wide uppercase mb-3 sm:mb-4 shadow-sm max-w-full">
+              <Sparkles size={13} className="text-orange-600 dark:text-orange-400 shrink-0" />
+              <span className="truncate sm:overflow-visible">Serviços Residenciais • Rio Verde (GO)</span>
             </div>
 
             {/* Título Principal de Alto Impacto */}
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.15] mb-4">
+            <h1 className="text-2xl sm:text-4xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight sm:leading-[1.15] mb-3 sm:mb-4">
               O que você precisa{' '}
               <span className="text-orange-600 underline decoration-orange-300 decoration-wavy decoration-2">
                 consertar
@@ -521,37 +526,37 @@ export default function TriiderClientHomePage() {
             </h1>
 
             {/* Subtítulo */}
-            <p className="text-sm sm:text-base lg:text-lg text-slate-600 font-normal leading-relaxed max-w-2xl mx-auto mb-8">
+            <p className="text-xs sm:text-base lg:text-lg text-slate-600 dark:text-slate-300 font-normal leading-relaxed max-w-2xl mx-auto mb-6 sm:mb-8 px-1">
               Encanadores, eletricistas e montadores verificados em Rio Verde com preço fixo transparente, atendimento ágil e garantia de 30 dias.
             </p>
 
             {/* Barra de Busca Proeminente com Autocomplete */}
-            <div className="relative max-w-2xl mx-auto">
-              <div className="relative flex items-center shadow-lg shadow-orange-950/5 rounded-2xl bg-white">
-                <Search size={20} className="absolute left-4 text-slate-400 pointer-events-none" />
+            <div className="relative max-w-2xl mx-auto w-full">
+              <div className="relative flex items-center shadow-lg shadow-orange-950/5 dark:shadow-black/40 rounded-2xl bg-white dark:bg-slate-800">
+                <Search size={18} className="absolute left-3.5 sm:left-4 text-slate-400 pointer-events-none shrink-0" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
-                  placeholder="Busque pelo conserto: chuveiro, torneira, tomada, fechadura..."
-                  className="w-full pl-12 pr-12 py-4 bg-transparent border-2 border-slate-200 focus:border-orange-500 rounded-2xl text-sm sm:text-base text-slate-900 placeholder-slate-400 transition-all outline-none"
+                  placeholder="Busque pelo conserto: chuveiro, torneira, tomada..."
+                  className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 sm:py-4 bg-transparent border-2 border-slate-200 dark:border-slate-700 focus:border-orange-500 dark:focus:border-orange-500 rounded-2xl text-xs sm:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 transition-all outline-none"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-4 text-slate-400 hover:text-slate-600 p-1"
+                    className="absolute right-3.5 sm:right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
                   >
-                    <X size={18} />
+                    <X size={16} />
                   </button>
                 )}
               </div>
 
               {/* Dropdown de Autocomplete */}
               {isSearchFocused && searchSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-30 text-left overflow-hidden animate-in fade-in slide-in-from-top-2">
-                  <div className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 py-2 z-30 text-left overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  <div className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     Sugestões Imediatas
                   </div>
                   {searchSuggestions.map(service => (
@@ -559,14 +564,14 @@ export default function TriiderClientHomePage() {
                       key={service.id}
                       href={`/chamar/${service.id}`}
                       onClick={() => setIsSearchFocused(false)}
-                      className="flex items-center justify-between px-4 py-3 hover:bg-orange-50/70 transition-colors text-sm text-slate-800"
+                      className="flex items-center justify-between px-4 py-3 hover:bg-orange-50/70 dark:hover:bg-slate-700/70 transition-colors text-sm text-slate-800 dark:text-slate-200"
                     >
                       <div className="flex items-center gap-2">
-                        <Wrench size={15} className="text-orange-600" />
-                        <span className="font-semibold text-slate-900">{service.name}</span>
-                        <span className="text-xs text-slate-400">({service.category})</span>
+                        <Wrench size={15} className="text-orange-600 dark:text-orange-400 shrink-0" />
+                        <span className="font-semibold text-slate-900 dark:text-white">{service.name}</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">({service.category})</span>
                       </div>
-                      <span className="text-orange-600 font-bold text-sm">
+                      <span className="text-orange-600 dark:text-orange-400 font-bold text-sm shrink-0">
                         {formatCurrency(service.fixed_price)}
                       </span>
                     </Link>
@@ -576,63 +581,65 @@ export default function TriiderClientHomePage() {
             </div>
 
             {/* Tags de Pesquisas Frequentes */}
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs">
-              <span className="text-slate-400 font-semibold mr-1">Populares:</span>
+            <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-3.5 sm:mt-4 text-xs max-w-full">
+              <span className="text-slate-400 dark:text-slate-500 font-semibold mr-0.5 text-[11px] sm:text-xs">Populares:</span>
               {['Chuveiro', 'Torneira', 'Tomada', 'Ventilador', 'Fechadura', 'Máquina de Lavar', 'Varal', 'Silicone'].map(tag => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => setSearchQuery(tag)}
-                  className="px-3 py-1.5 rounded-full bg-white hover:bg-orange-50 border border-slate-200 hover:border-orange-300 text-slate-600 hover:text-orange-600 font-medium transition-all shadow-xs"
+                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 hover:border-orange-300 text-slate-600 dark:text-slate-300 hover:text-orange-600 dark:hover:text-orange-400 text-[11px] sm:text-xs font-medium transition-all shadow-xs cursor-pointer active:scale-95"
                 >
                   {tag}
                 </button>
               ))}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-8 pt-8 border-t border-slate-200/60 text-left">
-              <div className="p-3.5 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs flex items-start gap-2.5">
-                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 shrink-0">
+
+            {/* 4 Blocos de Garantia / Vantagens no Hero */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-slate-200/60 dark:border-slate-800 text-left">
+              <div className="p-3 sm:p-3.5 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex items-center sm:items-start gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 shrink-0">
                   <ShieldCheck size={18} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900">Segurança Verificada</h4>
-                  <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
-                    Checagem rigorosa de antecedentes criminais e residência.
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">Segurança Verificada</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
+                    Checagem rigorosa de antecedentes e residência.
                   </p>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs flex items-start gap-2.5">
-                <div className="p-2 rounded-xl bg-amber-50 text-amber-600 shrink-0">
+              <div className="p-3 sm:p-3.5 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex items-center sm:items-start gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 shrink-0">
                   <Zap size={18} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900">Chegada Rápida</h4>
-                  <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">Chegada Rápida</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
                     Técnico no seu endereço em 30 a 45 min em Rio Verde.
                   </p>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs flex items-start gap-2.5">
-                <div className="p-2 rounded-xl bg-blue-50 text-blue-600 shrink-0">
+              <div className="p-3 sm:p-3.5 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex items-center sm:items-start gap-2.5">
+                <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
                   <Lock size={18} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900">Pagamento Protegido</h4>
-                  <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
-                    Pague via Pix com total segurança direto na plataforma.
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">Pagamento Protegido</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
+                    Pague via Pix com total segurança na plataforma.
                   </p>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-white/90 border border-slate-200/80 shadow-xs flex items-start gap-2.5">
-                <div className="p-2 rounded-xl bg-purple-50 text-purple-600 shrink-0">
+              <div className="p-3 sm:p-3.5 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex items-center sm:items-start gap-2.5">
+                <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 shrink-0">
                   <Sparkles size={18} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900">Garantia de 7 Dias</h4>
-                  <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">Garantia de 30 Dias</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
                     Se o reparo apresentar defeito, reexecutamos sem custo.
                   </p>
                 </div>
@@ -644,15 +651,15 @@ export default function TriiderClientHomePage() {
       </section>
 
       {/* ────────────────────────────────────────────────────────
-          3. CATEGORIAS DE SERVIÇOS (GRID EXPANSIVO NO DESKTOP)
+          3. CATEGORIAS DE SERVIÇOS (GRID ULTRA FLUIDO)
           ──────────────────────────────────────────────────────── */}
-      <section id="categorias" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full">
-        <div className="flex items-center justify-between mb-6">
+      <section id="categorias" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-12 w-full">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               Categorias de Serviços
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
               Escolha a área do reparo para filtrar os serviços disponíveis
             </p>
           </div>
@@ -660,15 +667,15 @@ export default function TriiderClientHomePage() {
             <button
               type="button"
               onClick={() => setSelectedCategory('all')}
-              className="text-xs sm:text-sm font-bold text-orange-600 hover:text-orange-700 underline"
+              className="text-xs sm:text-sm font-bold text-orange-600 dark:text-orange-400 hover:text-orange-700 underline cursor-pointer shrink-0 ml-2"
             >
-              Ver todos os serviços
+              Ver todos
             </button>
           )}
         </div>
 
-        {/* Grid Responsivo de Categorias (2 colunas mobile -> 3 tablet -> 6 desktop) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4">
+        {/* Grid Responsivo de Categorias: 3 colunas no mobile -> 6 no desktop */}
+        <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-4">
           {CATEGORIES.map(cat => {
             const Icon = cat.icon
             const isSelected = selectedCategory === cat.id
@@ -677,22 +684,22 @@ export default function TriiderClientHomePage() {
                 key={cat.id}
                 type="button"
                 onClick={() => setSelectedCategory(isSelected ? 'all' : cat.id)}
-                className={`p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border text-center flex flex-col items-center justify-center gap-2 transition-all active:scale-95 group ${
+                className={`p-2.5 sm:p-5 rounded-2xl sm:rounded-3xl border text-center flex flex-col items-center justify-center gap-1.5 sm:gap-2 transition-all active:scale-95 group cursor-pointer ${
                   isSelected
-                    ? 'bg-orange-50/90 border-orange-500 shadow-md shadow-orange-500/10 ring-2 ring-orange-400/20'
-                    : 'bg-white border-slate-200/80 hover:border-orange-300 hover:shadow-md hover:-translate-y-0.5'
+                    ? 'bg-orange-50/90 dark:bg-orange-950/40 border-orange-500 shadow-md shadow-orange-500/10 ring-2 ring-orange-400/20'
+                    : 'bg-white dark:bg-slate-800/90 border-slate-200/80 dark:border-slate-700/80 hover:border-orange-300 dark:hover:border-orange-500/50 hover:shadow-md hover:-translate-y-0.5'
                 }`}
               >
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-xs"
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-xs shrink-0"
                   style={{
-                    background: isSelected ? 'rgba(249, 115, 22, 0.15)' : 'rgba(241, 245, 249, 0.9)',
+                    background: isSelected ? 'rgba(249, 115, 22, 0.2)' : 'rgba(241, 245, 249, 0.9)',
                     color: isSelected ? '#EA580C' : cat.color,
                   }}
                 >
-                  <Icon size={22} />
+                  <Icon size={20} />
                 </div>
-                <span className={`text-xs font-bold leading-tight ${isSelected ? 'text-orange-700' : 'text-slate-800'}`}>
+                <span className={`text-[11px] sm:text-xs font-bold leading-tight ${isSelected ? 'text-orange-700 dark:text-orange-400' : 'text-slate-800 dark:text-slate-200'}`}>
                   {cat.name}
                 </span>
               </button>
@@ -704,94 +711,94 @@ export default function TriiderClientHomePage() {
       {/* ────────────────────────────────────────────────────────
           4. SERVIÇOS MAIS PEDIDOS (GRID MULTI-COLUNA NO PC)
           ──────────────────────────────────────────────────────── */}
-      <section id="servicos" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 w-full flex-1">
-        <div className="flex items-center justify-between mb-6">
+      <section id="servicos" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 w-full flex-1">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
           <div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               Serviços Mais Pedidos
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-              Preço tabelado para mão de obra com chegada estimada em até 40 minutos
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+              Preço tabelado para mão de obra com chegada em até 40 min
             </p>
           </div>
-          <span className="px-3 py-1 rounded-full bg-slate-200/70 text-slate-700 text-xs font-bold">
+          <span className="px-2.5 py-1 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] sm:text-xs font-bold shrink-0 ml-2">
             {filteredServices.length} {filteredServices.length === 1 ? 'serviço' : 'serviços'}
           </span>
         </div>
 
         {filteredServices.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-dashed border-slate-300 p-12 text-center my-6 shadow-sm">
-            <Search size={40} className="mx-auto text-slate-400 mb-3" />
-            <h3 className="text-base font-bold text-slate-800">Nenhum serviço encontrado</h3>
-            <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 p-8 sm:p-12 text-center my-6 shadow-sm">
+            <Search size={36} className="mx-auto text-slate-400 mb-3" />
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">Nenhum serviço encontrado</h3>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
               Não encontramos resultados para sua busca. Tente palavras simples como &quot;chuveiro&quot;, &quot;torneira&quot; ou confira nosso catálogo completo.
             </p>
             <button
               type="button"
               onClick={() => { setSearchQuery(''); setSelectedCategory('all') }}
-              className="mt-4 px-5 py-2.5 rounded-full bg-orange-600 text-white text-xs sm:text-sm font-bold hover:bg-orange-700 shadow-md shadow-orange-600/20 transition-all"
+              className="mt-4 px-5 py-2.5 rounded-full bg-orange-600 text-white text-xs sm:text-sm font-bold hover:bg-orange-700 shadow-md shadow-orange-600/20 transition-all cursor-pointer active:scale-95"
             >
               Exibir todos os serviços
             </button>
           </div>
         ) : (
           /* Grid Responsivo: 1 coluna no mobile, 2 no tablet, 3 ou 4 no desktop */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
             {filteredServices.map(service => {
               const ServiceIcon = (service.icon && SERVICE_ICONS[service.icon]) || Wrench
               return (
                 <div
                   key={service.id}
-                  className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-sm hover:shadow-xl hover:border-orange-300 transition-all flex flex-col justify-between group hover:-translate-y-1"
+                  className="bg-white dark:bg-slate-800/90 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-700/80 p-4 sm:p-5 shadow-sm hover:shadow-xl hover:border-orange-300 dark:hover:border-orange-500/50 transition-all flex flex-col justify-between group hover:-translate-y-1"
                 >
                   <div>
                     {/* Header do Card: Ícone do Serviço, Categoria e Badge Até 40 min */}
-                    <div className="flex items-center justify-between gap-2 mb-3.5">
+                    <div className="flex items-center justify-between gap-2 mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-orange-50 text-orange-600 group-hover:scale-110 transition-transform shadow-xs">
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform shadow-xs shrink-0">
                           <ServiceIcon size={17} />
                         </div>
-                        <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold uppercase tracking-wider">
+                        <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold uppercase tracking-wider">
                           {service.category}
                         </span>
                       </div>
-                      <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200/80 shadow-xs">
-                        <Clock size={12} className="text-emerald-600" />
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs shrink-0">
+                        <Clock size={12} className="text-emerald-600 dark:text-emerald-400" />
                         Até 40 min
                       </span>
                     </div>
 
                     {/* Nome e Descrição */}
-                    <h3 className="text-base font-bold text-slate-900 group-hover:text-orange-600 transition-colors leading-snug mb-1.5">
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors leading-snug mb-1">
                       {service.name}
                     </h3>
                     {service.description && (
-                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-3">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mb-2.5">
                         {service.description}
                       </p>
                     )}
 
                     {/* Aviso Obrigatório: Peças e Materiais Não Inclusos */}
-                    <div className="text-[10px] font-semibold text-amber-800 bg-amber-50/90 border border-amber-200/70 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 mt-2">
-                      <AlertCircle size={13} className="text-amber-600 shrink-0" />
+                    <div className="text-[10px] font-semibold text-amber-800 dark:text-amber-300 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-800/70 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 mt-2">
+                      <AlertCircle size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />
                       <span>Peças e materiais não inclusos</span>
                     </div>
                   </div>
 
                   {/* Preço e Botão de Ação */}
-                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
                         Mão de Obra
                       </span>
-                      <span className="text-xl font-black text-slate-900 tracking-tight">
+                      <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
                         {formatCurrency(service.fixed_price)}
                       </span>
                     </div>
 
                     <Link
                       href={`/chamar/${service.id}`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-orange-600/20 group-hover:shadow-orange-600/30 transition-all"
+                      className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-orange-600/20 group-hover:shadow-orange-600/30 transition-all shrink-0"
                     >
                       <span>Chamar</span>
                       <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
@@ -807,56 +814,56 @@ export default function TriiderClientHomePage() {
       {/* ────────────────────────────────────────────────────────
           5. BANNER DE CONFIANÇA & GARANTIA (ESTILO TRIIDER)
           ──────────────────────────────────────────────────────── */}
-      <section id="garantia" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 w-full">
-        <div className="rounded-3xl border border-orange-200/80 p-6 sm:p-10 bg-gradient-to-br from-orange-50/60 via-white to-amber-50/40 shadow-sm">
+      <section id="garantia" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-16 w-full">
+        <div className="rounded-2xl sm:rounded-3xl border border-orange-200/80 dark:border-slate-700 p-4 sm:p-10 bg-gradient-to-br from-orange-50/60 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-800/70 dark:to-slate-900 shadow-sm">
           
-          <div className="max-w-3xl mb-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-bold uppercase tracking-wider mb-2">
-              <ShieldCheck size={16} className="text-orange-600" />
+          <div className="max-w-3xl mb-6 sm:mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 text-xs font-bold uppercase tracking-wider mb-2">
+              <ShieldCheck size={16} className="text-orange-600 dark:text-orange-400 shrink-0" />
               <span>Segurança e Confiabilidade</span>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+            <h3 className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
               Padrão de Garantia Repara RV
             </h3>
-            <p className="text-sm text-slate-600 mt-1">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
               Desenvolvemos a plataforma sob os mesmos padrões de segurança das maiores empresas de serviços do país:
             </p>
           </div>
 
           {/* 3 Blocos de Confiança (1 coluna no mobile -> 3 no desktop) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-6">
             
-            <div className="bg-white/90 p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+            <div className="bg-white/90 dark:bg-slate-800/90 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
                 <CheckCircle2 size={20} />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-slate-900 mb-1">Garantia de 30 Dias</h4>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1">Garantia de 30 Dias</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   Se o reparo apresentar qualquer falha técnica dentro de 30 dias, garantimos o retorno do profissional sem cobrança extra.
                 </p>
               </div>
             </div>
 
-            <div className="bg-white/90 p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center shrink-0">
+            <div className="bg-white/90 dark:bg-slate-800/90 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 flex items-center justify-center shrink-0">
                 <ShieldCheck size={20} />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-slate-900 mb-1">Profissionais de Rio Verde</h4>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1">Profissionais de Rio Verde</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   Autônomos cadastrados com checagem de documentos e histórico. Avaliação pública e contínua pela comunidade rio-verdense.
                 </p>
               </div>
             </div>
 
-            <div className="bg-white/90 p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+            <div className="bg-white/90 dark:bg-slate-800/90 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0">
                 <Lock size={20} />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-slate-900 mb-1">Pagamento Protegido via Pix</h4>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1">Pagamento Protegido via Pix</h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   O valor do serviço só é repassado ao profissional após você atestar que o reparo foi devidamente finalizado e testado.
                 </p>
               </div>
@@ -952,12 +959,12 @@ export default function TriiderClientHomePage() {
       {/* ────────────────────────────────────────────────────────
           7. BARRA DE NAVEGAÇÃO INFERIOR (SOMENTE MOBILE: md:hidden)
           ──────────────────────────────────────────────────────── */}
-      <nav className="md:hidden sticky bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2 flex items-center justify-around shadow-lg shadow-slate-900/5 w-full max-w-full" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
+      <nav className="md:hidden sticky bottom-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-2 flex items-center justify-around shadow-lg shadow-slate-900/5 w-full max-w-full" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
         <button
           type="button"
           onClick={() => setActiveTab('home')}
           className={`flex flex-col items-center gap-1 transition-colors ${
-            activeTab === 'home' ? 'text-orange-600' : 'text-slate-400 hover:text-slate-600'
+            activeTab === 'home' ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
           }`}
         >
           <Home size={20} />
@@ -971,7 +978,7 @@ export default function TriiderClientHomePage() {
             handleMyOrders()
           }}
           className={`flex flex-col items-center gap-1 transition-colors ${
-            activeTab === 'orders' ? 'text-orange-600' : 'text-slate-400 hover:text-slate-600'
+            activeTab === 'orders' ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
           }`}
         >
           <ClipboardList size={20} />
@@ -984,7 +991,7 @@ export default function TriiderClientHomePage() {
           rel="noopener noreferrer"
           onClick={() => setActiveTab('support')}
           className={`flex flex-col items-center gap-1 transition-colors ${
-            activeTab === 'support' ? 'text-orange-600' : 'text-slate-400 hover:text-slate-600'
+            activeTab === 'support' ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
           }`}
         >
           <MessageSquare size={20} />
@@ -996,7 +1003,7 @@ export default function TriiderClientHomePage() {
             type="button"
             onClick={() => setIsProfileMenuOpen(true)}
             className={`flex flex-col items-center gap-1 transition-colors ${
-              isProfileMenuOpen ? 'text-orange-600' : 'text-slate-400 hover:text-slate-600'
+              isProfileMenuOpen ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
             }`}
           >
             <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center text-[9px] font-black uppercase">
@@ -1011,7 +1018,7 @@ export default function TriiderClientHomePage() {
             href="/login"
             onClick={() => setActiveTab('profile')}
             className={`flex flex-col items-center gap-1 transition-colors ${
-              activeTab === 'profile' ? 'text-orange-600' : 'text-slate-400 hover:text-slate-600'
+              activeTab === 'profile' ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
             }`}
           >
             <User size={20} />
@@ -1033,32 +1040,32 @@ export default function TriiderClientHomePage() {
           }}
         >
           <div
-            className="w-full bg-white rounded-t-3xl p-6 shadow-2xl border-t border-slate-200 animate-in slide-in-from-bottom-6"
+            className="w-full max-h-[85vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-t-3xl p-6 shadow-2xl border-t border-slate-200 dark:border-slate-800 animate-in slide-in-from-bottom-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center text-sm font-black uppercase">
                   {currentUser.full_name ? currentUser.full_name.charAt(0) : 'U'}
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 truncate">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">
                     {currentUser.full_name || 'Minha Conta'}
                   </h3>
-                  <p className="text-xs text-slate-500">{currentUser.phone || 'Repara RV'}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{currentUser.phone || 'Repara RV'}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsProfileMenuOpen(false)}
-                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <X size={20} />
               </button>
             </div>
 
             <div className="space-y-2 mb-4">
-              <span className="inline-block px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-orange-100 text-orange-700 mb-2">
+              <span className="inline-block px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 mb-2">
                 {currentUser.role === 'admin' ? 'Administrador' : currentUser.role === 'provider' ? 'Prestador Autônomo' : 'Cliente / Morador'}
               </span>
 
@@ -1076,25 +1083,25 @@ export default function TriiderClientHomePage() {
               <Link
                 href="/painel"
                 onClick={() => setIsProfileMenuOpen(false)}
-                className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-slate-800 font-semibold text-xs border border-slate-200 hover:bg-orange-50 transition-colors"
+                className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors"
               >
-                <Bike size={18} className="text-orange-600" />
+                <Bike size={18} className="text-orange-600 dark:text-orange-400" />
                 <span>Acessar Painel do Prestador</span>
               </Link>
 
               <button
                 type="button"
                 onClick={handleMyOrders}
-                className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 text-slate-800 font-semibold text-xs border border-slate-200 hover:bg-orange-50 cursor-pointer text-left transition-colors"
+                className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-slate-700 cursor-pointer text-left transition-colors"
               >
-                <ClipboardList size={18} className="text-slate-600" />
+                <ClipboardList size={18} className="text-slate-600 dark:text-slate-400" />
                 <span>Meus Chamados & Histórico</span>
               </button>
-              <div className="flex items-center justify-center gap-3 py-2 text-[11px] text-slate-500 border-t border-slate-100 mt-2 flex-wrap">
+              <div className="flex items-center justify-center gap-3 py-2 text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 mt-2 flex-wrap">
                 <Link
                   href="/termos"
                   onClick={() => setIsProfileMenuOpen(false)}
-                  className="hover:text-slate-800 underline transition-colors"
+                  className="hover:text-slate-800 dark:hover:text-white underline transition-colors"
                 >
                   Termos de Uso
                 </Link>
@@ -1102,7 +1109,7 @@ export default function TriiderClientHomePage() {
                 <Link
                   href="/privacidade"
                   onClick={() => setIsProfileMenuOpen(false)}
-                  className="hover:text-slate-800 underline transition-colors"
+                  className="hover:text-slate-800 dark:hover:text-white underline transition-colors"
                 >
                   Privacidade (LGPD)
                 </Link>
@@ -1110,7 +1117,7 @@ export default function TriiderClientHomePage() {
                 <Link
                   href="/contrato"
                   onClick={() => setIsProfileMenuOpen(false)}
-                  className="hover:text-slate-800 underline transition-colors"
+                  className="hover:text-slate-800 dark:hover:text-white underline transition-colors"
                 >
                   Contrato Técnico
                 </Link>
@@ -1125,7 +1132,7 @@ export default function TriiderClientHomePage() {
                 e.stopPropagation()
                 await handleLogout()
               }}
-              className="w-full flex items-center justify-center gap-2 p-3.5 rounded-xl font-bold text-xs text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer active:scale-95 shadow-sm"
+              className="w-full flex items-center justify-center gap-2 p-3.5 rounded-xl font-bold text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800/80 transition-colors cursor-pointer active:scale-95 shadow-sm"
             >
               <LogOut size={16} />
               <span>Sair da Conta</span>
@@ -1138,17 +1145,17 @@ export default function TriiderClientHomePage() {
           MODAL DE SELEÇÃO DE BAIRRO (RIO VERDE - GO)
           ──────────────────────────────────────────────────────── */}
       {isAddressModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
-          <div className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-slate-200 animate-in slide-in-from-bottom-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in slide-in-from-bottom-6">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
               <div>
-                <h3 className="text-base font-black text-slate-900">Selecionar Localização</h3>
-                <p className="text-xs text-slate-500">Rio Verde - Goiás</p>
+                <h3 className="text-base font-black text-slate-900 dark:text-white">Selecionar Localização</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Rio Verde - Goiás</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAddressModalOpen(false)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               >
                 <X size={20} />
               </button>
@@ -1156,7 +1163,7 @@ export default function TriiderClientHomePage() {
 
             {/* Digitação Livre */}
             <div className="mb-4">
-              <label className="text-xs font-bold text-slate-700 block mb-1.5">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
                 Endereço ou Bairro específico:
               </label>
               <div className="flex gap-2">
@@ -1165,7 +1172,7 @@ export default function TriiderClientHomePage() {
                   value={customAddress}
                   onChange={e => setCustomAddress(e.target.value)}
                   placeholder="Ex: Rua 10, Qd 20, Bairro..."
-                  className="input py-2 text-xs"
+                  className="input py-2 text-xs bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
                 />
                 <button
                   type="button"
@@ -1176,7 +1183,7 @@ export default function TriiderClientHomePage() {
                       setCustomAddress('')
                     }
                   }}
-                  className="px-4 py-2 bg-orange-600 text-white rounded-xl text-xs font-bold hover:bg-orange-700 shrink-0"
+                  className="px-4 py-2 bg-orange-600 text-white rounded-xl text-xs font-bold hover:bg-orange-700 shrink-0 cursor-pointer"
                 >
                   Confirmar
                 </button>
@@ -1184,7 +1191,7 @@ export default function TriiderClientHomePage() {
             </div>
 
             {/* Lista dos Principais Bairros de Rio Verde */}
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
               Bairros Atendidos
             </p>
             <div className="max-h-60 overflow-y-auto space-y-1 pr-1">
@@ -1196,14 +1203,14 @@ export default function TriiderClientHomePage() {
                     setSelectedNeighborhood(bairro)
                     setIsAddressModalOpen(false)
                   }}
-                  className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${
+                  className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer ${
                     selectedNeighborhood === bairro
-                      ? 'bg-orange-50 text-orange-700 border border-orange-200'
-                      : 'text-slate-700 hover:bg-slate-50'
+                      ? 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <span>{bairro}</span>
-                  {selectedNeighborhood === bairro && <CheckCircle2 size={16} className="text-orange-600" />}
+                  {selectedNeighborhood === bairro && <CheckCircle2 size={16} className="text-orange-600 dark:text-orange-400" />}
                 </button>
               ))}
             </div>
@@ -1216,21 +1223,24 @@ export default function TriiderClientHomePage() {
           ──────────────────────────────────────────────────────── */}
       {isOrdersModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
-          <div className="w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-slate-200 animate-in slide-in-from-bottom-6 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4 shrink-0">
+          <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in slide-in-from-bottom-6 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-orange-100 text-orange-600">
+                <div className="p-2 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400">
                   <ClipboardList size={20} />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900">Meus Chamados & Histórico</h3>
-                  <p className="text-xs text-slate-500">Acompanhe seus pedidos ou veja comprovantes</p>
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">Meus Chamados & Histórico</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Acompanhe seus pedidos ou veja comprovantes</p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setIsOrdersModalOpen(false)}
-                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                onClick={() => {
+                  setIsOrdersModalOpen(false)
+                  setActiveTab('home')
+                }}
+                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X size={20} />
               </button>
@@ -1240,17 +1250,17 @@ export default function TriiderClientHomePage() {
             <div className="overflow-y-auto flex-1 pr-1 space-y-3">
               {loadingOrders ? (
                 <div className="py-12 flex flex-col items-center justify-center text-center">
-                  <Loader2 size={36} className="animate-spin text-orange-600 mb-3" />
-                  <p className="text-sm font-semibold text-slate-700">Buscando seus chamados...</p>
-                  <p className="text-xs text-slate-400 mt-1">Conectando ao banco de dados</p>
+                  <Loader2 size={36} className="animate-spin text-orange-600 dark:text-orange-400 mb-3" />
+                  <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Buscando seus chamados...</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Conectando ao banco de dados</p>
                 </div>
               ) : userOrders.length === 0 ? (
                 <div className="py-10 px-4 text-center flex flex-col items-center">
-                  <div className="w-16 h-16 rounded-full bg-orange-50 text-orange-400 flex items-center justify-center mb-3">
+                  <div className="w-16 h-16 rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-400 flex items-center justify-center mb-3">
                     <ClipboardList size={30} />
                   </div>
-                  <h4 className="text-sm font-bold text-slate-900">Nenhum chamado registrado</h4>
-                  <p className="text-xs text-slate-500 max-w-xs mt-1 mb-5">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">Nenhum chamado registrado</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mt-1 mb-5">
                     Você ainda não possui pedidos ou atendimentos na Repara RV. Escolha um serviço abaixo para chamar um profissional!
                   </p>
                   <button
@@ -1260,7 +1270,7 @@ export default function TriiderClientHomePage() {
                       const el = document.getElementById('servicos')
                       if (el) el.scrollIntoView({ behavior: 'smooth' })
                     }}
-                    className="px-5 py-2.5 bg-orange-600 text-white rounded-xl text-xs font-bold hover:bg-orange-700 transition-all shadow-sm shadow-orange-600/20"
+                    className="px-5 py-2.5 bg-orange-600 text-white rounded-xl text-xs font-bold hover:bg-orange-700 transition-all shadow-sm shadow-orange-600/20 cursor-pointer"
                   >
                     Solicitar Serviço Agora
                   </button>
@@ -1277,34 +1287,34 @@ export default function TriiderClientHomePage() {
                   const statusConfig = (() => {
                     switch (order.status) {
                       case 'queued':
-                        return { label: 'Na Fila de Espera', badgeClass: 'bg-amber-50 text-amber-800 border-amber-200', dotClass: 'bg-amber-500' }
+                        return { label: 'Na Fila de Espera', badgeClass: 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60', dotClass: 'bg-amber-500' }
                       case 'searching':
-                        return { label: 'Buscando Técnico', badgeClass: 'bg-amber-50 text-amber-800 border-amber-200', dotClass: 'bg-amber-500 animate-ping' }
+                        return { label: 'Buscando Técnico', badgeClass: 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60', dotClass: 'bg-amber-500 animate-ping' }
                       case 'accepted':
                       case 'on_the_way':
-                        return { label: 'Técnico a Caminho', badgeClass: 'bg-blue-50 text-blue-800 border-blue-200', dotClass: 'bg-blue-500' }
+                        return { label: 'Técnico a Caminho', badgeClass: 'bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/60', dotClass: 'bg-blue-500' }
                       case 'in_progress':
-                        return { label: 'Em Execução', badgeClass: 'bg-purple-50 text-purple-800 border-purple-200', dotClass: 'bg-purple-500' }
+                        return { label: 'Em Execução', badgeClass: 'bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800/60', dotClass: 'bg-purple-500' }
                       case 'completed':
-                        return { label: 'Concluído', badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200', dotClass: 'bg-emerald-500' }
+                        return { label: 'Concluído', badgeClass: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60', dotClass: 'bg-emerald-500' }
                       case 'cancelled':
-                        return { label: 'Cancelado', badgeClass: 'bg-rose-50 text-rose-800 border-rose-200', dotClass: 'bg-rose-500' }
+                        return { label: 'Cancelado', badgeClass: 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800/60', dotClass: 'bg-rose-500' }
                       default:
-                        return { label: order.status, badgeClass: 'bg-slate-50 text-slate-700 border-slate-200', dotClass: 'bg-slate-400' }
+                        return { label: order.status, badgeClass: 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700', dotClass: 'bg-slate-400' }
                     }
                   })()
 
                   return (
                     <div
                       key={order.id}
-                      className="border border-slate-200 rounded-2xl p-4 bg-white hover:border-orange-300 hover:shadow-md transition-all flex flex-col gap-3"
+                      className="border border-slate-200 dark:border-slate-700/80 rounded-2xl p-4 bg-white dark:bg-slate-800/90 hover:border-orange-300 dark:hover:border-orange-500/50 hover:shadow-md transition-all flex flex-col gap-3"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
                             {serviceName}
                           </h4>
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-1">
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 mt-1">
                             <Clock size={12} />
                             <span>
                               {new Date(order.created_at).toLocaleDateString('pt-BR', {
@@ -1323,14 +1333,14 @@ export default function TriiderClientHomePage() {
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between text-xs py-2 px-3 bg-slate-50 rounded-xl">
-                        <div className="flex items-center gap-1 text-slate-600">
-                          <MapPin size={13} className="text-orange-600 shrink-0" />
+                      <div className="flex items-center justify-between text-xs py-2 px-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                        <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                          <MapPin size={13} className="text-orange-600 dark:text-orange-400 shrink-0" />
                           <span className="truncate max-w-[180px] sm:max-w-[240px] text-[11px] font-medium">
                             {order.neighborhood || 'Rio Verde - GO'}
                           </span>
                         </div>
-                        <span className="font-black text-slate-900 text-xs">
+                        <span className="font-black text-slate-900 dark:text-white text-xs">
                           {formatCurrency(order.total_price || 0)}
                         </span>
                       </div>
@@ -1349,9 +1359,9 @@ export default function TriiderClientHomePage() {
                           <Link
                             href={`/acompanhar/${order.id}`}
                             onClick={() => setIsOrdersModalOpen(false)}
-                            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-200 transition-all"
+                            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-600 transition-all"
                           >
-                            <FileText size={14} className="text-slate-600" />
+                            <FileText size={14} className="text-slate-600 dark:text-slate-400" />
                             <span>Ver Detalhes / Comprovante</span>
                           </Link>
                         ) : isCancelled ? (
@@ -1362,7 +1372,7 @@ export default function TriiderClientHomePage() {
                               const el = document.getElementById('servicos')
                               if (el) el.scrollIntoView({ behavior: 'smooth' })
                             }}
-                            className="w-full text-center py-1.5 text-xs font-bold text-orange-600 hover:underline"
+                            className="w-full text-center py-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
                           >
                             Solicitar este serviço novamente
                           </button>

@@ -76,7 +76,7 @@ export function PwaInstallBanner() {
   if (!isVisible) return null;
 
   return (
-    <aside aria-label="Instalação do Aplicativo" className="fixed bottom-3 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-sm z-40 animate-slide-up">
+    <aside aria-label="Instalação do Aplicativo" className="fixed bottom-16 sm:bottom-6 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-sm z-40 animate-slide-up">
       <div className="bg-slate-900/95 backdrop-blur-md text-white p-3.5 sm:p-4 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center justify-between gap-3 text-left">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center text-white shrink-0 shadow-md">

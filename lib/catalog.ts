@@ -252,7 +252,7 @@ export const DEFAULT_SERVICES: QuickService[] = [
   },
 ]
 
-export function getServiceScope(serviceName = '', category = ''): { included: string[]; not_included: string[] } {
+export function getServiceScope(serviceName = ''): { included: string[]; not_included: string[] } {
   const name = serviceName.toLowerCase()
 
   if (name.includes('chuveiro') || name.includes('resistência')) {

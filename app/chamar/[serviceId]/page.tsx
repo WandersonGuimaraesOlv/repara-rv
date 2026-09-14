@@ -23,7 +23,7 @@ export default function ChamarServicePage() {
   const [loading, setLoading] = useState(false)
 
   const scope = useMemo(() => {
-    return getServiceScope(service?.name, service?.category)
+    return getServiceScope(service?.name)
   }, [service])
 
   const { lat, lng, error: geoError, loading: geoLoading, getPosition } = useGeolocation()
@@ -227,21 +227,21 @@ export default function ChamarServicePage() {
 
           {/* Escopo Claro: O que está incluso vs Não incluso */}
           <div className="space-y-2 pt-1 text-left">
-            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+            <h4 className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
               Escopo do Atendimento (Transparência Total)
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Bloco Verde: Incluso */}
-              <div className="p-3.5 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 text-left">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 mb-2">
-                  <CheckCircle2 size={15} className="text-emerald-600 shrink-0" />
+              <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 text-left">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 mb-2">
+                  <CheckCircle2 size={15} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>O que está incluso:</span>
                 </div>
                 <ul className="space-y-1.5">
                   {scope.included.map((item, idx) => (
-                    <li key={idx} className="text-xs text-emerald-900/90 flex items-start gap-1.5 leading-snug">
-                      <span className="text-emerald-600 font-bold">•</span>
+                    <li key={idx} className="text-xs text-emerald-950/90 dark:text-emerald-200/90 flex items-start gap-1.5 leading-snug">
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">•</span>
                       <span>{item}</span>
                     </li>
                   ))}
@@ -249,15 +249,15 @@ export default function ChamarServicePage() {
               </div>
 
               {/* Bloco Vermelho: Não Incluso */}
-              <div className="p-3.5 rounded-2xl bg-rose-50/80 border border-rose-200/80 text-left">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 mb-2">
-                  <XCircle size={15} className="text-rose-600 shrink-0" />
+              <div className="p-3.5 rounded-2xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/60 text-left">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 dark:text-rose-300 mb-2">
+                  <XCircle size={15} className="text-rose-600 dark:text-rose-400 shrink-0" />
                   <span>O que NÃO está incluso:</span>
                 </div>
                 <ul className="space-y-1.5">
                   {scope.not_included.map((item, idx) => (
-                    <li key={idx} className="text-xs text-rose-950/90 flex items-start gap-1.5 leading-snug">
-                      <span className="text-rose-500 font-bold">•</span>
+                    <li key={idx} className="text-xs text-rose-950/90 dark:text-rose-200/90 flex items-start gap-1.5 leading-snug">
+                      <span className="text-rose-500 dark:text-rose-400 font-bold">•</span>
                       <span>{item}</span>
                     </li>
                   ))}

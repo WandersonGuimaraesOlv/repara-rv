@@ -1,14 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ShieldCheck, Zap, CheckCircle2, ArrowRight, ExternalLink, AlertTriangle, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 
 export default function MercadoPagoSettingsPage() {
-  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState(false)
   const [user, setUser] = useState<any>(null)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { CancelCallPayload } from '@/lib/types'
+import { evaluateCancelAuthorization } from '@/lib/cancel-authorization'
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,16 +41,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Chamado não encontrado' }, { status: 404 })
     }
 
-    const isClient = user ? call.client_id === user.id : true
-    const isProvider = user ? call.provider_id === user.id : false
+    // Autorização: só o cliente ou o prestador vinculados a este chamado podem
+    // cancelá-lo, e o cliente só enquanto o chamado ainda não tem prestador
+    // comprometido. Requisição sem usuário autenticado é rejeitada (401) —
+    // antes disso um `user` nulo era tratado como "é o cliente", o que
+    // permitia cancelar chamados alheios sem autenticação nenhuma.
+    const authResult = evaluateCancelAuthorization({
+      userId: user?.id ?? null,
+      call,
+    })
 
-    // Cliente só pode cancelar se ainda estiver buscando ou na fila de espera
-    if (isClient && !['searching', 'queued', 'no_providers_available'].includes(call.status)) {
-      return NextResponse.json(
-        { error: 'Cancelamento de cliente só é permitido enquanto o chamado está em busca ou na fila de espera.' },
-        { status: 400 }
-      )
+    if (!authResult.allowed) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status })
     }
+
+    const { isClient } = authResult
 
     // 3. Atualiza o chamado com auditoria completa
     const { error: updateError } = await supabaseAdmin

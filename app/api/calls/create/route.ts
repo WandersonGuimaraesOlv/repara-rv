@@ -96,7 +96,11 @@ export async function POST(request: NextRequest) {
     })
 
     if (rpcError) {
-      console.warn('[API] find_nearest_provider RPC warning:', rpcError)
+      // Achado em 14/09/2026: isto já esteve acontecendo em TODA chamada (havia uma segunda
+      // versão de find_nearest_provider no banco, com assinatura ambígua e referenciando
+      // colunas inexistentes — removida via DROP FUNCTION). Se este erro voltar a aparecer,
+      // é sinal de que algo quebrou de novo silenciosamente — por isso console.error, não warn.
+      console.error('[API] find_nearest_provider RPC ERRO (chamado será criado mesmo assim, mas cai direto na fila sem tentar casar com um prestador de verdade):', rpcError)
     }
 
     const isQueued = !nearestProvider

@@ -1,0 +1,61 @@
+import { describe, it, expect } from 'vitest'
+import { evaluateCancelAuthorization } from '../lib/cancel-authorization'
+
+describe('evaluateCancelAuthorization — autorização de cancelamento (app/api/calls/cancel)', () => {
+  const baseCall = { client_id: 'client-1', provider_id: 'provider-1', status: 'searching' }
+
+  it('bloqueia requisição sem usuário autenticado — 401', () => {
+    const result = evaluateCancelAuthorization({ userId: null, call: baseCall })
+    expect(result.allowed).toBe(false)
+    if (!result.allowed) expect(result.status).toBe(401)
+  })
+
+  it('bloqueia usuário autenticado que não é cliente nem prestador deste chamado — 403 (achado original: antes disso o cancelamento passava)', () => {
+    const result = evaluateCancelAuthorization({ userId: 'stranger-99', call: baseCall })
+    expect(result.allowed).toBe(false)
+    if (!result.allowed) expect(result.status).toBe(403)
+  })
+
+  it('permite o cliente cancelar enquanto o chamado está searching, queued ou no_providers_available', () => {
+    for (const status of ['searching', 'queued', 'no_providers_available']) {
+      const result = evaluateCancelAuthorization({ userId: 'client-1', call: { ...baseCall, status } })
+      expect(result.allowed).toBe(true)
+    }
+  })
+
+  it('bloqueia o cliente de cancelar depois que já existe prestador comprometido — 400', () => {
+    for (const status of ['accepted', 'on_the_way', 'in_progress']) {
+      const result = evaluateCancelAuthorization({ userId: 'client-1', call: { ...baseCall, status } })
+      expect(result.allowed).toBe(false)
+      if (!result.allowed) expect(result.status).toBe(400)
+    }
+  })
+
+  it('permite o prestador vinculado cancelar mesmo depois de accepted/on_the_way/in_progress', () => {
+    for (const status of ['accepted', 'on_the_way', 'in_progress']) {
+      const result = evaluateCancelAuthorization({ userId: 'provider-1', call: { ...baseCall, status } })
+      expect(result.allowed).toBe(true)
+      if (result.allowed) expect(result.isProvider).toBe(true)
+    }
+  })
+
+  it('não deixa um provider_id nulo (chamado ainda na fila) casar com um userId qualquer por acidente', () => {
+    const result = evaluateCancelAuthorization({
+      userId: 'someone',
+      call: { client_id: 'client-1', provider_id: null, status: 'queued' },
+    })
+    expect(result.allowed).toBe(false)
+    if (!result.allowed) expect(result.status).toBe(403)
+  })
+
+  it('devolve isClient/isProvider corretos quando autorizado', () => {
+    const asClient = evaluateCancelAuthorization({ userId: 'client-1', call: baseCall })
+    expect(asClient).toMatchObject({ allowed: true, isClient: true, isProvider: false })
+
+    const asProvider = evaluateCancelAuthorization({
+      userId: 'provider-1',
+      call: { ...baseCall, status: 'accepted' },
+    })
+    expect(asProvider).toMatchObject({ allowed: true, isClient: false, isProvider: true })
+  })
+})

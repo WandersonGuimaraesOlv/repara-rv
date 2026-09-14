@@ -179,7 +179,7 @@ export default function OnboardingPage() {
               value={fullName}
               onChange={e => setFullName(e.target.value)}
               placeholder="Ex: João da Silva"
-              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:border-orange-500 outline-none transition-all"
+              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 focus:border-orange-500 outline-none transition-all"
               required
             />
           </div>
@@ -195,7 +195,7 @@ export default function OnboardingPage() {
               value={phone}
               onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
               placeholder="Ex: 64 99999-9999"
-              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:border-orange-500 outline-none transition-all"
+              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 focus:border-orange-500 outline-none transition-all"
               inputMode="numeric"
               required
             />
@@ -217,7 +217,7 @@ export default function OnboardingPage() {
               value={cpfOrCnpj}
               onChange={e => setCpfOrCnpj(e.target.value.replace(/\D/g, '').slice(0, 14))}
               placeholder="000.000.000-00"
-              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm focus:border-orange-500 outline-none transition-all font-mono"
+              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 focus:border-orange-500 outline-none transition-all font-mono"
               inputMode="numeric"
               required
             />
@@ -235,18 +235,18 @@ export default function OnboardingPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Tipo da Chave
+                  Tipo de Chave Pix
                 </label>
                 <select
-                  id="select-pix-type"
+                  id="select-pix-key-type"
                   value={pixKeyType}
-                  onChange={e => setPixKeyType(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:border-orange-500 outline-none"
+                  onChange={e => setPixKeyType(e.target.value as 'cpf' | 'phone' | 'email' | 'random')}
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:border-orange-500 outline-none cursor-pointer"
                 >
                   <option value="phone">Celular</option>
                   <option value="cpf">CPF</option>
                   <option value="email">E-mail</option>
-                  <option value="random">Chave Aleatória</option>
+                  <option value="random">Chave Aleatória (EVP)</option>
                 </select>
               </div>
 
@@ -266,7 +266,7 @@ export default function OnboardingPage() {
                       ? '000.000.000-00'
                       : 'sua-chave-pix'
                   }
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:border-orange-500 outline-none"
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:border-orange-500 outline-none"
                 />
               </div>
 

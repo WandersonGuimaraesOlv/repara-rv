@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { Logo } from '@/components/logo'
 import { Wrench, BarChart3, Users, ArrowLeft, Shield, LogOut } from 'lucide-react'
 import { toast } from 'sonner'

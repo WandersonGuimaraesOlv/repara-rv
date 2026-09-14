@@ -14,8 +14,6 @@ import {
   XCircle,
   Phone,
   Calendar,
-  Award,
-  AlertCircle,
   AlertTriangle,
   Star,
   Copy,
@@ -23,7 +21,6 @@ import {
   Ban,
   ShieldAlert,
   ShieldCheck,
-  ExternalLink,
   ChevronDown
 } from 'lucide-react'
 import { 
@@ -54,7 +51,6 @@ export default function AdminUsersPage() {
   const [blockTargetUser, setBlockTargetUser] = useState<AdminUserListItem | null>(null)
 
   // Feedback de Cópia
-  const [copiedId, setCopiedId] = useState<string | null>(null)
   const [copiedPixId, setCopiedPixId] = useState<string | null>(null)
   const handleCopyPix = (pixKey: string, userId: string) => {
     if (!pixKey) return
@@ -160,24 +156,6 @@ export default function AdminUsersPage() {
       `Olá ${user.full_name}, aqui é da administração da Repara RV em Rio Verde...`
     )
     return `https://wa.me/${phone}?text=${msg}`
-  }
-
-  // Gera Link de Cobrança de Conexão Mercado Pago via WhatsApp
-  const getWhatsAppMercadoPagoUrl = (user: AdminUserListItem) => {
-    const phone = getSanitizedPhone(user.phone)
-    const msg = encodeURIComponent(
-      `Olá ${user.full_name}, aqui é da equipe de gestão do Repara RV! Identificamos que sua conta Mercado Pago ainda não está conectada para o split automático de pagamentos Pix. Sem ela, nosso sistema não pode despachar chamados para você em Rio Verde.\n\nConecte sua conta em menos de 1 minuto pelo link seguro:\nhttps://repararv.com/painel/configuracoes/mercado-pago`
-    )
-    return `https://wa.me/${phone}?text=${msg}`
-  }
-
-  // Copia Link Oficial de Vinculação do Mercado Pago
-  const handleCopyMpLink = (user: AdminUserListItem) => {
-    const mpLink = 'https://repararv.com/painel/configuracoes/mercado-pago'
-    navigator.clipboard.writeText(mpLink)
-    setCopiedId(user.id)
-    toast.success(`Link de conexão Mercado Pago copiado para ${user.full_name.split(' ')[0]}!`)
-    setTimeout(() => setCopiedId(null), 2500)
   }
 
   // Alteração de Papel (Role)
@@ -526,10 +504,8 @@ export default function AdminUsersPage() {
                   const isClient = user.role === 'client'
                   const isAdmin = user.role === 'admin'
                   const isOnline = Boolean(user.provider_status?.is_online)
-                  const hasMp = user.mercado_pago_connected
                   const isBlocked = user.is_blocked
                   const adminWaUrl = getWhatsAppAdministrativeUrl(user)
-                  const mpWaUrl = getWhatsAppMercadoPagoUrl(user)
 
                   return (
                     <tr 

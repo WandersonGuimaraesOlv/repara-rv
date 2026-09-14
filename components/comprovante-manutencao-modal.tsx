@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { X, Printer, ShieldCheck, CheckCircle2, FileText, MapPin, Calendar, Clock, User, Phone, Wrench } from 'lucide-react';
+import { X, Printer, ShieldCheck, CheckCircle2, FileText, MapPin, Calendar, User, Phone, Wrench } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
 interface ComprovanteProps {

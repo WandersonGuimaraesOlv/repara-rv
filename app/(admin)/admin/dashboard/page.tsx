@@ -3,17 +3,16 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils'
-import { 
-  BarChart3, 
-  TrendingUp, 
-  CheckCircle2, 
-  XCircle, 
-  DollarSign, 
-  ShieldAlert, 
-  RefreshCw, 
-  MapPin, 
-  User, 
-  Filter, 
+import {
+  TrendingUp,
+  CheckCircle2,
+  XCircle,
+  DollarSign,
+  ShieldAlert,
+  RefreshCw,
+  MapPin,
+  User,
+  Filter,
   Activity,
   Award,
   History,
@@ -26,12 +25,9 @@ import {
   Check,
   CreditCard,
   Copy,
-  Clock,
   Send,
   Radio,
-  Zap,
-  ExternalLink,
-  ShieldCheck
+  Zap
 } from 'lucide-react'
 import { updateCallPaymentStatusAction } from '@/app/actions/admin-users'
 import { toast } from 'sonner'
@@ -120,7 +116,6 @@ export default function AdminDashboardPage() {
   // Abas de navegação
   const [activeTab, setActiveTab] = useState<'overview' | 'completed' | 'cancellations' | 'audit' | 'sos'>('overview')
   const [cancelFilter, setCancelFilter] = useState<'all' | 'arrived' | 'allocated' | 'searching'>('all')
-  const [selectedProviderFilter, setSelectedProviderFilter] = useState<string>('')
   const [completedSearchQuery, setCompletedSearchQuery] = useState<string>('')
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'pending'>('all')
   const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null)
@@ -477,10 +472,6 @@ export default function AdminDashboardPage() {
       if (paymentFilter === 'paid' && c.payment_status !== 'paid') return false
       if (paymentFilter === 'pending' && c.payment_status === 'paid') return false
 
-      if (selectedProviderFilter && provName.toLowerCase() !== selectedProviderFilter.toLowerCase()) {
-        return false
-      }
-
       if (completedSearchQuery.trim()) {
         const q = completedSearchQuery.toLowerCase()
         const match =
@@ -495,7 +486,7 @@ export default function AdminDashboardPage() {
 
       return true
     })
-  }, [calls, paymentFilter, selectedProviderFilter, completedSearchQuery])
+  }, [calls, paymentFilter, completedSearchQuery])
 
   // Chamados Cancelados com Filtros
   const cancelledCalls = useMemo(() => {

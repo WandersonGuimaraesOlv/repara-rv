@@ -19,8 +19,8 @@ export function Logo({
   subtextColor,
   inverted = false,
 }: LogoProps) {
-  const primaryText = textColor || (inverted ? '#FFFFFF' : '#0F172A')
-  const secondaryText = subtextColor || (inverted ? '#94A3B8' : '#64748B')
+  const primaryText = textColor || (inverted ? '#FFFFFF' : 'var(--color-text)')
+  const secondaryText = subtextColor || (inverted ? '#94A3B8' : 'var(--color-text-muted)')
   if (variant === 'icon') {
     return (
       <svg
@@ -55,13 +55,14 @@ export function Logo({
 
   if (variant === 'compact') {
     return (
-      <div className={`flex items-center gap-2 ${className}`}>
+      <div className={`flex items-center gap-1.5 sm:gap-2 shrink-0 ${className}`}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 100 110"
-          width={width || 34}
-          height={height || 38}
+          width={width || 28}
+          height={height || 32}
           aria-hidden="true"
+          className="shrink-0"
         >
           <defs>
             <linearGradient id="reparaCompactGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -78,7 +79,7 @@ export function Logo({
           <rect x="47" y="46" width="6" height="18" rx="3" fill="#0F172A" />
           <path d="M50 28 L53 37 L48 37 L51 46 L45 39 L49 39 Z" fill="#FFFFFF" opacity="0.9" />
         </svg>
-        <span className="text-xl font-black tracking-tight leading-none" style={{ color: primaryText }}>
+        <span className="text-lg sm:text-xl font-black tracking-tight leading-none text-slate-900 dark:text-white shrink-0" style={textColor ? { color: textColor } : undefined}>
           Repara<span className="text-orange-600">RV</span>
         </span>
       </div>

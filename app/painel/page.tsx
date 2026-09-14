@@ -23,8 +23,6 @@ export default function PainelPage() {
   const [totalToday, setTotalToday] = useState(0)
   const [pendingToday, setPendingToday] = useState(0)
   const [providerPixKey, setProviderPixKey] = useState('')
-  const [recipientGatewayId, setRecipientGatewayId] = useState<string | null>(null)
-  const [connectingMp, setConnectingMp] = useState(false)
   const [queuedCalls, setQueuedCalls] = useState<ServiceCall[]>([])
   const [claimingCallId, setClaimingCallId] = useState<string | null>(null)
   const [editingPix, setEditingPix] = useState(false)
@@ -104,9 +102,6 @@ export default function PainelPage() {
               }
             }
 
-            const hasMp = Boolean(status?.recipient_gateway_id || prof.mercado_pago_connected)
-            setRecipientGatewayId(status?.recipient_gateway_id ?? null)
-
             // Prestador com cadastro ativo pode ficar online se desejar
             setIsOnline(Boolean(status?.is_online))
 
@@ -158,38 +153,6 @@ export default function PainelPage() {
       }
     }
   }, [])
-
-  const handleConnectMercadoPago = async () => {
-    setConnectingMp(true)
-    try {
-      const res = await fetch('/api/mercadopago/oauth/url')
-      const data = await res.json()
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        toast.error(data.error || 'Erro ao iniciar conexão com Mercado Pago.')
-        setConnectingMp(false)
-      }
-    } catch {
-      toast.error('Erro de conexão com o servidor.')
-      setConnectingMp(false)
-    }
-  }
-
-  const handleDisconnectMercadoPago = async () => {
-    try {
-      const res = await fetch('/api/mercadopago/oauth/disconnect', { method: 'POST' })
-      if (res.ok) {
-        setRecipientGatewayId(null)
-        setIsOnline(false)
-        toast.success('Conta Mercado Pago desconectada. Você foi colocado offline.')
-      } else {
-        toast.error('Erro ao desconectar.')
-      }
-    } catch {
-      toast.error('Falha de conexão.')
-    }
-  }
 
   // Atualiza localização quando muda (GPS watch)
   useEffect(() => {
@@ -455,7 +418,7 @@ export default function PainelPage() {
     }
   }, [profile, supabase])
 
-  const handleClaimQueued = async (callId: string) => {
+  const handleClaimQueued = useCallback(async (callId: string) => {
     if (!profile) return
     audioAlert.stopAlarm()
     if (!hasPixKey) {
@@ -490,7 +453,7 @@ export default function PainelPage() {
     } finally {
       setClaimingCallId(null)
     }
-  }
+  }, [profile, hasPixKey, router])
 
   // Ativa automaticamente o aceite se o prestador acessou via deep link do WhatsApp (?claim=ID)
   useEffect(() => {
@@ -499,9 +462,15 @@ export default function PainelPage() {
     const claimId = params.get('claim')
     if (claimId && !claimingCallId) {
       console.log('⚡ [Deep Link] Assumindo chamado via link direto do WhatsApp:', claimId)
+      // Remove o parâmetro da URL antes de disparar — sem isso, uma falha (409, erro de
+      // rede etc.) devolve claimingCallId a null e o efeito dispara a mesma tentativa de
+      // novo em loop, já que o ?claim=ID nunca era limpo.
+      const url = new URL(window.location.href)
+      url.searchParams.delete('claim')
+      window.history.replaceState({}, '', url.toString())
       handleClaimQueued(claimId)
     }
-  }, [profile, hasPixKey, claimingCallId])
+  }, [profile, hasPixKey, claimingCallId, handleClaimQueued])
 
   if (!profile) {
     return (
