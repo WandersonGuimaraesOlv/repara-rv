@@ -4,6 +4,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Profile, ServiceCall } from '@/lib/types'
+
+// Estado do chamado pendente ANTES do aceite nunca deve carregar endereço
+// completo/coordenadas (ver checkActiveCalls e o handler de Realtime abaixo).
+type PendingCallPreview = Omit<ServiceCall, 'client_address' | 'client_location'>
 import { CallAlertModal } from '@/components/call-alert-modal'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { Power, Loader2, MapPin, CreditCard, Zap, Lock, AlertTriangle, Volume2, LogOut } from 'lucide-react'
@@ -18,7 +22,7 @@ export default function PainelPage() {
 
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isOnline, setIsOnline] = useState(false)
-  const [pendingCall, setPendingCall] = useState<ServiceCall | null>(null)
+  const [pendingCall, setPendingCall] = useState<PendingCallPreview | null>(null)
   const [togglingOnline, setTogglingOnline] = useState(false)
   const [totalToday, setTotalToday] = useState(0)
   const [pendingToday, setPendingToday] = useState(0)
@@ -259,17 +263,26 @@ export default function PainelPage() {
     if (!profile || !isOnline) return
 
     // 1. Busca ativa e polling de 3 segundos para garantir alerta em tempo real
+    //
+    // Achado de segurança (14/09/2026): antes, este SELECT trazia client_address e
+    // client_location (coordenadas) — o card de alerta pré-aceite mostrava o
+    // endereço completo do cliente ao prestador antes dele decidir aceitar,
+    // contrariando a regra de mascaramento do AGENTS.md ("antes do aceite, o
+    // radar exibe apenas Bairro, Distância aproximada, Serviço e Valor
+    // Líquido"). Corrigido enumerando só as colunas realmente necessárias pra
+    // esta tela — o endereço completo só é buscado depois, em app/chamado/
+    // [callId], já com o chamado aceito.
     const checkActiveCalls = async () => {
       const { data: calls } = await supabase
         .from('service_calls')
-        .select('*, service:quick_services(*)')
+        .select('id, status, service_id, total_price, provider_cut, platform_fee, neighborhood, created_at, client_id, provider_id, service:quick_services(*)')
         .eq('provider_id', profile.id)
         .eq('status', 'searching')
         .order('created_at', { ascending: false })
         .limit(1)
 
       if (calls && calls.length > 0) {
-        setPendingCall(calls[0] as ServiceCall)
+        setPendingCall(calls[0] as unknown as PendingCallPreview)
       } else if (!calls || calls.length === 0) {
         setPendingCall(prev => (prev?.status === 'searching' ? null : prev))
       }
@@ -300,7 +313,14 @@ export default function PainelPage() {
                 .maybeSingle()
               callData.service = srv as any
             }
-            setPendingCall(callData)
+            // O payload do Realtime traz a linha inteira do banco (o filtro de
+            // colunas do SELECT não se aplica aqui) — descarta endereço completo
+            // e coordenadas antes de guardar em estado, pela mesma razão do
+            // SELECT explícito em checkActiveCalls logo acima.
+            const safeCallData: Record<string, unknown> = { ...callData }
+            delete safeCallData.client_address
+            delete safeCallData.client_location
+            setPendingCall(safeCallData as unknown as PendingCallPreview)
             audioAlert.startAlarm()
           } else if (callData && callData.status !== 'searching') {
             setPendingCall(null)
@@ -847,7 +867,7 @@ export default function PainelPage() {
         <CallAlertModal
           call={pendingCall}
           serviceName={(pendingCall.service as { name?: string })?.name ?? 'Serviço Solicitado'}
-          clientAddress={pendingCall.client_address}
+          neighborhood={pendingCall.neighborhood || 'Rio Verde (GO)'}
           totalPrice={pendingCall.total_price}
           providerCut={pendingCall.provider_cut}
           onAccept={handleAcceptCall}
