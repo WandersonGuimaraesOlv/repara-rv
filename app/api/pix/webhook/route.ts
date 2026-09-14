@@ -178,14 +178,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true })
     }
 
-    await supabase
+    // Idempotência: o Mercado Pago pode (e vai, mais cedo ou mais tarde) reentregar a
+    // mesma notificação. A condição `payment_status = 'pending'` faz da escrita um
+    // compare-and-swap — a 2ª entrega do mesmo payment_id não encontra nenhuma linha
+    // pra atualizar e não faz nada, em vez de reprocessar a confirmação. Também não
+    // grava mais `completed_at` aqui: esse campo já é responsabilidade exclusiva do
+    // prestador ao concluir o serviço (app/chamado/[callId]/page.tsx) — ele alimenta a
+    // data de início da garantia de 7 dias no Comprovante de Manutenção, e deixar o
+    // webhook sobrescrevê-lo a cada nova entrega empurrava a garantia pra frente.
+    const { data: updatedCall } = await supabase
       .from('service_calls')
       .update({
         payment_status: 'paid',
         pix_payment_id: String(paymentId),
-        completed_at: new Date().toISOString(),
       })
       .eq('id', callIdToUpdate)
+      .eq('payment_status', 'pending')
+      .select('id')
+      .maybeSingle()
+
+    if (!updatedCall) {
+      console.log(`[Webhook] Notificação duplicada ignorada — chamado ${callIdToUpdate} já estava com payment_status != 'pending'`)
+      return NextResponse.json({ received: true })
+    }
 
     console.log(`[Webhook] Pagamento confirmado com sucesso para chamado ${callIdToUpdate}`)
     return NextResponse.json({ received: true })

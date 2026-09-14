@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
+
+const notifyAcceptedSchema = z.object({
+  call_id:     z.string().uuid('call_id inválido'),
+  provider_id: z.string().uuid('provider_id inválido').optional(),
+});
 
 export async function POST(request: NextRequest) {
   try {
-    const { call_id, provider_id } = await request.json();
-
-    if (!call_id) {
-      return NextResponse.json({ error: 'call_id é obrigatório' }, { status: 400 });
+    const rawBody = await request.json().catch(() => null);
+    const parsed = notifyAcceptedSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Dados inválidos', issues: parsed.error.format() }, { status: 422 });
     }
+
+    const { call_id, provider_id } = parsed.data;
 
     const supabaseAdmin = await createServiceClient();
 

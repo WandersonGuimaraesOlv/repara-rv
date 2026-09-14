@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
+
+const skipProviderSchema = z.object({
+  call_id:             z.string().uuid('call_id inválido'),
+  rejected_provider_id: z.string().uuid('rejected_provider_id inválido').optional(),
+})
 
 // Trava otimista: a rota original lia o chamado e gravava com um UPDATE sem
 // nenhuma condição sobre o estado lido — um clássico read-then-write sem
@@ -24,11 +30,20 @@ const MAX_ATTEMPTS = 3
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServiceClient()
-    const { call_id, rejected_provider_id } = await request.json()
 
-    if (!call_id) {
-      return NextResponse.json({ error: 'call_id obrigatório' }, { status: 400 })
+    let rawBody: unknown
+    try {
+      rawBody = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Corpo da requisição inválido' }, { status: 400 })
     }
+
+    const parsed = skipProviderSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Dados inválidos', issues: parsed.error.format() }, { status: 422 })
+    }
+
+    const { call_id, rejected_provider_id } = parsed.data
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       // Busca o chamado atual (inclui client_id para blindagem de auto-atribuição)

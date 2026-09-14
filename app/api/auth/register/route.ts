@@ -1,52 +1,54 @@
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
+
+const registerSchema = z
+  .object({
+    fullName: z.string().trim().min(3, 'Digite seu nome completo (mínimo 3 caracteres)'),
+    // Aceita qualquer formatação (com máscara, espaços, etc.) — os dígitos são
+    // extraídos e validados a seguir, igual ao comportamento anterior.
+    phone: z.string().min(1, 'Celular é obrigatório'),
+    pin: z.string().min(1, 'PIN é obrigatório'),
+    role: z.enum(['client', 'provider']).optional().default('client'),
+    cpfOrCnpj: z.string().trim().optional(),
+    pixKey: z.string().trim().optional(),
+    pixKeyType: z.enum(['cpf', 'phone', 'email', 'random']).optional().default('phone'),
+    selfDeclaration: z.boolean().optional().default(true),
+  })
+  .transform((data) => ({
+    ...data,
+    cleanPhone: data.phone.replace(/\D/g, ''),
+    cleanPin: data.pin.trim(),
+  }))
+  .refine((data) => data.cleanPhone.length >= 10 && data.cleanPhone.length <= 11, {
+    message: 'Digite um celular válido com DDD (10 ou 11 dígitos)',
+    path: ['phone'],
+  })
+  .refine((data) => /^\d{4,8}$/.test(data.cleanPin), {
+    message: 'O PIN deve conter entre 4 e 8 dígitos numéricos',
+    path: ['pin'],
+  })
+  .refine((data) => data.role !== 'provider' || Boolean(data.pixKey && data.pixKey.length > 0), {
+    message: 'Profissionais precisam informar a chave Pix para receber os repasses de serviços',
+    path: ['pixKey'],
+  })
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json()
-    const {
-      fullName,
-      phone,
-      pin,
-      role = 'client',
-      cpfOrCnpj,
-      pixKey,
-      pixKeyType = 'phone',
-      selfDeclaration = true,
-    } = body
-
-    const cleanFullName = (fullName || '').trim()
-    const cleanPhone = (phone || '').replace(/\D/g, '')
-    const cleanPin = (pin || '').trim()
-    const validRole = role === 'provider' ? 'provider' : 'client'
-
-    if (cleanFullName.length < 3) {
+    const rawBody = await req.json().catch(() => null)
+    const parsed = registerSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      const firstIssue = parsed.error.issues[0]
       return NextResponse.json(
-        { error: 'Digite seu nome completo (mínimo 3 caracteres)' },
+        { error: firstIssue?.message || 'Dados inválidos', issues: parsed.error.format() },
         { status: 400 }
       )
     }
 
-    if (cleanPhone.length < 10 || cleanPhone.length > 11) {
-      return NextResponse.json(
-        { error: 'Digite um celular válido com DDD (10 ou 11 dígitos)' },
-        { status: 400 }
-      )
-    }
+    const { fullName, cleanPhone, cleanPin, role, cpfOrCnpj, pixKey, pixKeyType, selfDeclaration } = parsed.data
 
-    if (cleanPin.length < 4 || cleanPin.length > 8) {
-      return NextResponse.json(
-        { error: 'O PIN deve conter entre 4 e 8 dígitos numéricos' },
-        { status: 400 }
-      )
-    }
-
-    if (validRole === 'provider' && !pixKey?.trim()) {
-      return NextResponse.json(
-        { error: 'Profissionais precisam informar a chave Pix para receber os repasses de serviços' },
-        { status: 400 }
-      )
-    }
+    const cleanFullName = fullName
+    const validRole = role
 
     const email = `${cleanPhone}@repararv.com`
     const password = `pin_${cleanPin}`

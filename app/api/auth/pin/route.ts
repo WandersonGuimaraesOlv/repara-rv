@@ -1,25 +1,43 @@
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
+
+const pinSchema = z
+  .object({
+    phone: z.string().min(1, 'Celular é obrigatório'),
+    pin: z.string().min(1, 'PIN é obrigatório'),
+  })
+  .transform((data) => ({
+    cleanPhone: data.phone.replace(/\D/g, ''),
+    cleanPin: data.pin.trim(),
+  }))
+  .refine((data) => data.cleanPhone.length >= 10 && data.cleanPhone.length <= 11, {
+    message: 'Digite um celular válido com DDD (10 ou 11 dígitos)',
+    path: ['phone'],
+  })
+  // Só checa comprimento (não exige dígitos): esta rota também resolve login
+  // de contas já existentes, e endurecer pra "só numérico" aqui arriscaria
+  // travar o acesso de alguém cujo PIN histórico não seja puramente numérico.
+  // A validação de "só dígitos" no cadastro (app/api/auth/register) já
+  // garante que todo PIN novo criado a partir de agora é numérico.
+  .refine((data) => data.cleanPin.length >= 4 && data.cleanPin.length <= 8, {
+    message: 'O PIN deve ter entre 4 e 8 dígitos',
+    path: ['pin'],
+  })
 
 export async function POST(req: Request) {
   try {
-    const { phone, pin } = await req.json()
-    const cleanPhone = (phone || '').replace(/\D/g, '')
-    const cleanPin = (pin || '').trim()
-
-    if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+    const rawBody = await req.json().catch(() => null)
+    const parsed = pinSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      const firstIssue = parsed.error.issues[0]
       return NextResponse.json(
-        { error: 'Digite um celular válido com DDD (10 ou 11 dígitos)' },
+        { error: firstIssue?.message || 'Dados inválidos' },
         { status: 400 }
       )
     }
 
-    if (cleanPin.length < 4 || cleanPin.length > 8) {
-      return NextResponse.json(
-        { error: 'O PIN deve ter entre 4 e 8 dígitos' },
-        { status: 400 }
-      )
-    }
+    const { cleanPhone, cleanPin } = parsed.data
 
     const email = `${cleanPhone}@repararv.com`
     const password = `pin_${cleanPin}`

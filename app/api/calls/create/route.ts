@@ -1,18 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { CreateCallPayload } from '@/lib/types'
 import { DEFAULT_SERVICES } from '@/lib/catalog'
+
+// service_id aceita tanto UUID do catálogo quanto o id textual de DEFAULT_SERVICES
+// (ver fallback por nome logo abaixo) — por isso não é `.uuid()`.
+const createCallSchema = z.object({
+  service_id:      z.string().min(1, 'Serviço inválido'),
+  client_address:  z.string().trim().min(8, 'Endereço incompleto. Forneça rua, número, bairro e ponto de referência.'),
+  client_lat:      z.number().min(-90).max(90).optional(),
+  client_lng:      z.number().min(-180).max(180).optional(),
+  neighborhood:    z.string().min(1).optional(),
+  client_id:       z.string().uuid('ID de cliente inválido').optional(),
+})
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServiceClient()
 
-    const body: CreateCallPayload & { client_id?: string; neighborhood?: string } = await request.json()
-    const { service_id, client_address, client_lat, client_lng, neighborhood } = body
-
-    if (!service_id || !client_address || client_address.trim().length < 8) {
-      return NextResponse.json({ error: 'Endereço incompleto. Forneça rua, número, bairro e ponto de referência.' }, { status: 400 })
+    let rawBody: unknown
+    try {
+      rawBody = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Corpo da requisição inválido' }, { status: 400 })
     }
+
+    const parsed = createCallSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Dados inválidos', issues: parsed.error.format() }, { status: 422 })
+    }
+
+    const body = parsed.data
+    const { service_id, client_address, client_lat, client_lng, neighborhood } = body
 
     // 1. Identifica e autentica o usuário
     let user: { id: string } | null = null

@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
+
+const STATE_COOKIE = 'mp_oauth_state'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
-  const providerId = searchParams.get('state')
+  const returnedState = searchParams.get('state')
   const error = searchParams.get('error')
   const errorDescription = searchParams.get('error_description')
 
@@ -20,12 +23,42 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  if (!code || !providerId) {
-    console.error('[OAuth Callback] Código ou provider_id ausente:', { code, providerId })
+  if (!code || !returnedState) {
+    console.error('[OAuth Callback] Código ou state ausente:', { code, returnedState })
     return NextResponse.redirect(
       `${appUrl}/painel?mp_error=${encodeURIComponent('Código de autorização inválido')}`
     )
   }
+
+  // Achado de segurança (14/09/2026): antes disso, `state` era usado direto como
+  // provider_id, sem checar sessão — qualquer um podia forjar `state=<uuid-alheio>`
+  // e sequestrar o repasse Pix de outro prestador com a PRÓPRIA conta Mercado
+  // Pago. Corrigido em duas camadas: (1) `state` só serve como nonce CSRF,
+  // comparado contra o cookie httpOnly gerado em /api/mercadopago/oauth/url —
+  // nunca mais interpretado como identidade; (2) o provider_id vem exclusivamente
+  // da sessão autenticada verificada aqui, nunca de um valor vindo da URL.
+  const cookieStore = await cookies()
+  const expectedState = cookieStore.get(STATE_COOKIE)?.value
+  cookieStore.delete(STATE_COOKIE)
+
+  if (!expectedState || expectedState !== returnedState) {
+    console.error('[OAuth Callback] state CSRF inválido ou ausente — possível tentativa forjada')
+    return NextResponse.redirect(
+      `${appUrl}/painel?mp_error=${encodeURIComponent('Sessão de autorização expirada. Tente conectar novamente.')}`
+    )
+  }
+
+  const supabaseSession = await createClient()
+  const { data: { user }, error: sessionError } = await supabaseSession.auth.getUser()
+
+  if (sessionError || !user) {
+    console.error('[OAuth Callback] Sessão não autenticada no momento do callback')
+    return NextResponse.redirect(
+      `${appUrl}/painel?mp_error=${encodeURIComponent('Faça login novamente e repita a conexão com o Mercado Pago.')}`
+    )
+  }
+
+  const providerId = user.id
 
   const clientId = process.env.MERCADOPAGO_CLIENT_ID
   const clientSecret = process.env.MERCADOPAGO_CLIENT_SECRET
