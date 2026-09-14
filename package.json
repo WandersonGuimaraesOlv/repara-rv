@@ -14,7 +14,7 @@
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
-    "types:db": "supabase gen types typescript --project-id lvjahufllclmkqcbbrcu > types/supabase.ts",
+    "types:db": "npx supabase gen types typescript --project-id lvjahufllclmkqcbbrcu > types/supabase.ts",
     "check:arch": "depcruise --config .dependency-cruiser.cjs app components lib modules",
     "check:types": "tsc --noEmit",
     "validate": "npm run check:types && npm run check:arch && npm run lint"
@@ -41,6 +41,8 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dependency-cruiser": "^18.2.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.5",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vite": "^8.2.2",
