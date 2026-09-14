@@ -8,9 +8,10 @@ import { CheckCircle, X, Clock, MapPin } from 'lucide-react'
 import { useEffect } from 'react'
 
 interface CallAlertModalProps {
-  call: ServiceCall
+  // Nunca deve carregar client_address/client_location — ver painel/page.tsx
+  call: Omit<ServiceCall, 'client_address' | 'client_location'>
   serviceName: string
-  clientAddress: string
+  neighborhood: string
   totalPrice: number
   providerCut: number
   onAccept: () => void
@@ -20,7 +21,7 @@ interface CallAlertModalProps {
 
 export function CallAlertModal({
   serviceName,
-  clientAddress,
+  neighborhood,
   totalPrice,
   providerCut,
   onAccept,
@@ -102,14 +103,16 @@ export function CallAlertModal({
           </div>
         </div>
 
-        {/* Endereço */}
+        {/* Bairro — achado de segurança de 14/09/2026: o endereço completo aparecia aqui
+            antes do aceite, contrariando a regra de mascaramento pré-aceite do AGENTS.md.
+            Endereço completo só é liberado depois que o prestador aceita (app/chamado). */}
         <div
           className="flex items-start gap-2 p-3 rounded-xl mb-4"
           style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}
         >
           <MapPin size={16} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--color-cta)' }} />
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-            {clientAddress}
+            {neighborhood}
           </p>
         </div>
 
