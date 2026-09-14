@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:race:claim": "node --env-file=.env.local scripts/test-claim-race.mjs",
+    "test:race:claim-fallback": "node --env-file=.env.local scripts/test-claim-fallback-race.mjs",
     "test:race:skip": "node --env-file=.env.local scripts/test-skip-provider-race.mjs",
     "test:idempotency:webhook": "node --env-file=.env.local scripts/test-webhook-idempotency.mjs",
     "test:realtime:reconnect": "node --env-file=.env.local scripts/test-realtime-reconnect.mjs",
