@@ -56,6 +56,25 @@ describe('updateServiceSchema (lib/validations/service-admin) — usado por app/
       expect(result.data.is_active).toBe(false)
     }
   })
+
+  describe('piso de remuneração de R$50 (achado real: 4 serviços do catálogo violavam isso)', () => {
+    it('rejeita repasse líquido abaixo de R$50 mesmo com fixed_price/platform_fee individualmente dentro dos limites', () => {
+      // Caso real encontrado: Troca de Mangueira e Registro de Gás — R$50 total, R$12 de taxa, R$38 de repasse
+      const result = updateServiceSchema.safeParse({ id: validId, fixed_price: 50, platform_fee: 12 })
+      expect(result.success).toBe(false)
+    })
+
+    it('aceita repasse líquido de exatamente R$50 (limite, não abaixo dele)', () => {
+      const result = updateServiceSchema.safeParse({ id: validId, fixed_price: 62, platform_fee: 12 })
+      expect(result.success).toBe(true)
+    })
+
+    it('aplica o piso também quando platform_fee é omitido (usa o default de R$12 da action)', () => {
+      // fixed_price=60 com fee implícito de 12 -> repasse de 48, abaixo do piso
+      const result = updateServiceSchema.safeParse({ id: validId, fixed_price: 60 })
+      expect(result.success).toBe(false)
+    })
+  })
 })
 
 describe('createServiceSchema (lib/validations/service-admin)', () => {
@@ -90,6 +109,24 @@ describe('createServiceSchema (lib/validations/service-admin)', () => {
   it('rejeita fixed_price como string (não faz coerção silenciosa de tipo)', () => {
     const result = createServiceSchema.safeParse({ name: 'Serviço X', category: 'Geral', fixed_price: '80' })
     expect(result.success).toBe(false)
+  })
+
+  describe('piso de remuneração de R$50 (achado real: 4 serviços do catálogo violavam isso)', () => {
+    it('rejeita um novo serviço cujo repasse líquido fica abaixo de R$50', () => {
+      // Caso real encontrado: Instalação de Plafon/LED, Regulagem de Dobradiças, Vedação de Box — R$60 total, R$12 de taxa, R$48 de repasse
+      const result = createServiceSchema.safeParse({ name: 'Serviço Barato', category: 'Geral', fixed_price: 60, platform_fee: 12 })
+      expect(result.success).toBe(false)
+    })
+
+    it('rejeita mesmo usando o platform_fee default (R$12) quando fixed_price é baixo', () => {
+      const result = createServiceSchema.safeParse({ name: 'Serviço Barato', category: 'Geral', fixed_price: 60 })
+      expect(result.success).toBe(false)
+    })
+
+    it('aceita um novo serviço cujo repasse líquido é exatamente R$50', () => {
+      const result = createServiceSchema.safeParse({ name: 'Serviço no Limite', category: 'Geral', fixed_price: 62, platform_fee: 12 })
+      expect(result.success).toBe(true)
+    })
   })
 })
 
