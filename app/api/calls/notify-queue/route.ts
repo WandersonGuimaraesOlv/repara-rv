@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
+
+const notifyQueueSchema = z.object({
+  call_id: z.string().uuid('call_id inválido'),
+})
 
 export async function POST(request: NextRequest) {
   try {
-    const { call_id } = await request.json()
-
-    if (!call_id) {
-      return NextResponse.json({ error: 'call_id é obrigatório' }, { status: 400 })
+    const rawBody = await request.json().catch(() => null)
+    const parsed = notifyQueueSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Dados inválidos', issues: parsed.error.format() }, { status: 422 })
     }
+
+    const { call_id } = parsed.data
 
     const supabase = await createServiceClient()
 

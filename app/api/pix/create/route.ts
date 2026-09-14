@@ -1,16 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
-import { PixCreatePayload } from '@/lib/types'
+
+// `amount` propositalmente NÃO faz parte do schema: o valor cobrado é SEMPRE
+// call.total_price, lido do banco (achado real de 14/09/2026 — antes disso o
+// cliente podia mandar um `amount` próprio no corpo e ele sobrepunha o preço
+// real do chamado na hora de gerar a cobrança no Mercado Pago).
+const pixCreateSchema = z.object({
+  call_id:      z.string().uuid('call_id inválido'),
+  description:  z.string().trim().max(200).optional(),
+  payer_email:  z.string().email('E-mail do pagador inválido').optional(),
+})
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServiceClient()
-    const body: PixCreatePayload = await request.json()
-    const { call_id, amount: reqAmount, description: reqDesc, payer_email } = body
 
-    if (!call_id) {
-      return NextResponse.json({ error: 'call_id é obrigatório' }, { status: 400 })
+    let rawBody: unknown
+    try {
+      rawBody = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Corpo da requisição inválido' }, { status: 400 })
     }
+
+    const parsed = pixCreateSchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Dados inválidos', issues: parsed.error.format() }, { status: 422 })
+    }
+
+    const { call_id, description: reqDesc, payer_email } = parsed.data
 
     // 1. Busca os detalhes do chamado
     const { data: call, error: callErr } = await supabase
@@ -38,7 +56,8 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const amount = reqAmount || call.total_price
+    // Valor SEMPRE vem do banco — nunca do cliente (ver comentário no schema acima).
+    const amount = call.total_price
     const description = reqDesc || `Repara RV — ${call.service?.name ?? 'Serviço residencial'}`
     const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
     

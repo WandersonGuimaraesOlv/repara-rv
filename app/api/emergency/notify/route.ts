@@ -1,16 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
-import { EmergencyNotifyPayload } from '@/lib/types'
 import { formatEmergencyMessage } from '@/lib/utils'
+
+const emergencyNotifySchema = z.object({
+  call_id:      z.string().uuid('call_id inválido'),
+  user_role:    z.enum(['client', 'provider', 'admin']).optional(),
+  latitude:     z.number().min(-90).max(90).nullable().optional(),
+  longitude:    z.number().min(-180).max(180).nullable().optional(),
+  triggered_by: z.string().uuid().optional(),
+})
 
 export async function POST(request: NextRequest) {
   try {
-    const body: EmergencyNotifyPayload = await request.json()
-    const { call_id, user_role, latitude, longitude, triggered_by } = body
-
-    if (!call_id) {
-      return NextResponse.json({ error: 'call_id é obrigatório' }, { status: 400 })
+    let rawBody: unknown
+    try {
+      rawBody = await request.json()
+    } catch {
+      return NextResponse.json({ error: 'Corpo da requisição inválido' }, { status: 400 })
     }
+
+    const parsed = emergencyNotifySchema.safeParse(rawBody)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Dados inválidos', issues: parsed.error.format() }, { status: 422 })
+    }
+
+    const { call_id, user_role, latitude, longitude, triggered_by } = parsed.data
 
     // Produção / Supabase
     const supabase = await createServiceClient()

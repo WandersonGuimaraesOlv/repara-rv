@@ -1,9 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+
+// Aceita os dois formatos de chave (camelCase e snake_case) que já circulam
+// entre os chamadores existentes desta rota.
+const claimQueuedSchema = z.object({
+  callId:      z.string().uuid('callId inválido').optional(),
+  call_id:     z.string().uuid('call_id inválido').optional(),
+  providerId:  z.string().uuid('providerId inválido').optional(),
+  provider_id: z.string().uuid('provider_id inválido').optional(),
+});
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json().catch(() => ({}));
+    const rawBody = await req.json().catch(() => ({}));
+    const parsed = claimQueuedSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Dados inválidos', issues: parsed.error.format() }, { status: 422 });
+    }
+
+    const body = parsed.data;
     const callId = body.callId || body.call_id;
     let providerId = body.providerId || body.provider_id;
 
