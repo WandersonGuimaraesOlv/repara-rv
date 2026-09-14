@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Profile, ServiceCall } from '@/lib/types'
@@ -8,6 +8,18 @@ import { Profile, ServiceCall } from '@/lib/types'
 // Estado do chamado pendente ANTES do aceite nunca deve carregar endereço
 // completo/coordenadas (ver checkActiveCalls e o handler de Realtime abaixo).
 type PendingCallPreview = Omit<ServiceCall, 'client_address' | 'client_location'>
+
+// Mesma regra pra fila prioritária — o shape exato que app/api/calls/queue
+// devolve (nunca client_address/client_location, ver comentário na rota).
+interface QueuedCallPreview {
+  id: string
+  neighborhood: string | null
+  total_price: number
+  provider_cut: number
+  platform_fee: number
+  created_at: string
+  service?: { id: string; name: string; category?: string; icon?: string | null; color?: string | null } | null
+}
 import { CallAlertModal } from '@/components/call-alert-modal'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { Power, Loader2, MapPin, CreditCard, Zap, Lock, AlertTriangle, Volume2, LogOut } from 'lucide-react'
@@ -27,7 +39,7 @@ export default function PainelPage() {
   const [totalToday, setTotalToday] = useState(0)
   const [pendingToday, setPendingToday] = useState(0)
   const [providerPixKey, setProviderPixKey] = useState('')
-  const [queuedCalls, setQueuedCalls] = useState<ServiceCall[]>([])
+  const [queuedCalls, setQueuedCalls] = useState<QueuedCallPreview[]>([])
   const [claimingCallId, setClaimingCallId] = useState<string | null>(null)
   const [editingPix, setEditingPix] = useState(false)
   const [newPixKeyInput, setNewPixKeyInput] = useState('')
@@ -386,57 +398,50 @@ export default function PainelPage() {
   }, [pendingCall, profile])
 
   // Monitora chamados na fila prioritária
+  //
+  // Achado de segurança/funcional (14/09/2026): nunca existiu política de RLS
+  // cobrindo leitura de service_calls com status='queued' — esta seção sempre
+  // recebeu 0 linhas em produção, pra qualquer prestador (confirmado com
+  // login real). A consulta direta na tabela + o canal Realtime abaixo (sem
+  // filtro nenhum, o que já era um problema à parte) nunca funcionaram.
+  // Corrigido lendo de app/api/calls/queue (Service Role no servidor, só
+  // campos seguros — nunca client_address/client_location). Sem RLS/policy
+  // nova no banco não dá pra ter push instantâneo via Realtime pra este caso
+  // específico, então o "ao vivo" virou polling de 4s (já existia como rede
+  // de segurança; agora é o mecanismo principal). O toque sonoro de "chamado
+  // novo" é acionado comparando os ids entre uma rodada de polling e outra.
+  const queuedCallIdsRef = useRef<Set<string>>(new Set())
+
   useEffect(() => {
     if (!profile) return
 
     const loadQueued = async () => {
-      const { data } = await supabase
-        .from('service_calls')
-        .select('*, service:quick_services(*)')
-        .eq('status', 'queued')
-        .order('created_at', { ascending: false })
-        .limit(5)
+      try {
+        const res = await fetch('/api/calls/queue')
+        if (!res.ok) return
+        const { calls } = await res.json()
+        const list = (calls as QueuedCallPreview[]) || []
 
-      setQueuedCalls((data as ServiceCall[]) || [])
+        const previousIds = queuedCallIdsRef.current
+        const hasNewCall = list.some(c => !previousIds.has(c.id))
+        if (previousIds.size > 0 && hasNewCall) {
+          audioAlert.playCallChime()
+        }
+        queuedCallIdsRef.current = new Set(list.map(c => c.id))
+
+        setQueuedCalls(list)
+      } catch (err) {
+        console.warn('[painel] Falha ao buscar fila prioritária:', err)
+      }
     }
 
     loadQueued()
     const interval = setInterval(loadQueued, 4000)
 
-    // Escuta alterações na tabela de chamados via Supabase Realtime
-    const channel = supabase
-      .channel('service_calls_queue')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'service_calls' },
-        (payload: any) => {
-          if (payload.eventType === 'UPDATE') {
-            // Se o chamado que estava na fila mudou de status (ex: 'accepted'),
-            // remove o card da tela de todos os outros prestadores na hora (<300ms)
-            if (payload.new && payload.new.status !== 'queued') {
-              setQueuedCalls(prev => prev.filter(c => c.id !== payload.new.id))
-            } else if (payload.new && payload.new.status === 'queued') {
-              loadQueued()
-            }
-          } else if (payload.eventType === 'INSERT') {
-            if (payload.new && payload.new.status === 'queued') {
-              audioAlert.playCallChime()
-              loadQueued()
-            }
-          } else if (payload.eventType === 'DELETE') {
-            if (payload.old && payload.old.id) {
-              setQueuedCalls(prev => prev.filter(c => c.id !== payload.old.id))
-            }
-          }
-        }
-      )
-      .subscribe()
-
     return () => {
-      supabase.removeChannel(channel)
       clearInterval(interval)
     }
-  }, [profile, supabase])
+  }, [profile])
 
   const handleClaimQueued = useCallback(async (callId: string) => {
     if (!profile) return
@@ -678,7 +683,7 @@ export default function PainelPage() {
               </h3>
             </div>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-              ⚡ Ao vivo
+              🔄 Atualização automática
             </span>
           </div>
 
@@ -693,7 +698,7 @@ export default function PainelPage() {
                     {(qCall.service as { name?: string })?.name || 'Serviço residencial'}
                   </p>
                   <p className="text-xs text-slate-400 mt-0.5 truncate">
-                    📍 {qCall.neighborhood || 'Rio Verde (GO)'} — {qCall.client_address}
+                    📍 {qCall.neighborhood || 'Rio Verde (GO)'}
                   </p>
                   <p className="text-xs font-semibold text-emerald-400 mt-1">
                     Ganhos: R$ {Number(qCall.provider_cut || 0).toFixed(2).replace('.', ',')} (Total: R$ {Number(qCall.total_price || 0).toFixed(2).replace('.', ',')})
