@@ -19,6 +19,7 @@
     "monitor:synthetic": "node --env-file=.env.local scripts/synthetic-monitor.mjs",
     "test:e2e": "playwright test",
     "test:load": "node --env-file=.env.local scripts/load-test.mjs",
+    "test:profile-privilege": "node --env-file=.env.local scripts/test-profile-privilege-escalation.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
