@@ -12,6 +12,21 @@ export function formatCurrency(value: number): string {
   }).format(value)
 }
 
+// Normaliza um celular brasileiro digitado com o código do país (+55) na
+// frente, mantendo o DDD real. Sem isso, alguém que cola "+55 64 98115-5550"
+// (13 dígitos) tinha os 2 primeiros dígitos do "55" tratados como DDD e o
+// número cortado em 11 dígitos, virando um celular diferente e inválido —
+// achado real em produção em 15/09/2026 (cadastro aceitou "55649811555" no
+// lugar de "64981155550"). DDD 55 (RS) existe de verdade, então só removemos
+// o "55" quando sobra dígito demais (>11) — nunca de um número já correto.
+export function normalizeBrazilianPhone(raw: string): string {
+  let digits = raw.replace(/\D/g, '')
+  if (digits.length > 11 && digits.startsWith('55')) {
+    digits = digits.slice(2)
+  }
+  return digits.slice(0, 11)
+}
+
 export function formatPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '')
   if (digits.length === 11) {

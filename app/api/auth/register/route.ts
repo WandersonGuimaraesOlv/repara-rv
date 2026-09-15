@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
+import { normalizeBrazilianPhone } from '@/lib/utils'
 
 const registerSchema = z
   .object({
@@ -23,7 +24,7 @@ const registerSchema = z
   })
   .transform((data) => ({
     ...data,
-    cleanPhone: data.phone.replace(/\D/g, ''),
+    cleanPhone: normalizeBrazilianPhone(data.phone),
     cleanPin: data.pin.trim(),
     cleanCep: data.cep.replace(/\D/g, ''),
   }))

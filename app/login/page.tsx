@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Phone, Lock, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { Logo } from '@/components/logo'
+import { normalizeBrazilianPhone } from '@/lib/utils'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -18,8 +19,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   const handlePhoneChange = (value: string) => {
-    const digits = value.replace(/\D/g, '').slice(0, 11)
-    setPhone(digits)
+    setPhone(normalizeBrazilianPhone(value))
   }
 
   const formatDisplayPhone = (digits: string) => {

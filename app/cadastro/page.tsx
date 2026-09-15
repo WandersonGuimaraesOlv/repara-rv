@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { User, Phone, Lock, Eye, EyeOff, ShieldCheck, Wrench, ArrowRight, CheckCircle2, MapPin, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Logo } from '@/components/logo'
+import { normalizeBrazilianPhone } from '@/lib/utils'
 
 export default function CadastroPage() {
   const router = useRouter()
@@ -41,7 +42,7 @@ export default function CadastroPage() {
   }, [])
 
   const handlePhoneChange = (value: string) => {
-    const digits = value.replace(/\D/g, '').slice(0, 11)
+    const digits = normalizeBrazilianPhone(value)
     setPhone(digits)
     // Se prestador e tipo de chave for phone, pré-preenche a chave pix
     if (role === 'provider' && pixKeyType === 'phone' && (!pixKey || pixKey === phone)) {
