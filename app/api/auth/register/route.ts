@@ -56,7 +56,14 @@ export async function POST(req: Request) {
     const supabaseAdmin = await createServiceClient()
 
     // 1. Verifica se já existe usuário com este e-mail/telefone
-    const { data: usersData } = await supabaseAdmin.auth.admin.listUsers()
+    //
+    // Achado de escalabilidade (14/09/2026): listUsers() sem paginação só
+    // devolve a 1ª página (50 usuários, default da Auth API) — mesmo bug e
+    // mesma correção de app/api/auth/pin/route.ts. Sem isso, cadastro de
+    // telefone já usado por uma conta mais antiga (fora da 1ª página) caía
+    // direto no createUser() e falhava com erro genérico de banco em vez do
+    // aviso correto "já possui cadastro".
+    const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 })
     const existingUser = usersData?.users.find(u => u.email === email)
 
     if (existingUser) {

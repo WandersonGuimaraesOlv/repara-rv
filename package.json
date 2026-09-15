@@ -17,6 +17,7 @@
     "check:catalog-rounding": "node --env-file=.env.local scripts/check-catalog-rounding.mjs",
     "test:stale-radar": "node --env-file=.env.local scripts/test-stale-radar.mjs",
     "monitor:synthetic": "node --env-file=.env.local scripts/synthetic-monitor.mjs",
+    "test:e2e": "playwright test",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
@@ -43,6 +44,7 @@
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "^1.20.6",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22",
     "@types/react": "^19",
