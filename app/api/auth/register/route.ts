@@ -14,6 +14,10 @@ const registerSchema = z
     pixKey: z.string().trim().optional(),
     pixKeyType: z.enum(['cpf', 'phone', 'email', 'random']).optional().default('phone'),
     selfDeclaration: z.boolean().optional().default(true),
+    // CEP informado no cadastro (opcional) — o bairro já vem resolvido do
+    // frontend via ViaCEP, aqui só armazenamos os dois.
+    cep: z.string().trim().optional(),
+    neighborhood: z.string().trim().max(100).optional(),
   })
   .transform((data) => ({
     ...data,
@@ -45,7 +49,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const { fullName, cleanPhone, cleanPin, role, cpfOrCnpj, pixKey, pixKeyType, selfDeclaration } = parsed.data
+    const { fullName, cleanPhone, cleanPin, role, cpfOrCnpj, pixKey, pixKeyType, selfDeclaration, cep, neighborhood } = parsed.data
 
     const cleanFullName = fullName
     const validRole = role
@@ -104,6 +108,8 @@ export async function POST(req: Request) {
       cpf_or_cnpj: cpfOrCnpj ? String(cpfOrCnpj).trim() : null,
       terms_accepted_at: new Date().toISOString(),
       self_declaration_signed: validRole === 'provider' ? Boolean(selfDeclaration) : true,
+      cep: cep ? cep.replace(/\D/g, '') : null,
+      neighborhood: neighborhood || null,
     }
 
     let { error: profileError } = await supabaseAdmin
@@ -115,6 +121,8 @@ export async function POST(req: Request) {
       delete profilePayload.cpf_or_cnpj
       delete profilePayload.terms_accepted_at
       delete profilePayload.self_declaration_signed
+      delete profilePayload.cep
+      delete profilePayload.neighborhood
       const retry = await supabaseAdmin.from('profiles').upsert(profilePayload)
       profileError = retry.error
     }

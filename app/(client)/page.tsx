@@ -52,22 +52,6 @@ import { SiteFooter } from '@/components/site-footer'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { performLogout } from '@/lib/auth-logout'
 
-const RIO_VERDE_NEIGHBORHOODS = [
-  'Setor Central',
-  'Bairro Popular',
-  'Bairro Promissão',
-  'Morada do Sol',
-  'Santo Agostinho',
-  'Setor Universitário',
-  'Parque das Laranjeiras',
-  'Gameleira',
-  'Vila Maria',
-  'Eldorado',
-  'Residencial Buriti',
-  'Solar Campestre',
-  'Interlagos',
-]
-
 const CATEGORIES = [
   { id: 'all', name: 'Todos', icon: Sparkles },
   { id: 'Elétrica', name: 'Elétrica', icon: Zap },
@@ -128,15 +112,13 @@ export default function TriiderClientHomePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false)
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('Setor Central')
-  const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false)
-  const [customAddress, setCustomAddress] = useState<string>('')
   const [activeTab, setActiveTab] = useState<'home' | 'orders' | 'support' | 'profile'>('home')
   const [currentUser, setCurrentUser] = useState<{
     id: string
     full_name?: string
     phone?: string
     role?: string
+    neighborhood?: string | null
   } | null>(null)
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState<boolean>(false)
   const profileMenuRef = useRef<HTMLDivElement>(null)
@@ -176,11 +158,22 @@ export default function TriiderClientHomePage() {
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data: profile } = await supabase
+        // `neighborhood` é coluna nova (migration 20260915_profile_cep_neighborhood) —
+        // se ainda não foi aplicada no banco, cai no fallback sem essa coluna.
+        let { data: profile } = await supabase
           .from('profiles')
-          .select('id, role, full_name, phone')
+          .select('id, role, full_name, phone, neighborhood')
           .eq('id', user.id)
           .maybeSingle()
+
+        if (!profile) {
+          const fallback = await supabase
+            .from('profiles')
+            .select('id, role, full_name, phone')
+            .eq('id', user.id)
+            .maybeSingle()
+          profile = fallback.data ? { ...fallback.data, neighborhood: null } : null
+        }
 
         if (profile) {
           setCurrentUser(profile)
@@ -320,6 +313,7 @@ export default function TriiderClientHomePage() {
 
   const userInitial = currentUser?.full_name?.charAt(0)?.toUpperCase() ?? 'U'
   const userName = currentUser?.full_name?.split(' ')[0] ?? 'Minha Conta'
+  const firstName = currentUser?.full_name?.split(' ')[0]
 
   return (
     <div
@@ -342,58 +336,28 @@ export default function TriiderClientHomePage() {
         <div className="content-container">
           <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
 
-            {/* Esquerda: Logo + Seletor de Bairro */}
+            {/* Esquerda: Logo + Bairro (quando o cliente tiver informado no cadastro) */}
             <div className="flex items-center gap-2 sm:gap-4 min-w-0 shrink-0">
               <Link href="/" className="flex items-center transition-opacity hover:opacity-85 shrink-0">
                 <Logo variant="full" width={148} height={38} className="hidden sm:block" />
                 <Logo variant="compact" className="sm:hidden" />
               </Link>
 
-              {/* Seletor de Localização (Desktop) */}
-              <button
-                type="button"
-                onClick={() => setIsAddressModalOpen(true)}
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer"
-                style={{
-                  background: 'var(--color-surface-alt)',
-                  border: '1px solid var(--color-border)',
-                  color: 'var(--color-text-muted)',
-                }}
-                aria-label={`Bairro: ${selectedNeighborhood}. Clique para alterar.`}
-              >
-                <MapPin size={13} style={{ color: 'var(--color-primary)' }} className="shrink-0" />
-                <span>Bairro:</span>
-                <strong style={{ color: 'var(--color-text)' }}>{selectedNeighborhood}</strong>
-                <ChevronDown size={13} style={{ color: 'var(--color-text-subtle)' }} />
-              </button>
+              {currentUser?.neighborhood && (
+                <div
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+                  style={{
+                    background: 'var(--color-surface-alt)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text-muted)',
+                  }}
+                >
+                  <MapPin size={13} style={{ color: 'var(--color-primary)' }} className="shrink-0" />
+                  <span>Bairro:</span>
+                  <strong style={{ color: 'var(--color-text)' }}>{currentUser.neighborhood}</strong>
+                </div>
+              )}
             </div>
-
-            {/* Centro: Nav Desktop */}
-            <nav className="hidden lg:flex items-center gap-1" aria-label="Navegação principal">
-              <a
-                href="#categorias"
-                className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
-                Serviços
-              </a>
-              <a
-                href="#garantia"
-                className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
-                Garantia 7 Dias
-              </a>
-              <a
-                href="https://wa.me/5564999999999?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20no%20Repara%20RV"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
-                Suporte
-              </a>
-            </nav>
 
             {/* Direita: Ações */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -579,213 +543,183 @@ export default function TriiderClientHomePage() {
             </div>
           </div>
 
-          {/* Seletor de Bairro para Mobile */}
+          {/* Localização para Mobile */}
           <div
             className="md:hidden pb-2 pt-1 flex items-center gap-2 text-xs"
             style={{ borderTop: '1px solid var(--color-border)' }}
           >
-            <button
-              type="button"
-              onClick={() => setIsAddressModalOpen(true)}
-              className="flex items-center gap-1.5 text-left transition-colors cursor-pointer py-0.5 flex-1 min-w-0"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
+            <div className="flex items-center gap-1.5 py-0.5 flex-1 min-w-0" style={{ color: 'var(--color-text-muted)' }}>
               <MapPin size={13} style={{ color: 'var(--color-primary)' }} className="shrink-0" />
-              <div className="truncate flex-1 min-w-0">
-                <span style={{ color: 'var(--color-text-subtle)' }}>Você está em: </span>
-                <strong style={{ color: 'var(--color-text)' }}>{selectedNeighborhood}, Rio Verde</strong>
-              </div>
-              <ChevronDown size={13} style={{ color: 'var(--color-text-subtle)' }} className="shrink-0 ml-1" />
-            </button>
+              <span className="truncate">
+                {currentUser?.neighborhood ? (
+                  <>
+                    <span style={{ color: 'var(--color-text-subtle)' }}>Você está em: </span>
+                    <strong style={{ color: 'var(--color-text)' }}>{currentUser.neighborhood}, Rio Verde</strong>
+                  </>
+                ) : (
+                  'Atendemos Rio Verde — GO'
+                )}
+              </span>
+            </div>
             <ThemeToggle className="shrink-0" />
           </div>
         </div>
       </header>
 
       {/* ────────────────────────────────────────────────────────
-          2. HERO SECTION
+          2. PAINEL INICIAL (saudação + busca flutuante estilo app)
           ──────────────────────────────────────────────────────── */}
-      {/* ────────────────────────────────────────────────────────
-          2. HERO SECTION
-          ──────────────────────────────────────────────────────── */}
-      <section
-        className="mesh-hero-glow relative overflow-hidden pt-8 pb-14 sm:pt-16 sm:pb-24"
-        style={{
-          borderBottom: '1px solid var(--color-border)',
-        }}
-      >
-        {/* Grade de fundo sutil e iluminação ambiente */}
-        <div className="absolute inset-0 bg-ambient-grid opacity-35 pointer-events-none" />
-        <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[450px] rounded-full opacity-20 pointer-events-none blur-3xl"
-          style={{ background: 'radial-gradient(ellipse at center, var(--color-primary) 0%, transparent 70%)' }}
-        />
+      <section className="content-container pt-4 pb-6 sm:pt-6 w-full">
 
-        <div className="content-container relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
+        {/* Saudação pessoal */}
+        <div className="flex items-center gap-3 mb-4">
+          <div
+            className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-black uppercase text-white shrink-0"
+            style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-hover))' }}
+          >
+            {userInitial}
+          </div>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-xl font-black tracking-tight truncate" style={{ color: 'var(--color-text)' }}>
+              {firstName ? `Olá, ${firstName}!` : 'Olá! 👋'}
+            </p>
+            <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+              <span className="live-dot" />
+              <span>Disponível agora em Rio Verde (GO)</span>
+            </div>
+          </div>
+        </div>
 
-            {/* Selo Local com Indicador em Tempo Real */}
+        {/* Painel verde com busca flutuante */}
+        <div className="relative mb-10">
+          <div
+            className="rounded-3xl overflow-hidden relative px-5 pt-5 pb-11 sm:px-7 sm:pt-7 sm:pb-12"
+            style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, #067a57 100%)' }}
+          >
+            <div className="absolute inset-0 bg-ambient-grid opacity-20 pointer-events-none" />
+            <div className="relative z-10 max-w-lg">
+              <h1 className="text-white text-xl sm:text-2xl font-black tracking-tight leading-tight">
+                O que você precisa consertar hoje?
+              </h1>
+              <p className="text-white/80 text-xs sm:text-sm mt-1.5 leading-relaxed">
+                Encanador, eletricista ou montador na sua porta em 30 a 45 min. Preço fixo, sem surpresas.
+              </p>
+            </div>
+          </div>
+
+          {/* Busca flutuante sobrepondo a borda inferior do painel */}
+          <div className="absolute left-4 right-4 sm:left-6 sm:right-6 -bottom-6">
             <div
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide mb-4 glass-panel shadow-sm"
+              className="relative flex items-center rounded-2xl search-glow-container"
               style={{
-                borderColor: 'rgba(94, 211, 164, 0.25)',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                boxShadow: '0 12px 28px rgba(0,0,0,0.4)',
               }}
             >
-              <span className="live-dot" />
-              <span style={{ color: 'var(--color-text)' }}>Disponível agora</span>
-              <span style={{ color: 'var(--color-text-subtle)' }}>•</span>
-              <span style={{ color: 'var(--color-success)' }}>Rio Verde (GO)</span>
-            </div>
-
-            {/* Título Principal */}
-            <h1
-              className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-tight sm:leading-[1.1] mb-4"
-              style={{ color: 'var(--color-text)' }}
-            >
-              O que você precisa{' '}
-              <span className="text-gradient-accent">
-                consertar
-              </span>{' '}
-              hoje?
-            </h1>
-
-            {/* Subtítulo Humanizado */}
-            <p
-              className="text-sm sm:text-lg leading-relaxed max-w-2xl mx-auto mb-8 px-1"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
-              Encanador, eletricista ou montador na sua porta em 30 a 45 minutos.
-              Preço fixo antes de começar, sem surpresas e com garantia de 7 dias.
-            </p>
-
-            {/* Barra de Busca Glassmorphic */}
-            <div className="relative max-w-2xl mx-auto w-full">
-              <div
-                className="relative flex items-center rounded-2xl search-glow-container glass-panel"
-                style={{
-                  borderColor: 'var(--color-border)',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
-                }}
-              >
-                <Search size={19} className="absolute left-4 pointer-events-none shrink-0" style={{ color: 'var(--color-text-subtle)' }} />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
-                  placeholder="Busque pelo conserto: chuveiro, torneira, tomada, fechadura..."
-                  className="w-full pl-12 pr-12 py-4 bg-transparent text-sm outline-none font-medium"
-                  style={{ color: 'var(--color-text)' }}
-                  aria-label="Buscar serviço"
-                />
-                {searchQuery ? (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-4 p-1 transition-colors cursor-pointer"
-                    style={{ color: 'var(--color-text-subtle)' }}
-                    aria-label="Limpar busca"
-                  >
-                    <X size={16} />
-                  </button>
-                ) : (
-                  <div className="absolute right-4 hidden sm:flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md font-mono" style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)', color: 'var(--color-text-subtle)' }}>
-                    Buscar
-                  </div>
-                )}
-              </div>
-
-              {/* Dropdown de Autocomplete */}
-              {isSearchFocused && searchSuggestions.length > 0 && (
-                <div
-                  className="absolute top-full left-0 right-0 mt-2 rounded-2xl py-2 z-30 text-left overflow-hidden animate-fade-in glass-panel"
-                  style={{
-                    borderColor: 'var(--color-border-strong)',
-                    boxShadow: '0 16px 36px rgba(0,0,0,0.5)',
-                  }}
+              <Search size={19} className="absolute left-4 pointer-events-none shrink-0" style={{ color: 'var(--color-text-subtle)' }} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
+                placeholder="Busque pelo conserto: chuveiro, torneira..."
+                className="w-full pl-12 pr-4 py-4 bg-transparent text-sm outline-none font-medium"
+                style={{ color: 'var(--color-text)' }}
+                aria-label="Buscar serviço"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-4 p-1 transition-colors cursor-pointer"
+                  style={{ color: 'var(--color-text-subtle)' }}
+                  aria-label="Limpar busca"
                 >
-                  <div
-                    className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider"
-                    style={{ color: 'var(--color-text-subtle)' }}
-                  >
-                    Sugestões Rápidas
-                  </div>
-                  {searchSuggestions.map(service => (
-                    <Link
-                      key={service.id}
-                      href={`/chamar/${service.id}`}
-                      onClick={() => setIsSearchFocused(false)}
-                      className="flex items-center justify-between px-4 py-3 transition-colors text-sm hover:bg-[rgba(10,155,112,0.12)]"
-                      style={{ color: 'var(--color-text-muted)' }}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Wrench size={15} style={{ color: 'var(--color-primary)' }} className="shrink-0" />
-                        <span className="font-semibold" style={{ color: 'var(--color-text)' }}>{service.name}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: 'var(--color-surface-alt)', color: 'var(--color-text-subtle)' }}>
-                          {service.category}
-                        </span>
-                      </div>
-                      <span className="font-black text-sm shrink-0" style={{ color: 'var(--color-accent)' }}>
-                        {formatCurrency(service.fixed_price)}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
+                  <X size={16} />
+                </button>
               )}
             </div>
 
-            {/* Tags de Pesquisas Frequentes */}
-            <div className="flex flex-wrap items-center justify-center gap-1.5 mt-4 text-xs max-w-full">
-              <span className="font-bold mr-1 text-[11px] uppercase tracking-wider" style={{ color: 'var(--color-text-subtle)' }}>Mais buscados:</span>
-              {['Chuveiro', 'Torneira', 'Tomada', 'Ventilador', 'Fechadura', 'Máquina de Lavar', 'Varal', 'Silicone'].map(tag => (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => setSearchQuery(tag)}
-                  className="search-tag-pill px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer active:scale-95"
-                  style={{
-                    background: 'var(--color-surface-alt)',
-                    border: '1px solid var(--color-border)',
-                    color: 'var(--color-text-muted)',
-                  }}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-
-            {/* 4 Blocos de Garantia e Confiança */}
-            <div
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-10 pt-8 text-left"
-              style={{ borderTop: '1px solid var(--color-border)' }}
-            >
-              {[
-                { icon: ShieldCheck, title: 'Cadastro Verificado', desc: 'Identidade checada e cadastrada na plataforma.', color: 'var(--color-success)' },
-                { icon: Zap, title: 'Chegada em 30-45 min', desc: 'Profissional mais próximo do seu bairro em Rio Verde.', color: 'var(--color-accent)' },
-                { icon: Lock, title: 'Pagamento Seguro', desc: 'O valor só é repassado após você conferir o reparo.', color: 'var(--color-info)' },
-                { icon: Sparkles, title: 'Garantia de 7 Dias', desc: 'Se o defeito voltar no prazo, o retorno é gratuito.', color: 'var(--color-primary)' },
-              ].map(({ icon: Icon, title, desc, color }) => (
+            {/* Dropdown de Autocomplete */}
+            {isSearchFocused && searchSuggestions.length > 0 && (
+              <div
+                className="absolute top-full left-0 right-0 mt-2 rounded-2xl py-2 z-30 text-left overflow-hidden animate-fade-in glass-panel"
+                style={{
+                  borderColor: 'var(--color-border-strong)',
+                  boxShadow: '0 16px 36px rgba(0,0,0,0.5)',
+                }}
+              >
                 <div
-                  key={title}
-                  className="glass-panel glass-panel-hover rounded-2xl p-4 flex items-start gap-3.5"
+                  className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider"
+                  style={{ color: 'var(--color-text-subtle)' }}
                 >
-                  <div
-                    className="p-2.5 rounded-xl shrink-0 mt-0.5"
-                    style={{ background: `${color}18`, border: `1px solid ${color}30` }}
-                  >
-                    <Icon size={18} style={{ color }} />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold tracking-tight" style={{ color: 'var(--color-text)' }}>{title}</h4>
-                    <p className="text-[11px] mt-0.5 leading-relaxed" style={{ color: 'var(--color-text-subtle)' }}>{desc}</p>
-                  </div>
+                  Sugestões Rápidas
                 </div>
-              ))}
-            </div>
-
+                {searchSuggestions.map(service => (
+                  <Link
+                    key={service.id}
+                    href={`/chamar/${service.id}`}
+                    onClick={() => setIsSearchFocused(false)}
+                    className="flex items-center justify-between px-4 py-3 transition-colors text-sm hover:bg-[rgba(10,155,112,0.12)]"
+                    style={{ color: 'var(--color-text-muted)' }}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <Wrench size={15} style={{ color: 'var(--color-primary)' }} className="shrink-0" />
+                      <span className="font-semibold" style={{ color: 'var(--color-text)' }}>{service.name}</span>
+                      <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: 'var(--color-surface-alt)', color: 'var(--color-text-subtle)' }}>
+                        {service.category}
+                      </span>
+                    </div>
+                    <span className="font-black text-sm shrink-0" style={{ color: 'var(--color-accent)' }}>
+                      {formatCurrency(service.fixed_price)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Tags de Pesquisas Frequentes */}
+        <div className="flex flex-wrap items-center gap-1.5 text-xs max-w-full">
+          <span className="font-bold mr-1 text-[11px] uppercase tracking-wider" style={{ color: 'var(--color-text-subtle)' }}>Mais buscados:</span>
+          {['Chuveiro', 'Torneira', 'Tomada', 'Ventilador', 'Fechadura', 'Máquina de Lavar', 'Varal', 'Silicone'].map(tag => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => setSearchQuery(tag)}
+              className="search-tag-pill px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer active:scale-95"
+              style={{
+                background: 'var(--color-surface-alt)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-text-muted)',
+              }}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+
+        {/* Selos de confiança — chips compactos em scroll horizontal */}
+        <div className="flex gap-2 overflow-x-auto mt-4 pb-1 -mx-4 px-4 sm:-mx-6 sm:px-6 [scrollbar-width:none]">
+          {[
+            { icon: ShieldCheck, title: 'Cadastro Verificado', color: 'var(--color-success)' },
+            { icon: Zap, title: 'Chegada em 30-45 min', color: 'var(--color-accent)' },
+            { icon: Lock, title: 'Pagamento Seguro', color: 'var(--color-info)' },
+            { icon: Sparkles, title: 'Garantia de 7 Dias', color: 'var(--color-primary)' },
+          ].map(({ icon: Icon, title, color }) => (
+            <div
+              key={title}
+              className="flex items-center gap-2 shrink-0 px-3.5 py-2 rounded-full glass-panel"
+            >
+              <Icon size={14} style={{ color }} className="shrink-0" />
+              <span className="text-xs font-bold whitespace-nowrap" style={{ color: 'var(--color-text)' }}>{title}</span>
+            </div>
+          ))}
+        </div>
+
       </section>
 
       {/* ────────────────────────────────────────────────────────
@@ -1347,96 +1281,6 @@ export default function TriiderClientHomePage() {
               <LogOut size={16} />
               <span>Sair da Conta</span>
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* ────────────────────────────────────────────────────────
-          MODAL DE SELEÇÃO DE BAIRRO
-          ──────────────────────────────────────────────────────── */}
-      {isAddressModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
-          style={{ background: 'rgba(7, 16, 15, 0.8)', backdropFilter: 'blur(6px)' }}
-        >
-          <div
-            className="w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up"
-            style={{
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              boxShadow: '0 -16px 48px rgba(0,0,0,0.5)',
-            }}
-          >
-            <div
-              className="flex items-center justify-between pb-4 mb-4"
-              style={{ borderBottom: '1px solid var(--color-border)' }}
-            >
-              <div>
-                <h3 className="text-base font-black" style={{ color: 'var(--color-text)' }}>Selecionar Localização</h3>
-                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Rio Verde — Goiás</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAddressModalOpen(false)}
-                className="p-1.5 rounded-full transition-colors cursor-pointer"
-                style={{ color: 'var(--color-text-muted)', background: 'var(--color-surface-alt)' }}
-                aria-label="Fechar"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <label className="label">Endereço ou Bairro específico:</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={customAddress}
-                  onChange={e => setCustomAddress(e.target.value)}
-                  placeholder="Ex: Rua 10, Qd 20, Bairro..."
-                  className="input py-2.5 text-sm flex-1"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (customAddress.trim()) {
-                      setSelectedNeighborhood(customAddress.trim())
-                      setIsAddressModalOpen(false)
-                      setCustomAddress('')
-                    }
-                  }}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-white cursor-pointer transition-all hover:opacity-90 shrink-0"
-                  style={{ background: 'var(--color-primary)' }}
-                >
-                  Confirmar
-                </button>
-              </div>
-            </div>
-
-            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--color-text-subtle)' }}>
-              Bairros Atendidos
-            </p>
-            <div className="max-h-60 overflow-y-auto space-y-1 pr-1">
-              {RIO_VERDE_NEIGHBORHOODS.map(bairro => (
-                <button
-                  key={bairro}
-                  type="button"
-                  onClick={() => {
-                    setSelectedNeighborhood(bairro)
-                    setIsAddressModalOpen(false)
-                  }}
-                  className="w-full text-left px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
-                  style={{
-                    background: selectedNeighborhood === bairro ? 'var(--color-primary-soft)' : 'transparent',
-                    color: selectedNeighborhood === bairro ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                    border: selectedNeighborhood === bairro ? '1px solid var(--color-border)' : '1px solid transparent',
-                  }}
-                >
-                  <span>{bairro}</span>
-                  {selectedNeighborhood === bairro && <CheckCircle2 size={15} style={{ color: 'var(--color-primary)' }} />}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       )}
