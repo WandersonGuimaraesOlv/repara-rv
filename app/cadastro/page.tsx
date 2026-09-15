@@ -86,7 +86,7 @@ export default function CadastroPage() {
         return
       }
       if (!selfDeclaration) {
-        toast.error('Marque a autodeclaração de aptidão e antecedentes para prosseguir')
+        toast.error('Marque a autodeclaração de aptidão técnica para prosseguir')
         return
       }
     }
@@ -387,7 +387,7 @@ export default function CadastroPage() {
                 </div>
               </div>
 
-              {/* Autodeclaração de Aptidão e Antecedentes */}
+              {/* Autodeclaração de Aptidão Técnica */}
               <label className="flex items-start gap-2.5 cursor-pointer pt-1">
                 <input
                   type="checkbox"
@@ -396,7 +396,7 @@ export default function CadastroPage() {
                   className="mt-0.5 w-4 h-4 rounded text-orange-600 focus:ring-orange-500 border-slate-300"
                 />
                 <span className="text-[11px] text-slate-700 leading-snug">
-                  Declaro sob as penas da lei possuir capacidade técnica para execução dos serviços e não possuir antecedentes impeditivos para atendimento residencial em Rio Verde (GO).
+                  Declaro sob as penas da lei possuir capacidade técnica para execução dos serviços residenciais oferecidos na Plataforma em Rio Verde (GO).
                 </span>
               </label>
             </div>

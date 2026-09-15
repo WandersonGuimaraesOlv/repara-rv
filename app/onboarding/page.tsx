@@ -63,7 +63,7 @@ export default function OnboardingPage() {
     if (!termsAccepted) { toast.error('Você deve aceitar os Termos de Uso e Política de Privacidade.'); return }
     if (role === 'provider' && !pixKey.trim()) { toast.error('Informe sua chave Pix para receber seus pagamentos.'); return }
     if (role === 'provider' && !selfDeclaration) {
-      toast.error('É obrigatório assinar a autodeclaração de aptidão e antecedentes para atuar no Repara RV.')
+      toast.error('É obrigatório assinar a autodeclaração de aptidão técnica para atuar no Repara RV.')
       return
     }
 
@@ -286,9 +286,9 @@ export default function OnboardingPage() {
                   />
                   <span className="text-[11px] text-slate-700 leading-snug">
                     <strong className="text-slate-900 block font-bold mb-0.5">
-                      Autodeclaração de Aptidão & Antecedentes:
+                      Autodeclaração de Aptidão Técnica:
                     </strong>
-                    &ldquo;Declaro, sob as penas da lei, ser profissional autônomo capacitado, não possuir antecedentes criminais e assumir responsabilidade civil direta pelos serviços executados.&rdquo;
+                    &ldquo;Declaro, sob as penas da lei, ser profissional autônomo capacitado e assumir responsabilidade civil direta pelos serviços executados.&rdquo;
                   </span>
                 </label>
               </div>

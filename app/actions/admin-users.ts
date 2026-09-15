@@ -277,7 +277,7 @@ export async function updateUserRoleAction(input: unknown) {
 }
 
 /**
- * Atualiza o status de verificação de antecedentes / compliance do usuário.
+ * Atualiza o status de liberação operacional (compliance) do usuário.
  */
 export async function updateBackgroundCheckStatusAction(input: unknown) {
   const authCheck = await requireAdmin()

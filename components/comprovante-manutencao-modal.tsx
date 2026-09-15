@@ -148,7 +148,7 @@ export function ComprovanteManutencaoModal({ isOpen, onClose, call }: Comprovant
               </p>
               <p className="text-emerald-700 text-[11px] font-medium mt-1 flex items-center gap-1">
                 <ShieldCheck size={12} />
-                Identidade e antecedentes criminais verificados
+                Identidade cadastrada na Plataforma
               </p>
             </div>
           </div>
@@ -187,7 +187,7 @@ export function ComprovanteManutencaoModal({ isOpen, onClose, call }: Comprovant
           <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-[11px] text-gray-600 leading-relaxed">
             <p className="font-bold text-gray-800 mb-1 flex items-center gap-1">
               <ShieldCheck size={13} className="text-orange-600" />
-              Garantia do Serviço (7 a 30 dias)
+              Garantia do Serviço (7 dias corridos)
             </p>
             <p>
               Este comprovante assegura que o reparo acima foi executado por profissional parceiro verificado do Repara RV. Caso o reparo apresente qualquer defeito decorrente da mão de obra durante o período de garantia, o cliente ou a imobiliária pode reabrir o atendimento pelo site <strong>repararv.com</strong> informando o protocolo <strong>#{call.id.slice(0, 8).toUpperCase()}</strong>.

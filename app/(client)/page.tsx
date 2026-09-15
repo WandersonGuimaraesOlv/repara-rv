@@ -602,9 +602,9 @@ export default function TriiderClientHomePage() {
                   <ShieldCheck size={18} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">Segurança Verificada</h4>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">Cadastro Verificado</h4>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
-                    Checagem rigorosa de antecedentes e residência.
+                    Identidade e autodeclaração de aptidão técnica.
                   </p>
                 </div>
               </div>
