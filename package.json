@@ -21,6 +21,7 @@
     "test:load": "node --env-file=.env.local scripts/load-test.mjs",
     "test:profile-privilege": "node --env-file=.env.local scripts/test-profile-privilege-escalation.mjs",
     "test:legal-admin": "node --env-file=.env.local scripts/test-legal-admin.mjs",
+    "test:auth-pin-race": "node --env-file=.env.local scripts/test-auth-pin-race.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
