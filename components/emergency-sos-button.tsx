@@ -133,7 +133,7 @@ export function EmergencySosButton({
               </h2>
             </div>
 
-            <p className="text-xs md:text-sm text-slate-300 leading-relaxed text-left bg-slate-900/60 p-3.5 rounded-xl border border-slate-800">
+            <p className="text-xs md:text-sm text-[var(--color-text-muted)] leading-relaxed text-left bg-[var(--color-surface)]/60 p-3.5 rounded-xl border border-[var(--color-border)]">
               ⚠️ <strong>Ao confirmar:</strong>
               <br />
               <span className="block mt-1">
@@ -145,7 +145,7 @@ export function EmergencySosButton({
             </p>
 
             {clientAddress && (
-              <div className="flex items-center gap-2 text-xs text-slate-400 text-left px-1">
+              <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)] text-left px-1">
                 <MapPin size={13} className="text-red-400 flex-shrink-0" />
                 <span className="truncate">{clientAddress}</span>
               </div>
@@ -182,7 +182,7 @@ export function EmergencySosButton({
                 id="btn-cancel-sos-modal"
                 onClick={() => setIsOpen(false)}
                 disabled={isTriggering}
-                className="w-full py-2.5 px-4 rounded-xl font-medium text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+                className="w-full py-2.5 px-4 rounded-xl font-medium text-xs text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-surface-alt)] transition-all cursor-pointer"
               >
                 Cancelar (Estou em Segurança)
               </button>

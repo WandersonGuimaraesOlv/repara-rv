@@ -125,7 +125,10 @@ export function LegalDocumentRenderer({ document, clauses, eyebrow, relatedLinks
             )
           })}
 
-          <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+          <div
+            className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs"
+            style={{ borderTop: '1px solid var(--color-border)', color: 'var(--color-text-subtle)' }}
+          >
             <div>Repara RV Tecnologia e Intermediação Ltda • Rio Verde - GO</div>
             <div className="flex items-center gap-4">
               {relatedLinks.map((link) => (
