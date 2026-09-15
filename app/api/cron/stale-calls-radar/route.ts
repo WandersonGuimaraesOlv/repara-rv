@@ -6,9 +6,14 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 
 const STALE_THRESHOLD_MINUTES = 5;
+// Cron roda a cada 60s (ver workers/cron-monitor.ts) — usado só pra decidir
+// quais chamados "acabaram de cruzar" o limiar de estagnação nesta rodada,
+// evitando reenviar o alerta de WhatsApp a cada tick enquanto o mesmo
+// chamado continua parado.
+const CRON_TICK_SECONDS = 60;
 
 export interface StaleCall {
   id:              string;
@@ -28,7 +33,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
   }
 
-  const supabase = await createClient();
+  // Achado de segurança/monitoramento (14/09/2026): esta rota usava
+  // createClient() (chave anon, sujeita a RLS) — mas é uma chamada
+  // servidor-a-servidor autenticada por token, sem sessão/cookie de usuário
+  // nenhum. Como nunca existiu política de RLS cobrindo leitura de
+  // service_calls com status='queued' (mesmo achado da fila do painel, ver
+  // Camada 4), esta consulta SEMPRE retornava 0 linhas — o radar de fila
+  // estagnada nunca detectou nada de verdade, desde sempre. Corrigido usando
+  // Service Role, que é o padrão correto pra uma rota interna de cron.
+  const supabase = await createServiceClient();
 
   // Busca chamados em queued há mais de 5 minutos e que não expiraram
   const { data: staleCalls, error } = await supabase
@@ -55,11 +68,60 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ),
   }));
 
+  // Alerta ativo pro time (achado de 14/09/2026: até aqui só existia o log —
+  // "Transformar o log do cron-monitor em alerta ativo" era item pendente do
+  // plano de validação). Só dispara pros chamados que ACABARAM de cruzar os 5
+  // minutos nesta rodada (janela do tamanho de 1 tick do cron), pra não
+  // reenviar a cada 60s enquanto o mesmo chamado continua parado.
+  const justCrossedThreshold = enriched.filter(
+    (call) => call.minutes_waiting >= STALE_THRESHOLD_MINUTES &&
+      call.minutes_waiting < STALE_THRESHOLD_MINUTES + Math.ceil(CRON_TICK_SECONDS / 60) + 1
+  );
+
+  if (justCrossedThreshold.length > 0) {
+    const webhookUrl = process.env.OPS_ALERT_WEBHOOK_URL || process.env.EMERGENCY_WEBHOOK_URL;
+    if (webhookUrl) {
+      const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com';
+      const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost'))
+        ? rawAppUrl
+        : 'https://repararv.com';
+
+      const lines = justCrossedThreshold.map(
+        (c) => `• ${c.neighborhood ?? 'Bairro não informado'} — R$ ${c.provider_cut.toFixed(2)} — ${c.minutes_waiting} min parado`
+      );
+      const message = [
+        `⏱️ *Fila estagnada — Repara RV*`,
+        `${justCrossedThreshold.length} chamado(s) sem prestador há mais de ${STALE_THRESHOLD_MINUTES} minutos:`,
+        ...lines,
+        ``,
+        `Painel: ${appUrl}/admin/dashboard`,
+      ].join('\n');
+
+      try {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'stale_queue_alert',
+            stale_count: justCrossedThreshold.length,
+            calls: justCrossedThreshold,
+            message,
+          }),
+        });
+      } catch (webhookErr) {
+        console.error('[stale-calls-radar] Falha ao disparar alerta de fila estagnada:', webhookErr);
+      }
+    } else {
+      console.warn('[stale-calls-radar] Fila estagnada detectada mas OPS_ALERT_WEBHOOK_URL/EMERGENCY_WEBHOOK_URL não configurado — alerta não disparado.');
+    }
+  }
+
   return NextResponse.json(
     {
       success:    true,
       stale_count: enriched.length,
       calls:       enriched,
+      alert_sent:  justCrossedThreshold.length > 0,
       checked_at:  new Date().toISOString(),
     },
     { status: 200 }
