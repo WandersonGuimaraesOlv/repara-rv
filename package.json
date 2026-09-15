@@ -15,6 +15,7 @@
     "test:realtime:reconnect": "node --env-file=.env.local scripts/test-realtime-reconnect.mjs",
     "test:rls": "node --env-file=.env.local scripts/test-rls-policies.mjs",
     "check:catalog-rounding": "node --env-file=.env.local scripts/check-catalog-rounding.mjs",
+    "test:stale-radar": "node --env-file=.env.local scripts/test-stale-radar.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",

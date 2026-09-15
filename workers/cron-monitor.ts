@@ -52,6 +52,7 @@ const cronMonitorWorker = {
           const result = await response.json() as {
             stale_count: number;
             calls:       Array<{ id: string; minutes_waiting: number; neighborhood: string | null }>;
+            alert_sent?: boolean;
           };
 
           const elapsed = Date.now() - startTime;
@@ -60,6 +61,7 @@ const cronMonitorWorker = {
             console.warn(
               `[cron-monitor] ⚠️ ${result.stale_count} chamado(s) estagnado(s) na fila.`,
               `Mais antigo: ${result.calls[0]?.minutes_waiting ?? 0} min em ${result.calls[0]?.neighborhood ?? '?'}.`,
+              `Alerta disparado nesta rodada: ${result.alert_sent ? 'sim' : 'não (já tinha sido enviado antes)'}.`,
               `Tempo de execução: ${elapsed}ms`
             );
           } else {
