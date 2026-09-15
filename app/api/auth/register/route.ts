@@ -14,15 +14,18 @@ const registerSchema = z
     pixKey: z.string().trim().optional(),
     pixKeyType: z.enum(['cpf', 'phone', 'email', 'random']).optional().default('phone'),
     selfDeclaration: z.boolean().optional().default(true),
-    // CEP informado no cadastro (opcional) — o bairro já vem resolvido do
-    // frontend via ViaCEP, aqui só armazenamos os dois.
-    cep: z.string().trim().optional(),
-    neighborhood: z.string().trim().max(100).optional(),
+    // CEP obrigatório — o bairro já vem resolvido do frontend via ViaCEP,
+    // aqui validamos o formato e exigimos que o bairro tenha sido
+    // encontrado (o frontend já bloqueia o envio se a busca falhar, isso é
+    // a defesa de borda contra quem chamar a rota direto).
+    cep: z.string().trim().min(1, 'CEP é obrigatório'),
+    neighborhood: z.string().trim().min(1, 'Bairro não identificado — verifique o CEP informado').max(100),
   })
   .transform((data) => ({
     ...data,
     cleanPhone: data.phone.replace(/\D/g, ''),
     cleanPin: data.pin.trim(),
+    cleanCep: data.cep.replace(/\D/g, ''),
   }))
   .refine((data) => data.cleanPhone.length >= 10 && data.cleanPhone.length <= 11, {
     message: 'Digite um celular válido com DDD (10 ou 11 dígitos)',
@@ -31,6 +34,10 @@ const registerSchema = z
   .refine((data) => /^\d{4,8}$/.test(data.cleanPin), {
     message: 'O PIN deve conter entre 4 e 8 dígitos numéricos',
     path: ['pin'],
+  })
+  .refine((data) => /^\d{8}$/.test(data.cleanCep), {
+    message: 'Digite um CEP válido com 8 dígitos',
+    path: ['cep'],
   })
   .refine((data) => data.role !== 'provider' || Boolean(data.pixKey && data.pixKey.length > 0), {
     message: 'Profissionais precisam informar a chave Pix para receber os repasses de serviços',
@@ -49,7 +56,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const { fullName, cleanPhone, cleanPin, role, cpfOrCnpj, pixKey, pixKeyType, selfDeclaration, cep, neighborhood } = parsed.data
+    const { fullName, cleanPhone, cleanPin, cleanCep, role, cpfOrCnpj, pixKey, pixKeyType, selfDeclaration, neighborhood } = parsed.data
 
     const cleanFullName = fullName
     const validRole = role
@@ -108,8 +115,8 @@ export async function POST(req: Request) {
       cpf_or_cnpj: cpfOrCnpj ? String(cpfOrCnpj).trim() : null,
       terms_accepted_at: new Date().toISOString(),
       self_declaration_signed: validRole === 'provider' ? Boolean(selfDeclaration) : true,
-      cep: cep ? cep.replace(/\D/g, '') : null,
-      neighborhood: neighborhood || null,
+      cep: cleanCep,
+      neighborhood: neighborhood,
     }
 
     let { error: profileError } = await supabaseAdmin

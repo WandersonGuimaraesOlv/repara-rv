@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { User, Phone, Lock, Eye, EyeOff, ShieldCheck, Wrench, ArrowRight, CheckCircle2, MapPin } from 'lucide-react'
+import { User, Phone, Lock, Eye, EyeOff, ShieldCheck, Wrench, ArrowRight, CheckCircle2, MapPin, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Logo } from '@/components/logo'
 
@@ -96,6 +96,21 @@ export default function CadastroPage() {
 
     if (phone.length < 10) {
       toast.error('Digite um telefone celular válido com DDD (10 ou 11 dígitos)')
+      return
+    }
+
+    if (cep.length !== 8) {
+      toast.error('Informe um CEP válido com 8 dígitos')
+      return
+    }
+
+    if (loadingCep) {
+      toast.error('Aguarde a validação do CEP...')
+      return
+    }
+
+    if (!neighborhood) {
+      toast.error('CEP não encontrado. Verifique o número digitado.')
       return
     }
 
@@ -336,7 +351,8 @@ export default function CadastroPage() {
           {/* CEP e Bairro */}
           <div>
             <label htmlFor="cadastro-cep" className="label">
-              CEP <span className="font-normal" style={{ color: 'var(--color-text-subtle)' }}>(opcional — identifica seu bairro automaticamente)</span>
+              CEP <span style={{ color: 'var(--color-danger)' }}>*</span>{' '}
+              <span className="font-normal" style={{ color: 'var(--color-text-subtle)' }}>(identifica seu bairro automaticamente)</span>
             </label>
             <div className="relative flex items-center">
               <MapPin size={17} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
@@ -349,6 +365,7 @@ export default function CadastroPage() {
                 className="input pl-11"
                 inputMode="numeric"
                 maxLength={9}
+                required
                 autoComplete="postal-code"
               />
               {loadingCep && (
@@ -369,8 +386,8 @@ export default function CadastroPage() {
               )}
             </div>
             {cepError && (
-              <p className="text-[11px] mt-1" style={{ color: 'var(--color-warning)' }}>
-                CEP não encontrado. Você pode continuar sem informar o bairro.
+              <p className="text-[11px] mt-1 flex items-center gap-1" style={{ color: 'var(--color-danger)' }}>
+                <AlertCircle size={12} className="shrink-0" /> CEP não encontrado. Verifique o número digitado.
               </p>
             )}
           </div>
@@ -531,7 +548,7 @@ export default function CadastroPage() {
           <button
             type="submit"
             id="btn-submit-cadastro"
-            disabled={loading || phone.length < 10 || pin.length < 4 || !fullName.trim() || !termsAccepted}
+            disabled={loading || phone.length < 10 || pin.length < 4 || !fullName.trim() || !termsAccepted || cep.length !== 8 || loadingCep || !neighborhood}
             className="btn-primary mt-2"
           >
             {loading ? (
