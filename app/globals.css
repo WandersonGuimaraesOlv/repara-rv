@@ -527,6 +527,78 @@ body {
   flex-shrink: 0;
 }
 
+/* Corpo de cláusula renderizado a partir de Markdown (lib/legal-markdown.ts) —
+   sem plugin @tailwindcss/typography instalado no projeto, por isso o
+   estilo dos elementos gerados (p/ul/ol/blockquote/table/a) é definido aqui,
+   escopado só ao conteúdo de documentos legais. */
+.legal-clause-body {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+.legal-clause-body > * + * {
+  margin-top: 0.75rem;
+}
+.legal-clause-body strong {
+  color: var(--color-text);
+  font-weight: 700;
+}
+.legal-clause-body em {
+  font-style: italic;
+}
+.legal-clause-body ul,
+.legal-clause-body ol {
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.legal-clause-body ul {
+  list-style: disc;
+}
+.legal-clause-body ol {
+  list-style: decimal;
+}
+.legal-clause-body blockquote {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+}
+.legal-clause-body blockquote > * + * {
+  margin-top: 0.5rem;
+}
+.legal-clause-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+.legal-clause-body th,
+.legal-clause-body td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.legal-clause-body th {
+  color: var(--color-text-subtle);
+  font-weight: 700;
+}
+.legal-clause-body a {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+.legal-clause-body code {
+  background: var(--color-surface-alt);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.85em;
+  color: var(--color-primary);
+}
+.legal-clause-body hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
 /* ──────────────────────────────────────────────────────────
    FOCUS VISIBLE (acessibilidade)
    ────────────────────────────────────────────────────────── */
