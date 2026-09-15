@@ -54,3 +54,34 @@ export function evaluateCancelAuthorization({
 
   return { allowed: true, isClient, isProvider }
 }
+
+// Valores aceitos pela coluna ENUM cancel_reason do Postgres (types/supabase.ts).
+// O prestador (app/chamado/[callId]/page.tsx) manda exatamente um destes
+// valores. O cliente (components/cancel-call-modal.tsx) manda um rótulo livre
+// em português (ex: "Demorou muito para encontrar prestador") — nunca um
+// destes valores. Achado real em produção em 15/09/2026: quando a rota exigia
+// `z.enum(CANCEL_REASON_ENUM)` no campo `reason` do payload, todo cancelamento
+// de cliente era rejeitado com 422 antes mesmo de chegar na autorização — o
+// texto livre nunca batia com o enum. A rota agora aceita qualquer string em
+// `reason` e usa esta função pra derivar o valor do enum separadamente.
+export const CANCEL_REASON_ENUM = [
+  'client_request',
+  'provider_absent',
+  'wrong_address',
+  'technical_issue',
+  'no_provider_found',
+  'other',
+] as const
+
+export type CancelReasonEnum = typeof CANCEL_REASON_ENUM[number]
+
+// Se `reason` já é um dos valores estruturados (caminho do prestador), usa
+// direto. Caso contrário (rótulo livre do cliente, ou ausente), cai num valor
+// padrão sensato pro papel de quem está cancelando — o texto completo e
+// legível continua preservado em `cancellation_reason`, sem perda de detalhe.
+export function resolveCancelReasonEnum(reason: string | undefined, isClient: boolean): CancelReasonEnum {
+  if (reason && (CANCEL_REASON_ENUM as readonly string[]).includes(reason)) {
+    return reason as CancelReasonEnum
+  }
+  return isClient ? 'client_request' : 'other'
+}

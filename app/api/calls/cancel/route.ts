@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { evaluateCancelAuthorization } from '@/lib/cancel-authorization'
+import { evaluateCancelAuthorization, resolveCancelReasonEnum } from '@/lib/cancel-authorization'
 
-const CANCEL_REASONS = [
-  'client_request',
-  'provider_absent',
-  'wrong_address',
-  'technical_issue',
-  'no_provider_found',
-  'other',
-] as const
-
+// `reason` aceita qualquer string, não um enum fixo — ver o comentário em
+// lib/cancel-authorization.ts (resolveCancelReasonEnum) pro porquê: o cliente
+// manda rótulo livre em português, o prestador manda um valor estruturado, e
+// exigir o enum aqui rejeitava (422) todo cancelamento de cliente.
 const cancelCallSchema = z.object({
   call_id:              z.string().uuid('call_id inválido'),
-  reason:                z.enum(CANCEL_REASONS).optional(),
+  reason:                z.string().trim().min(1).max(200).optional(),
   note:                  z.string().trim().max(500).optional(),
   cancellation_reason:   z.string().trim().max(500).optional(),
 })
@@ -85,7 +80,7 @@ export async function POST(request: NextRequest) {
       .from('service_calls')
       .update({
         status: 'cancelled',
-        cancel_reason: 'client_request',
+        cancel_reason: resolveCancelReasonEnum(reason, isClient),
         cancellation_reason: effectiveReason,
         cancel_note: note ?? null,
         cancellation_stage: call.status,

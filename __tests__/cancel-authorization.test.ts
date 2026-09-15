@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { evaluateCancelAuthorization } from '../lib/cancel-authorization'
+import { evaluateCancelAuthorization, resolveCancelReasonEnum } from '../lib/cancel-authorization'
 
 describe('evaluateCancelAuthorization — autorização de cancelamento (app/api/calls/cancel)', () => {
   const baseCall = { client_id: 'client-1', provider_id: 'provider-1', status: 'searching' }
@@ -57,5 +57,29 @@ describe('evaluateCancelAuthorization — autorização de cancelamento (app/api
       call: { ...baseCall, status: 'accepted' },
     })
     expect(asProvider).toMatchObject({ allowed: true, isClient: false, isProvider: true })
+  })
+})
+
+describe('resolveCancelReasonEnum — deriva o valor da coluna ENUM cancel_reason (app/api/calls/cancel)', () => {
+  it('achado real em produção: rótulo livre do cliente (não é um valor do enum) nunca quebra o INSERT/UPDATE — cai em client_request', () => {
+    expect(resolveCancelReasonEnum('Demorou muito para encontrar prestador', true)).toBe('client_request')
+    expect(resolveCancelReasonEnum('Resolvi o problema sozinho', true)).toBe('client_request')
+    expect(resolveCancelReasonEnum('Outro motivo', true)).toBe('client_request')
+  })
+
+  it('reason ausente (undefined) do cliente cai em client_request', () => {
+    expect(resolveCancelReasonEnum(undefined, true)).toBe('client_request')
+  })
+
+  it('reason livre/ausente do prestador cai em other, não em client_request', () => {
+    expect(resolveCancelReasonEnum('Cliente não atendia o telefone', false)).toBe('other')
+    expect(resolveCancelReasonEnum(undefined, false)).toBe('other')
+  })
+
+  it('usa o valor estruturado direto quando reason já é um membro válido do enum (caminho normal do prestador)', () => {
+    for (const value of ['provider_absent', 'wrong_address', 'technical_issue', 'no_provider_found', 'other', 'client_request']) {
+      expect(resolveCancelReasonEnum(value, false)).toBe(value)
+      expect(resolveCancelReasonEnum(value, true)).toBe(value)
+    }
   })
 })
