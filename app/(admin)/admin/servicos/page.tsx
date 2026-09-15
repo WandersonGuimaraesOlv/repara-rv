@@ -440,17 +440,17 @@ export default function AdminServicesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-orange-500/15 text-orange-400 border border-orange-500/30">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--color-primary)]/15 text-[var(--color-primary)] border border-[var(--color-primary)]/30">
               <Sparkles size={12} />
               Gestão de Catálogo & Precificação
             </span>
-            <span className="text-xs text-slate-500 font-medium">Rio Verde - GO</span>
+            <span className="text-xs text-[var(--color-text-subtle)] font-medium">Rio Verde - GO</span>
           </div>
           <h1 className="text-2xl font-extrabold text-white flex items-center gap-2.5 mt-1.5">
-            <Sliders className="text-orange-500" size={26} />
+            <Sliders className="text-[var(--color-primary)]" size={26} />
             Catálogo, Escopo & Margens
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
             Altere preços, pause ou ative itens instantaneamente e defina o que está incluso em cada reparo.
           </p>
         </div>
@@ -469,7 +469,7 @@ export default function AdminServicesPage() {
               'Materiais pesados de alvenaria, quebra de paredes ou reformas estruturais'
             ])
           }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md active:scale-95 transition-all self-start sm:self-auto cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[var(--color-primary)] to-amber-500 hover:from-[var(--color-primary-hover)] hover:to-amber-600 shadow-md active:scale-95 transition-all self-start sm:self-auto cursor-pointer"
         >
           <Plus size={16} />
           Cadastrar Novo Serviço
@@ -478,26 +478,26 @@ export default function AdminServicesPage() {
 
       {/* Cards de Métricas */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-[var(--color-text-muted)]">
             <span className="text-xs font-semibold uppercase tracking-wider">Total de Itens</span>
-            <div className="p-2 bg-slate-800 rounded-xl text-slate-300">
+            <div className="p-2 bg-[var(--color-surface-alt)] rounded-xl text-[var(--color-text-muted)]">
               <Sliders size={18} />
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-white">{totalCount}</div>
-          <div className="text-xs text-slate-500">Serviços catalogados</div>
+          <div className="text-xs text-[var(--color-text-subtle)]">Serviços catalogados</div>
         </div>
 
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-[var(--color-text-muted)]">
             <span className="text-xs font-semibold uppercase tracking-wider">Disponíveis</span>
             <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
               <CheckCircle2 size={18} />
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-emerald-400">{activeCount}</div>
-          <div className="text-xs text-slate-400 flex items-center gap-1.5">
+          <div className="text-xs text-[var(--color-text-muted)] flex items-center gap-1.5">
             {inactiveCount > 0 ? (
               <span className="text-amber-400 font-semibold">{inactiveCount} pausado{inactiveCount > 1 ? 's' : ''}</span>
             ) : (
@@ -506,21 +506,21 @@ export default function AdminServicesPage() {
           </div>
         </div>
 
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-[var(--color-text-muted)]">
             <span className="text-xs font-semibold uppercase tracking-wider">Preço Médio</span>
             <div className="p-2 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/20">
               <DollarSign size={18} />
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-cyan-400">{formatCurrency(avgPrice)}</div>
-          <div className="text-xs text-slate-500">Valor ao cliente</div>
+          <div className="text-xs text-[var(--color-text-subtle)]">Valor ao cliente</div>
         </div>
 
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-[var(--color-text-muted)]">
             <span className="text-xs font-semibold uppercase tracking-wider">Média Repasse</span>
-            <div className="p-2 bg-orange-500/10 rounded-xl text-orange-400 border border-orange-500/20">
+            <div className="p-2 bg-[var(--color-primary)]/10 rounded-xl text-[var(--color-primary)] border border-[var(--color-primary)]/20">
               <DollarSign size={18} />
             </div>
           </div>
@@ -530,15 +530,15 @@ export default function AdminServicesPage() {
       </div>
 
       {/* Barra de Filtros por Categoria com Contadores e Busca */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-slate-900/60 p-3 rounded-2xl border border-slate-800">
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-[var(--color-surface)]/60 p-3 rounded-2xl border border-[var(--color-border)]">
         {/* Filtro por Categoria */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
           <button
             onClick={() => setSelectedCategory('all')}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
               selectedCategory === 'all'
-                ? 'bg-orange-500 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                : 'text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-surface-alt)]'
             }`}
           >
             Todas ({categoryCounts.all || 0})
@@ -549,8 +549,8 @@ export default function AdminServicesPage() {
               onClick={() => setSelectedCategory(cat)}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
                 selectedCategory === cat
-                  ? 'bg-orange-500 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  ? 'bg-[var(--color-primary)] text-white shadow-sm'
+                  : 'text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-surface-alt)]'
               }`}
             >
               {cat} ({categoryCounts[cat] || 0})
@@ -560,34 +560,34 @@ export default function AdminServicesPage() {
 
         {/* Input de Busca */}
         <div className="relative min-w-[260px]">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={15} />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-subtle)]" size={15} />
           <input
             type="text"
             placeholder="Buscar por serviço ou descrição..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950/80 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-colors"
+            className="w-full bg-[var(--color-bg)]/80 border border-[var(--color-border)] rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
           />
         </div>
       </div>
 
       {/* Tabela de Serviços */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-sm">
         {loading ? (
-          <div className="p-16 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-            <Loader2 className="animate-spin text-orange-500" size={32} />
+          <div className="p-16 text-center text-[var(--color-text-muted)] flex flex-col items-center justify-center gap-3">
+            <Loader2 className="animate-spin text-[var(--color-primary)]" size={32} />
             <p className="text-sm font-medium">Carregando catálogo de serviços...</p>
           </div>
         ) : filteredServices.length === 0 ? (
-          <div className="p-16 text-center text-slate-400">
-            <AlertCircle className="mx-auto mb-2 text-slate-500" size={32} />
+          <div className="p-16 text-center text-[var(--color-text-muted)]">
+            <AlertCircle className="mx-auto mb-2 text-[var(--color-text-subtle)]" size={32} />
             <p className="text-sm font-medium">Nenhum serviço encontrado com os filtros atuais.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-950/70 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg)]/70 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
                   <th className="py-3.5 px-4">Serviço & Escopo</th>
                   <th className="py-3.5 px-4">Categoria</th>
                   <th className="py-3.5 px-4 text-right">Preço Cliente</th>
@@ -597,15 +597,15 @@ export default function AdminServicesPage() {
                   <th className="py-3.5 px-4 text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-[var(--color-border)]/60">
                 {filteredServices.map((service) => {
                   const totalPrice = Number(service.fixed_price)
                   const platformFee = Number(service.platform_fee || 12.0)
                   const providerCut = Math.max(0, totalPrice - platformFee)
                   const catStyle = CATEGORY_COLORS[service.category] || {
-                    bg: 'bg-slate-800',
-                    text: 'text-slate-300',
-                    border: 'border-slate-700',
+                    bg: 'bg-[var(--color-surface-alt)]',
+                    text: 'text-[var(--color-text-muted)]',
+                    border: 'border-[var(--color-border-strong)]',
                   }
                   const isBelowFloor = providerCut < 50
                   const includedCount = service.included?.length || 0
@@ -614,7 +614,7 @@ export default function AdminServicesPage() {
                   return (
                     <tr
                       key={service.id}
-                      className={`hover:bg-slate-800/40 transition-colors ${
+                      className={`hover:bg-[var(--color-surface-alt)]/40 transition-colors ${
                         !service.is_active ? 'opacity-50' : ''
                       }`}
                     >
@@ -624,7 +624,7 @@ export default function AdminServicesPage() {
                           {service.name}
                         </div>
                         {service.description && (
-                          <div className="text-xs text-slate-400 line-clamp-1 mt-0.5">
+                          <div className="text-xs text-[var(--color-text-muted)] line-clamp-1 mt-0.5">
                             {service.description}
                           </div>
                         )}
@@ -637,7 +637,7 @@ export default function AdminServicesPage() {
                             🔴 {notIncludedCount} não incluso{notIncludedCount === 1 ? '' : 's'}
                           </span>
                           {service.duration_est && (
-                            <span className="inline-flex items-center gap-1 text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
+                            <span className="inline-flex items-center gap-1 text-[var(--color-text-muted)] bg-[var(--color-surface-alt)] px-1.5 py-0.5 rounded">
                               <Clock size={10} /> {service.duration_est}
                             </span>
                           )}
@@ -660,7 +660,7 @@ export default function AdminServicesPage() {
 
                       {/* Taxa Retida */}
                       <td className="py-3.5 px-4 text-right">
-                        <span className="inline-flex items-center gap-1 font-bold text-orange-400 text-xs bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20">
+                        <span className="inline-flex items-center gap-1 font-bold text-[var(--color-primary)] text-xs bg-[var(--color-primary)]/10 px-2 py-0.5 rounded border border-[var(--color-primary)]/20">
                           {formatCurrency(platformFee)}
                         </span>
                       </td>
@@ -684,7 +684,7 @@ export default function AdminServicesPage() {
                             type="button"
                             onClick={() => handleToggleStatus(service)}
                             className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                              service.is_active ? 'bg-emerald-500' : 'bg-slate-700'
+                              service.is_active ? 'bg-emerald-500' : 'bg-[var(--color-border-strong)]'
                             }`}
                           >
                             <span
@@ -693,7 +693,7 @@ export default function AdminServicesPage() {
                               }`}
                             />
                           </button>
-                          <span className={`text-[10px] font-bold ${service.is_active ? 'text-emerald-400' : 'text-slate-500'}`}>
+                          <span className={`text-[10px] font-bold ${service.is_active ? 'text-emerald-400' : 'text-[var(--color-text-subtle)]'}`}>
                             {service.is_active ? 'Ativo' : 'Pausado'}
                           </span>
                         </div>
@@ -705,7 +705,7 @@ export default function AdminServicesPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(service)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-200 bg-slate-800 hover:bg-orange-500 hover:text-white transition-colors border border-slate-700 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-[var(--color-text)] bg-[var(--color-surface-alt)] hover:bg-[var(--color-primary)] hover:text-white transition-colors border border-[var(--color-border-strong)] cursor-pointer"
                             title="Editar preço e escopo"
                           >
                             <Edit3 size={13} />
@@ -736,11 +736,11 @@ export default function AdminServicesPage() {
       {/* ============================================================ */}
       {editingService && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 my-8 animate-scale-up">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 my-8 animate-scale-up">
             {/* Header Modal */}
-            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+            <div className="flex items-start justify-between border-b border-[var(--color-border)] pb-4">
               <div>
-                <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">
+                <span className="text-xs font-bold text-[var(--color-primary)] uppercase tracking-wider">
                   Editar Serviço & Precificação
                 </span>
                 <h3 className="text-lg font-bold text-white mt-0.5">
@@ -750,7 +750,7 @@ export default function AdminServicesPage() {
               <button
                 type="button"
                 onClick={handleCloseEdit}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
+                className="text-[var(--color-text-muted)] hover:text-white p-1 rounded-lg hover:bg-[var(--color-surface-alt)] cursor-pointer"
               >
                 <X size={20} />
               </button>
@@ -761,7 +761,7 @@ export default function AdminServicesPage() {
               {/* Nome e Categoria */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-[var(--color-text-muted)] uppercase mb-1.5">
                     Nome do Serviço *
                   </label>
                   <input
@@ -769,18 +769,18 @@ export default function AdminServicesPage() {
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     required
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-[var(--color-primary)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-[var(--color-text-muted)] uppercase mb-1.5">
                     Categoria *
                   </label>
                   <select
                     value={editCategory}
                     onChange={(e) => setEditCategory(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-[var(--color-primary)]"
                   >
                     <option value="Elétrica">Elétrica</option>
                     <option value="Hidráulica">Hidráulica</option>
@@ -793,15 +793,15 @@ export default function AdminServicesPage() {
               </div>
 
               {/* CALCULADORA DE REPASSE EM TEMPO REAL */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                <span className="text-xs font-bold text-orange-400 uppercase tracking-wider flex items-center gap-1.5">
+              <div className="p-4 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] space-y-3">
+                <span className="text-xs font-bold text-[var(--color-primary)] uppercase tracking-wider flex items-center gap-1.5">
                   <DollarSign size={14} /> Calculadora de Repasse em Tempo Real
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {/* Preço Fixo ao Cliente */}
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                    <label className="block text-[11px] font-semibold text-[var(--color-text-muted)] mb-1">
                       Preço ao Cliente (R$)
                     </label>
                     <input
@@ -812,13 +812,13 @@ export default function AdminServicesPage() {
                       value={editPrice}
                       onChange={(e) => setEditPrice(e.target.value)}
                       required
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-orange-500"
+                      className="w-full bg-[var(--color-surface)] border border-[var(--color-border-strong)] rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-[var(--color-primary)]"
                     />
                   </div>
 
                   {/* Taxa da Plataforma */}
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                    <label className="block text-[11px] font-semibold text-[var(--color-text-muted)] mb-1">
                       Taxa Repara RV (R$)
                     </label>
                     <input
@@ -829,13 +829,13 @@ export default function AdminServicesPage() {
                       value={editPlatformFee}
                       onChange={(e) => setEditPlatformFee(e.target.value)}
                       required
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-orange-400 focus:outline-none focus:border-orange-500"
+                      className="w-full bg-[var(--color-surface)] border border-[var(--color-border-strong)] rounded-xl px-3 py-2 text-sm font-bold text-[var(--color-primary)] focus:outline-none focus:border-[var(--color-primary)]"
                     />
                   </div>
 
                   {/* Duração Estimada */}
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                    <label className="block text-[11px] font-semibold text-[var(--color-text-muted)] mb-1">
                       Duração Estimada
                     </label>
                     <input
@@ -843,15 +843,15 @@ export default function AdminServicesPage() {
                       placeholder="Ex: 40 min, 1h"
                       value={editDuration}
                       onChange={(e) => setEditDuration(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:border-orange-500"
+                      className="w-full bg-[var(--color-surface)] border border-[var(--color-border-strong)] rounded-xl px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:border-[var(--color-primary)]"
                     />
                   </div>
                 </div>
 
                 {/* Resultado Dinâmico do Repasse */}
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-                  <div className="text-xs text-slate-400">
-                    Repasse Líquido ao Prestador = <strong className="text-white">R$ {parsedEditPrice.toFixed(2)}</strong> - <strong className="text-orange-400">R$ {parsedEditFee.toFixed(2)}</strong>
+                <div className="pt-2 border-t border-[var(--color-border)] flex items-center justify-between">
+                  <div className="text-xs text-[var(--color-text-muted)]">
+                    Repasse Líquido ao Prestador = <strong className="text-white">R$ {parsedEditPrice.toFixed(2)}</strong> - <strong className="text-[var(--color-primary)]">R$ {parsedEditFee.toFixed(2)}</strong>
                   </div>
                   <div className="text-right">
                     <span className="text-base font-black text-emerald-400">
@@ -888,7 +888,7 @@ export default function AdminServicesPage() {
                         handleAddEditIncluded()
                       }
                     }}
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded-xl px-3 py-2 text-xs text-white placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-emerald-500"
                   />
                   <button
                     type="button"
@@ -900,9 +900,9 @@ export default function AdminServicesPage() {
                 </div>
 
                 {/* Chips Inclusos */}
-                <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-slate-950/60 rounded-xl border border-slate-800">
+                <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-[var(--color-bg)]/60 rounded-xl border border-[var(--color-border)]">
                   {editIncluded.length === 0 ? (
-                    <span className="text-[11px] text-slate-500 italic">Nenhum item incluso adicionado.</span>
+                    <span className="text-[11px] text-[var(--color-text-subtle)] italic">Nenhum item incluso adicionado.</span>
                   ) : (
                     editIncluded.map((item, idx) => (
                       <span
@@ -940,7 +940,7 @@ export default function AdminServicesPage() {
                         handleAddEditNotIncluded()
                       }
                     }}
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500"
+                    className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded-xl px-3 py-2 text-xs text-white placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-red-500"
                   />
                   <button
                     type="button"
@@ -952,9 +952,9 @@ export default function AdminServicesPage() {
                 </div>
 
                 {/* Chips Não Inclusos */}
-                <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-slate-950/60 rounded-xl border border-slate-800">
+                <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-[var(--color-bg)]/60 rounded-xl border border-[var(--color-border)]">
                   {editNotIncluded.length === 0 ? (
-                    <span className="text-[11px] text-slate-500 italic">Nenhum item não-incluso adicionado.</span>
+                    <span className="text-[11px] text-[var(--color-text-subtle)] italic">Nenhum item não-incluso adicionado.</span>
                   ) : (
                     editNotIncluded.map((item, idx) => (
                       <span
@@ -977,23 +977,23 @@ export default function AdminServicesPage() {
 
               {/* Descrição */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
+                <label className="block text-xs font-bold text-[var(--color-text-muted)] uppercase mb-1.5">
                   Descrição Geral do Serviço (Opcional)
                 </label>
                 <textarea
                   rows={2}
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded-xl p-3 text-xs text-white placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-[var(--color-primary)]"
                   placeholder="Explique o que cobre este serviço para cliente e prestador..."
                 />
               </div>
 
               {/* Status Ativo / Inativo */}
-              <div className="flex items-center justify-between p-3.5 bg-slate-950 rounded-xl border border-slate-800">
+              <div className="flex items-center justify-between p-3.5 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)]">
                 <div>
                   <div className="text-xs font-bold text-white">Disponibilidade no Catálogo</div>
-                  <div className="text-[11px] text-slate-400">
+                  <div className="text-[11px] text-[var(--color-text-muted)]">
                     {editIsActive ? 'Visível para clientes em Rio Verde' : 'Pausado (Oculto na Home)'}
                   </div>
                 </div>
@@ -1001,7 +1001,7 @@ export default function AdminServicesPage() {
                   type="button"
                   onClick={() => setEditIsActive(!editIsActive)}
                   className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                    editIsActive ? 'bg-emerald-500' : 'bg-slate-700'
+                    editIsActive ? 'bg-emerald-500' : 'bg-[var(--color-border-strong)]'
                   }`}
                 >
                   <span
@@ -1013,19 +1013,19 @@ export default function AdminServicesPage() {
               </div>
 
               {/* Ações */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--color-border)]">
                 <button
                   type="button"
                   onClick={handleCloseEdit}
                   disabled={isSaving}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-alt)] transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving || parsedEditFee >= parsedEditPrice}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors shadow-md disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] transition-colors shadow-md disabled:opacity-50 cursor-pointer"
                 >
                   {isSaving ? (
                     <>
@@ -1047,10 +1047,10 @@ export default function AdminServicesPage() {
       {/* ============================================================ */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 my-8 animate-scale-up">
-            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 my-8 animate-scale-up">
+            <div className="flex items-start justify-between border-b border-[var(--color-border)] pb-4">
               <div>
-                <span className="text-xs font-bold text-orange-400 uppercase tracking-wider">
+                <span className="text-xs font-bold text-[var(--color-primary)] uppercase tracking-wider">
                   Novo Item de Mão de Obra
                 </span>
                 <h3 className="text-lg font-bold text-white mt-0.5">
@@ -1060,7 +1060,7 @@ export default function AdminServicesPage() {
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
+                className="text-[var(--color-text-muted)] hover:text-white p-1 rounded-lg hover:bg-[var(--color-surface-alt)] cursor-pointer"
               >
                 <X size={20} />
               </button>
@@ -1069,7 +1069,7 @@ export default function AdminServicesPage() {
             <form onSubmit={handleCreateService} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-[var(--color-text-muted)] uppercase mb-1.5">
                     Nome do Serviço *
                   </label>
                   <input
@@ -1078,18 +1078,18 @@ export default function AdminServicesPage() {
                     value={createName}
                     onChange={(e) => setCreateName(e.target.value)}
                     required
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                    className="w-full bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded-xl px-3.5 py-2 text-xs font-semibold text-white placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-[var(--color-primary)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
+                  <label className="block text-xs font-bold text-[var(--color-text-muted)] uppercase mb-1.5">
                     Categoria *
                   </label>
                   <select
                     value={createCategory}
                     onChange={(e) => setCreateCategory(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-orange-500"
+                    className="w-full bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-[var(--color-primary)]"
                   >
                     <option value="Elétrica">Elétrica</option>
                     <option value="Hidráulica">Hidráulica</option>
@@ -1107,21 +1107,21 @@ export default function AdminServicesPage() {
                       value={createCustomCategory}
                       onChange={(e) => setCreateCustomCategory(e.target.value)}
                       required
-                      className="w-full mt-2 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500"
+                      className="w-full mt-2 bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded-xl px-3 py-1.5 text-xs text-white placeholder-[var(--color-text-subtle)]"
                     />
                   )}
                 </div>
               </div>
 
               {/* CALCULADORA DE REPASSE */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
-                <span className="text-xs font-bold text-orange-400 uppercase tracking-wider flex items-center gap-1.5">
+              <div className="p-4 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] space-y-3">
+                <span className="text-xs font-bold text-[var(--color-primary)] uppercase tracking-wider flex items-center gap-1.5">
                   <DollarSign size={14} /> Calculadora de Repasse em Tempo Real
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                    <label className="block text-[11px] font-semibold text-[var(--color-text-muted)] mb-1">
                       Preço ao Cliente (R$)
                     </label>
                     <input
@@ -1133,12 +1133,12 @@ export default function AdminServicesPage() {
                       value={createPrice}
                       onChange={(e) => setCreatePrice(e.target.value)}
                       required
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-orange-500"
+                      className="w-full bg-[var(--color-surface)] border border-[var(--color-border-strong)] rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-[var(--color-primary)]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                    <label className="block text-[11px] font-semibold text-[var(--color-text-muted)] mb-1">
                       Taxa Repara RV (R$)
                     </label>
                     <input
@@ -1149,12 +1149,12 @@ export default function AdminServicesPage() {
                       value={createPlatformFee}
                       onChange={(e) => setCreatePlatformFee(e.target.value)}
                       required
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-orange-400 focus:outline-none focus:border-orange-500"
+                      className="w-full bg-[var(--color-surface)] border border-[var(--color-border-strong)] rounded-xl px-3 py-2 text-sm font-bold text-[var(--color-primary)] focus:outline-none focus:border-[var(--color-primary)]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                    <label className="block text-[11px] font-semibold text-[var(--color-text-muted)] mb-1">
                       Duração Estimada
                     </label>
                     <input
@@ -1162,14 +1162,14 @@ export default function AdminServicesPage() {
                       placeholder="Ex: 40 min"
                       value={createDuration}
                       onChange={(e) => setCreateDuration(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:border-orange-500"
+                      className="w-full bg-[var(--color-surface)] border border-[var(--color-border-strong)] rounded-xl px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:border-[var(--color-primary)]"
                     />
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-                  <div className="text-xs text-slate-400">
-                    Repasse Líquido = <strong className="text-white">R$ {parsedCreatePrice.toFixed(2)}</strong> - <strong className="text-orange-400">R$ {parsedCreateFee.toFixed(2)}</strong>
+                <div className="pt-2 border-t border-[var(--color-border)] flex items-center justify-between">
+                  <div className="text-xs text-[var(--color-text-muted)]">
+                    Repasse Líquido = <strong className="text-white">R$ {parsedCreatePrice.toFixed(2)}</strong> - <strong className="text-[var(--color-primary)]">R$ {parsedCreateFee.toFixed(2)}</strong>
                   </div>
                   <div className="text-right">
                     <span className="text-base font-black text-emerald-400">
@@ -1205,7 +1205,7 @@ export default function AdminServicesPage() {
                         handleAddCreateIncluded()
                       }
                     }}
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                    className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded-xl px-3 py-2 text-xs text-white placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-emerald-500"
                   />
                   <button
                     type="button"
@@ -1215,7 +1215,7 @@ export default function AdminServicesPage() {
                     + Adicionar
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-slate-950/60 rounded-xl border border-slate-800">
+                <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-[var(--color-bg)]/60 rounded-xl border border-[var(--color-border)]">
                   {createIncluded.map((item, idx) => (
                     <span
                       key={idx}
@@ -1251,7 +1251,7 @@ export default function AdminServicesPage() {
                         handleAddCreateNotIncluded()
                       }
                     }}
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-500"
+                    className="flex-1 bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded-xl px-3 py-2 text-xs text-white placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-red-500"
                   />
                   <button
                     type="button"
@@ -1261,7 +1261,7 @@ export default function AdminServicesPage() {
                     + Adicionar
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-slate-950/60 rounded-xl border border-slate-800">
+                <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 bg-[var(--color-bg)]/60 rounded-xl border border-[var(--color-border)]">
                   {createNotIncluded.map((item, idx) => (
                     <span
                       key={idx}
@@ -1281,31 +1281,31 @@ export default function AdminServicesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase mb-1.5">
+                <label className="block text-xs font-bold text-[var(--color-text-muted)] uppercase mb-1.5">
                   Descrição (Opcional)
                 </label>
                 <textarea
                   rows={2}
                   value={createDescription}
                   onChange={(e) => setCreateDescription(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded-xl p-3 text-xs text-white placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-[var(--color-primary)]"
                   placeholder="Ex: Instalação e teste de funcionamento em ponto existente..."
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--color-border)]">
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
                   disabled={isCreating}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-alt)] transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isCreating || parsedCreateFee >= parsedCreatePrice}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 transition-colors shadow-md disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] transition-colors shadow-md disabled:opacity-50 cursor-pointer"
                 >
                   {isCreating ? (
                     <>
@@ -1325,30 +1325,30 @@ export default function AdminServicesPage() {
       {/* Modal de Exclusão */}
       {deletingService && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-scale-up">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-scale-up">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-red-500/10 text-red-400 rounded-xl border border-red-500/20">
                 <Trash2 size={24} />
               </div>
               <div>
                 <h3 className="text-base font-bold text-white">Excluir do Catálogo?</h3>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
                   Esta ação afetará a exibição para clientes em Rio Verde.
                 </p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-[var(--color-text-muted)]">
               Tem certeza que deseja remover o serviço <strong className="text-white">&ldquo;{deletingService.name}&rdquo;</strong>?
               Se houver atendimentos já realizados com este serviço, o sistema irá pausá-lo para preservar os relatórios.
             </p>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--color-border)]">
               <button
                 type="button"
                 onClick={() => setDeletingService(null)}
                 disabled={isDeleting}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-alt)] transition-colors cursor-pointer"
               >
                 Cancelar
               </button>

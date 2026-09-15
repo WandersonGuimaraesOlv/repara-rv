@@ -375,7 +375,7 @@ export default function AdminDashboardPage() {
         { label: 'Achou o valor do serviço alto', count: valorAltoCount, pct: safePct(valorAltoCount), color: 'bg-amber-500', text: 'text-amber-400' },
         { label: 'Resolveu o reparo sozinho / Desistiu', count: resolveuSozinhoCount, pct: safePct(resolveuSozinhoCount), color: 'bg-blue-500', text: 'text-blue-400' },
         { label: 'Endereço incorreto / Fora de Rio Verde', count: enderecoCount, pct: safePct(enderecoCount), color: 'bg-purple-500', text: 'text-purple-400' },
-        { label: 'Outros motivos / Não informado', count: outrosCount, pct: safePct(outrosCount), color: 'bg-slate-500', text: 'text-slate-400' },
+        { label: 'Outros motivos / Não informado', count: outrosCount, pct: safePct(outrosCount), color: 'bg-[var(--color-text-subtle)]', text: 'text-[var(--color-text-muted)]' },
       ],
     }
   }, [calls])
@@ -513,13 +513,13 @@ export default function AdminDashboardPage() {
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
               Torre de Controle Operacional
             </span>
-            <span className="text-xs text-slate-500 font-medium">Rio Verde - GO</span>
+            <span className="text-xs text-[var(--color-text-subtle)] font-medium">Rio Verde - GO</span>
           </div>
           <h1 className="text-2xl font-extrabold text-white flex items-center gap-2.5 mt-1.5">
-            <Radio className="text-orange-500" size={26} />
+            <Radio className="text-[var(--color-primary)]" size={26} />
             Radar de Despacho & Performance
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
             Monitoramento em tempo real de chamados na fila, despacho rápido no WhatsApp e métricas financeiras.
           </p>
         </div>
@@ -527,9 +527,9 @@ export default function AdminDashboardPage() {
         <button
           onClick={fetchData}
           disabled={loading}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition-colors self-start sm:self-auto cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[var(--color-surface)] hover:bg-[var(--color-surface-alt)] text-[var(--color-text)] border border-[var(--color-border)] transition-colors self-start sm:self-auto cursor-pointer"
         >
-          <RefreshCw size={14} className={loading ? 'animate-spin text-orange-500' : 'text-slate-400'} />
+          <RefreshCw size={14} className={loading ? 'animate-spin text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'} />
           Atualizar Dados
         </button>
       </div>
@@ -538,7 +538,7 @@ export default function AdminDashboardPage() {
       {/* 🚨 ALERTA CRÍTICO: CHAMADOS ESTAGNANOS NA FILA DE ESPERA (> 5 MIN) */}
       {/* ============================================================ */}
       {stuckQueuedCalls.length > 0 && (
-        <div className="p-5 rounded-2xl bg-gradient-to-r from-red-950/90 via-red-900/60 to-slate-900 border-2 border-red-500/80 shadow-2xl shadow-red-950/50 space-y-4 animate-pulse">
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-red-950/90 via-red-900/60 to-[var(--color-surface)] border-2 border-red-500/80 shadow-2xl shadow-red-950/50 space-y-4 animate-pulse">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-red-600 text-white rounded-xl shadow-lg">
@@ -566,7 +566,7 @@ export default function AdminDashboardPage() {
               return (
                 <div
                   key={call.id}
-                  className="p-3.5 rounded-xl bg-slate-950/80 border border-red-500/40 hover:border-red-400 transition-all flex flex-col justify-between gap-3 shadow-sm"
+                  className="p-3.5 rounded-xl bg-[var(--color-bg)]/80 border border-red-500/40 hover:border-red-400 transition-all flex flex-col justify-between gap-3 shadow-sm"
                 >
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
@@ -580,7 +580,7 @@ export default function AdminDashboardPage() {
 
                     <div>
                       <div className="text-xs font-bold text-white line-clamp-1">{serviceName}</div>
-                      <div className="text-[11px] text-slate-300 flex items-center gap-1 mt-0.5">
+                      <div className="text-[11px] text-[var(--color-text-muted)] flex items-center gap-1 mt-0.5">
                         <MapPin size={11} className="text-red-400 shrink-0" />
                         <span className="font-semibold">{neighborhood}</span> · {clientName}
                       </div>
@@ -607,8 +607,8 @@ export default function AdminDashboardPage() {
       {/* ============================================================ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Volume Bruto Transacionado (GMV) */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-[var(--color-text-muted)]">
             <span className="text-xs font-semibold uppercase tracking-wider">GMV Transacionado</span>
             <div className="p-2 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20">
               <DollarSign size={18} />
@@ -617,7 +617,7 @@ export default function AdminDashboardPage() {
           <div className="text-2xl sm:text-3xl font-black text-white">
             {formatCurrency(metrics.gmvTotal)}
           </div>
-          <div className="text-xs text-slate-400 space-y-0.5">
+          <div className="text-xs text-[var(--color-text-muted)] space-y-0.5">
             <div className="text-emerald-400 font-semibold">
               ✔ {formatCurrency(metrics.gmvPaid)} liquidado (pago)
             </div>
@@ -630,17 +630,17 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Card 2: Receita Própria da Plataforma (Take Rate) */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-[var(--color-text-muted)]">
             <span className="text-xs font-semibold uppercase tracking-wider">Receita Repara RV</span>
-            <div className="p-2 bg-orange-500/10 rounded-xl text-orange-400 border border-orange-500/20">
+            <div className="p-2 bg-[var(--color-primary)]/10 rounded-xl text-[var(--color-primary)] border border-[var(--color-primary)]/20">
               <TrendingUp size={18} />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-orange-400">
+          <div className="text-2xl sm:text-3xl font-black text-[var(--color-primary)]">
             {formatCurrency(metrics.platformRevenueTotal)}
           </div>
-          <div className="text-xs text-slate-400 space-y-0.5">
+          <div className="text-xs text-[var(--color-text-muted)] space-y-0.5">
             <div className="text-emerald-400 font-semibold">
               ✔ {formatCurrency(metrics.platformRevenueRealized)} realizada
             </div>
@@ -653,8 +653,8 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Card 3: Repasse Líquido dos Prestadores */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-[var(--color-text-muted)]">
             <span className="text-xs font-semibold uppercase tracking-wider">Repasse Técnicos</span>
             <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
               <Wrench size={18} />
@@ -663,7 +663,7 @@ export default function AdminDashboardPage() {
           <div className="text-2xl sm:text-3xl font-black text-emerald-400">
             {formatCurrency(metrics.providerPayoutTotal)}
           </div>
-          <div className="text-xs text-slate-400 space-y-0.5">
+          <div className="text-xs text-[var(--color-text-muted)] space-y-0.5">
             <div className="text-emerald-400 font-semibold">
               ✔ {formatCurrency(metrics.providerPayoutRealized)} transferido
             </div>
@@ -676,8 +676,8 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Card 4: Fila Ativa & Concluídos */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-[var(--color-text-muted)]">
             <span className="text-xs font-semibold uppercase tracking-wider">Fila & Concluídos</span>
             <div className="p-2 bg-purple-500/10 rounded-xl text-purple-400 border border-purple-500/20">
               <Zap size={18} />
@@ -685,9 +685,9 @@ export default function AdminDashboardPage() {
           </div>
           <div className="flex items-baseline gap-2 text-2xl sm:text-3xl font-black text-white">
             <span>{metrics.completedCount}</span>
-            <span className="text-xs font-bold text-slate-400">concluídos</span>
+            <span className="text-xs font-bold text-[var(--color-text-muted)]">concluídos</span>
           </div>
-          <div className="text-xs text-slate-400 flex flex-wrap items-center gap-1.5">
+          <div className="text-xs text-[var(--color-text-muted)] flex flex-wrap items-center gap-1.5">
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300">
               {metrics.queuedCount} na fila agora
             </span>
@@ -701,13 +701,13 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Navegação entre Módulos do Dashboard */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-3 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-[var(--color-border)] pb-3 overflow-x-auto">
         <button
           onClick={() => setActiveTab('overview')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'overview'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              ? 'bg-[var(--color-primary)] text-white shadow-sm'
+              : 'text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-surface)]'
           }`}
         >
           <Activity size={15} />
@@ -719,13 +719,13 @@ export default function AdminDashboardPage() {
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'completed'
               ? 'bg-emerald-600 text-white shadow-sm'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              : 'text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-surface)]'
           }`}
         >
           <CheckCircle2 size={15} />
           Serviços Efetuados ({metrics.completedCount})
           {metrics.pendingPaymentCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-amber-500 text-slate-950 ml-1 animate-pulse">
+            <span className="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-amber-500 text-[var(--color-bg)] ml-1 animate-pulse">
               {metrics.pendingPaymentCount} pend.
             </span>
           )}
@@ -735,8 +735,8 @@ export default function AdminDashboardPage() {
           onClick={() => setActiveTab('cancellations')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'cancellations'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              ? 'bg-[var(--color-primary)] text-white shadow-sm'
+              : 'text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-surface)]'
           }`}
         >
           <Filter size={15} />
@@ -747,8 +747,8 @@ export default function AdminDashboardPage() {
           onClick={() => setActiveTab('audit')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'audit'
-              ? 'bg-orange-500 text-white shadow-sm'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              ? 'bg-[var(--color-primary)] text-white shadow-sm'
+              : 'text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-surface)]'
           }`}
         >
           <History size={15} />
@@ -760,7 +760,7 @@ export default function AdminDashboardPage() {
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'sos'
               ? 'bg-red-600 text-white shadow-sm'
-              : 'text-slate-400 hover:text-red-400 hover:bg-slate-900'
+              : 'text-[var(--color-text-muted)] hover:text-red-400 hover:bg-[var(--color-surface)]'
           }`}
         >
           <ShieldAlert size={15} />
@@ -776,13 +776,13 @@ export default function AdminDashboardPage() {
           {/* Linha Superior: Diagnóstico de Cancelamentos e Concentração de Bairros */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Card: Diagnóstico dos Motivos de Cancelamento */}
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <XCircle className="text-red-400" size={18} />
                   Diagnóstico dos Motivos de Cancelamento
                 </h3>
-                <span className="text-xs font-bold text-slate-400">
+                <span className="text-xs font-bold text-[var(--color-text-muted)]">
                   {cancellationReasonAnalysis.total} cancelamento{cancellationReasonAnalysis.total === 1 ? '' : 's'}
                 </span>
               </div>
@@ -798,7 +798,7 @@ export default function AdminDashboardPage() {
               )}
 
               {cancellationReasonAnalysis.total === 0 ? (
-                <p className="text-xs text-slate-500 py-6 text-center">
+                <p className="text-xs text-[var(--color-text-subtle)] py-6 text-center">
                   Nenhum chamado cancelado registrado até o momento. Excelente retenção!
                 </p>
               ) : (
@@ -806,13 +806,13 @@ export default function AdminDashboardPage() {
                   {cancellationReasonAnalysis.reasons.map((item) => (
                     <div key={item.label} className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-300 font-medium">{item.label}</span>
+                        <span className="text-[var(--color-text-muted)] font-medium">{item.label}</span>
                         <div className="flex items-center gap-2">
                           <span className={`font-bold ${item.text}`}>{item.pct.toFixed(0)}%</span>
-                          <span className="text-slate-500 text-[11px]">({item.count})</span>
+                          <span className="text-[var(--color-text-subtle)] text-[11px]">({item.count})</span>
                         </div>
                       </div>
-                      <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                      <div className="w-full h-2 rounded-full bg-[var(--color-surface-alt)] overflow-hidden">
                         <div
                           className={`h-full rounded-full ${item.color} transition-all duration-500`}
                           style={{ width: `${Math.min(100, Math.max(0, item.pct))}%` }}
@@ -825,19 +825,19 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Card: Bairros Mais Demandados de Rio Verde */}
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <MapPin className="text-cyan-400" size={18} />
                   Ranking de Demanda por Bairros (Rio Verde)
                 </h3>
-                <span className="text-xs font-bold text-slate-400">
+                <span className="text-xs font-bold text-[var(--color-text-muted)]">
                   {neighborhoodRanking.length} bairros ativos
                 </span>
               </div>
 
               {neighborhoodRanking.length === 0 ? (
-                <p className="text-xs text-slate-500 py-6 text-center">
+                <p className="text-xs text-[var(--color-text-subtle)] py-6 text-center">
                   Nenhum chamado registrado por geolocalização até o momento.
                 </p>
               ) : (
@@ -846,17 +846,17 @@ export default function AdminDashboardPage() {
                     <div key={hood.name} className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2 font-semibold text-white">
-                          <span className="w-5 h-5 rounded-md bg-slate-800 text-cyan-400 font-bold text-[11px] flex items-center justify-center">
+                          <span className="w-5 h-5 rounded-md bg-[var(--color-surface-alt)] text-cyan-400 font-bold text-[11px] flex items-center justify-center">
                             #{index + 1}
                           </span>
                           {hood.name}
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-cyan-400">{hood.pct.toFixed(0)}%</span>
-                          <span className="text-slate-500 text-[11px]">({hood.count} chamados)</span>
+                          <span className="text-[var(--color-text-subtle)] text-[11px]">({hood.count} chamados)</span>
                         </div>
                       </div>
-                      <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                      <div className="w-full h-2 rounded-full bg-[var(--color-surface-alt)] overflow-hidden">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-500"
                           style={{ width: `${Math.min(100, Math.max(0, hood.pct))}%` }}
@@ -870,14 +870,14 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Linha Inferior: Top Prestadores em Rio Verde */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-4">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <Award className="text-amber-400" size={18} />
               Top Técnicos em Rio Verde (Por Conclusão de Serviços)
             </h3>
 
             {providerRanking.length === 0 ? (
-              <p className="text-xs text-slate-500 py-6 text-center">
+              <p className="text-xs text-[var(--color-text-subtle)] py-6 text-center">
                 Ainda não há dados suficientes de chamados concluídos para gerar o ranking.
               </p>
             ) : (
@@ -885,11 +885,11 @@ export default function AdminDashboardPage() {
                 {providerRanking.map((prov, index) => (
                   <div
                     key={prov.name}
-                    className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 hover:border-slate-700 transition-colors flex flex-col justify-between gap-3"
+                    className="p-4 rounded-xl bg-[var(--color-bg)]/60 border border-[var(--color-border)]/80 hover:border-[var(--color-border-strong)] transition-colors flex flex-col justify-between gap-3"
                   >
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="w-6 h-6 rounded-full bg-slate-800 text-orange-400 font-bold text-xs flex items-center justify-center">
+                        <span className="w-6 h-6 rounded-full bg-[var(--color-surface-alt)] text-[var(--color-primary)] font-bold text-xs flex items-center justify-center">
                           #{index + 1}
                         </span>
                         <span className="text-xs font-bold text-emerald-400">
@@ -897,11 +897,11 @@ export default function AdminDashboardPage() {
                         </span>
                       </div>
                       <div className="text-xs font-bold text-white mt-2">{prov.name}</div>
-                      <div className="text-[11px] text-slate-400">{prov.phone}</div>
+                      <div className="text-[11px] text-[var(--color-text-muted)]">{prov.phone}</div>
                     </div>
 
-                    <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
-                      <span className="text-slate-500 text-[11px]">
+                    <div className="pt-2 border-t border-[var(--color-border)]/60 flex items-center justify-between text-xs">
+                      <span className="text-[var(--color-text-subtle)] text-[11px]">
                         {prov.count} concluído{prov.count === 1 ? '' : 's'}
                       </span>
                       <span className="font-bold text-white">
@@ -921,18 +921,18 @@ export default function AdminDashboardPage() {
       {/* ============================================================ */}
       {activeTab === 'completed' && (
         <div className="space-y-6">
-          <div className="flex flex-col gap-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+          <div className="flex flex-col gap-3 bg-[var(--color-surface)]/60 p-4 rounded-2xl border border-[var(--color-border)]">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-                <span className="text-xs text-slate-400 font-semibold whitespace-nowrap flex items-center gap-1.5 mr-1">
+                <span className="text-xs text-[var(--color-text-muted)] font-semibold whitespace-nowrap flex items-center gap-1.5 mr-1">
                   <CreditCard size={13} /> Pagamento:
                 </span>
                 <button
                   onClick={() => setPaymentFilter('all')}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
                     paymentFilter === 'all'
-                      ? 'bg-slate-100 text-slate-900 shadow-sm'
-                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                      ? 'bg-[var(--color-text)] text-[var(--color-bg)] shadow-sm'
+                      : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:text-white border border-[var(--color-border)]'
                   }`}
                 >
                   Todos ({metrics.completedCount})
@@ -942,7 +942,7 @@ export default function AdminDashboardPage() {
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
                     paymentFilter === 'paid'
                       ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                      : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:text-white border border-[var(--color-border)]'
                   }`}
                 >
                   ✔ Pagos ({metrics.paidCount})
@@ -951,10 +951,10 @@ export default function AdminDashboardPage() {
                   onClick={() => setPaymentFilter('pending')}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap cursor-pointer ${
                     paymentFilter === 'pending'
-                      ? 'bg-amber-500 text-slate-950 shadow-sm'
+                      ? 'bg-amber-500 text-[var(--color-bg)] shadow-sm'
                       : metrics.pendingPaymentCount > 0
                       ? 'bg-amber-500/15 text-amber-400 border border-amber-500/40 hover:bg-amber-500/25'
-                      : 'bg-slate-950 text-slate-400 hover:text-white border border-slate-800'
+                      : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:text-white border border-[var(--color-border)]'
                   }`}
                 >
                   ⏳ Aguardando Pix ({metrics.pendingPaymentCount})
@@ -962,24 +962,24 @@ export default function AdminDashboardPage() {
               </div>
 
               <div className="relative w-full md:w-80">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={15} />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-subtle)]" size={15} />
                 <input
                   type="text"
                   placeholder="Buscar por serviço, cliente, técnico ou bairro..."
                   value={completedSearchQuery}
                   onChange={(e) => setCompletedSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full pl-9 pr-4 py-2 bg-[var(--color-bg)]/80 border border-[var(--color-border)] rounded-xl text-xs text-white placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-emerald-500 transition-colors"
                 />
               </div>
             </div>
           </div>
 
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-sm">
             {completedCalls.length === 0 ? (
-              <div className="p-16 text-center text-slate-400">
-                <CheckCircle2 className="mx-auto mb-3 text-slate-600" size={36} />
-                <p className="text-base font-semibold text-slate-300">Nenhum serviço efetuado encontrado</p>
-                <p className="text-xs text-slate-500 mt-1">
+              <div className="p-16 text-center text-[var(--color-text-muted)]">
+                <CheckCircle2 className="mx-auto mb-3 text-[var(--color-text-subtle)]" size={36} />
+                <p className="text-base font-semibold text-[var(--color-text-muted)]">Nenhum serviço efetuado encontrado</p>
+                <p className="text-xs text-[var(--color-text-subtle)] mt-1">
                   Tente alterar os filtros de status de pagamento ou limpar a busca.
                 </p>
               </div>
@@ -987,7 +987,7 @@ export default function AdminDashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-800 bg-slate-950/70 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg)]/70 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
                       <th className="py-3.5 px-4">Chamado & Status</th>
                       <th className="py-3.5 px-4">Serviço Efetuado</th>
                       <th className="py-3.5 px-4">Prestador Responsável</th>
@@ -997,7 +997,7 @@ export default function AdminDashboardPage() {
                       <th className="py-3.5 px-4 text-center">Gestão de Pagamento</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60">
+                  <tbody className="divide-y divide-[var(--color-border)]/60">
                     {completedCalls.map((call) => {
                       const provObj = Array.isArray(call.provider) ? call.provider[0] : call.provider
                       const clientObj = Array.isArray(call.client) ? call.client[0] : call.client
@@ -1022,9 +1022,9 @@ export default function AdminDashboardPage() {
                       const isPaid = call.payment_status === 'paid'
 
                       return (
-                        <tr key={call.id} className="hover:bg-slate-800/40 transition-colors">
+                        <tr key={call.id} className="hover:bg-[var(--color-surface-alt)]/40 transition-colors">
                           <td className="py-4 px-4">
-                            <div className="font-mono text-xs font-bold text-orange-400">
+                            <div className="font-mono text-xs font-bold text-[var(--color-primary)]">
                               #{call.id.slice(0, 8)}
                             </div>
                             {isPaid ? (
@@ -1036,8 +1036,8 @@ export default function AdminDashboardPage() {
                                 <AlertTriangle size={10} className="text-amber-400" /> Aguardando Pix ⚠️
                               </span>
                             )}
-                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-1">
-                              <Calendar size={11} className="text-slate-500" />
+                            <div className="text-[11px] text-[var(--color-text-muted)] flex items-center gap-1 mt-1">
+                              <Calendar size={11} className="text-[var(--color-text-subtle)]" />
                               {new Date(dateStr).toLocaleString('pt-BR')}
                             </div>
                           </td>
@@ -1046,7 +1046,7 @@ export default function AdminDashboardPage() {
                             <div className="font-bold text-white text-xs sm:text-sm">
                               {serviceName}
                             </div>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 mt-1">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-[var(--color-surface-alt)] text-[var(--color-text-muted)] border border-[var(--color-border-strong)] mt-1">
                               <Wrench size={10} /> {serviceCategory}
                             </span>
                           </td>
@@ -1055,7 +1055,7 @@ export default function AdminDashboardPage() {
                             <div className="font-semibold text-white text-xs">
                               {provName}
                             </div>
-                            <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                            <div className="text-[11px] text-[var(--color-text-muted)] font-mono mt-0.5">
                               {provPhone}
                             </div>
                             {cleanProvPhone && (
@@ -1086,7 +1086,7 @@ export default function AdminDashboardPage() {
                             <div className="font-semibold text-white text-xs">
                               {clientName}
                             </div>
-                            <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                            <div className="text-[11px] text-[var(--color-text-muted)] font-mono mt-0.5">
                               {clientPhone}
                             </div>
                             {cleanClientPhone && (
@@ -1107,7 +1107,7 @@ export default function AdminDashboardPage() {
                               <span className="truncate">{call.neighborhood || 'Setor Central'}</span>
                             </div>
                             {call.client_address && (
-                              <div className="text-[11px] text-slate-400 line-clamp-2 mt-0.5">
+                              <div className="text-[11px] text-[var(--color-text-muted)] line-clamp-2 mt-0.5">
                                 {call.client_address}
                               </div>
                             )}
@@ -1122,7 +1122,7 @@ export default function AdminDashboardPage() {
                                 <div className="text-[11px] text-emerald-400 font-bold mt-0.5">
                                   Técnico: +{formatCurrency(providerCut)} (Repassar via Pix)
                                 </div>
-                                <div className="text-[10px] text-orange-400 font-medium">
+                                <div className="text-[10px] text-[var(--color-primary)] font-medium">
                                   Taxa Repara RV: {formatCurrency(fee)} (Na conta MP)
                                 </div>
                               </>
@@ -1172,7 +1172,7 @@ export default function AdminDashboardPage() {
                                 <button
                                   onClick={() => handleTogglePaymentStatus(call.id, call.payment_status)}
                                   disabled={updatingPaymentId === call.id}
-                                  className="text-[10px] text-slate-500 hover:text-slate-400 underline transition-colors disabled:opacity-50 cursor-pointer"
+                                  className="text-[10px] text-[var(--color-text-subtle)] hover:text-[var(--color-text-muted)] underline transition-colors disabled:opacity-50 cursor-pointer"
                                 >
                                   Desmarcar Pix
                                 </button>
@@ -1200,8 +1200,8 @@ export default function AdminDashboardPage() {
               onClick={() => setCancelFilter('all')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                 cancelFilter === 'all'
-                  ? 'bg-slate-100 text-slate-900'
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                  ? 'bg-[var(--color-text)] text-[var(--color-bg)]'
+                  : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-white border border-[var(--color-border)]'
               }`}
             >
               Todos ({metrics.cancelledCount})
@@ -1211,7 +1211,7 @@ export default function AdminDashboardPage() {
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                 cancelFilter === 'arrived'
                   ? 'bg-red-500 text-white'
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                  : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-white border border-[var(--color-border)]'
               }`}
             >
               Técnico Chegou & Cancelou (arrived_at)
@@ -1221,7 +1221,7 @@ export default function AdminDashboardPage() {
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                 cancelFilter === 'allocated'
                   ? 'bg-amber-500 text-white'
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                  : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-white border border-[var(--color-border)]'
               }`}
             >
               Cancelado Pós-Alocação
@@ -1230,17 +1230,17 @@ export default function AdminDashboardPage() {
               onClick={() => setCancelFilter('searching')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap cursor-pointer ${
                 cancelFilter === 'searching'
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                  ? 'bg-[var(--color-primary)] text-white'
+                  : 'bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-white border border-[var(--color-border)]'
               }`}
             >
               Cancelado na Busca / Sem Prestador
             </button>
           </div>
 
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-sm">
             {cancelledCalls.length === 0 ? (
-              <div className="p-12 text-center text-slate-400">
+              <div className="p-12 text-center text-[var(--color-text-muted)]">
                 <CheckCircle2 className="mx-auto mb-2 text-emerald-400" size={32} />
                 <p className="text-sm font-medium">Nenhum cancelamento encontrado para o filtro selecionado.</p>
               </div>
@@ -1248,7 +1248,7 @@ export default function AdminDashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-800 bg-slate-950/60 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg)]/60 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider">
                       <th className="py-3 px-4">Chamado & Data</th>
                       <th className="py-3 px-4">Serviço & Bairro</th>
                       <th className="py-3 px-4">Quem Cancelou</th>
@@ -1256,7 +1256,7 @@ export default function AdminDashboardPage() {
                       <th className="py-3 px-4">Motivo / Justificativa</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60">
+                  <tbody className="divide-y divide-[var(--color-border)]/60">
                     {cancelledCalls.map((call) => {
                       const reason =
                         call.cancellation_reason ||
@@ -1268,12 +1268,12 @@ export default function AdminDashboardPage() {
                       const isArrived = !!call.arrived_at
 
                       return (
-                        <tr key={call.id} className="hover:bg-slate-800/40 transition-colors">
+                        <tr key={call.id} className="hover:bg-[var(--color-surface-alt)]/40 transition-colors">
                           <td className="py-3 px-4">
-                            <div className="font-mono text-xs text-orange-400 font-bold">
+                            <div className="font-mono text-xs text-[var(--color-primary)] font-bold">
                               #{call.id.slice(0, 8)}
                             </div>
-                            <div className="text-[11px] text-slate-500 mt-0.5">
+                            <div className="text-[11px] text-[var(--color-text-subtle)] mt-0.5">
                               {new Date(call.cancelled_at || call.created_at).toLocaleString('pt-BR')}
                             </div>
                           </td>
@@ -1282,14 +1282,14 @@ export default function AdminDashboardPage() {
                             <div className="font-semibold text-white text-xs">
                               {call.service?.name || 'Serviço sob demanda'}
                             </div>
-                            <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
-                              <MapPin size={11} className="text-slate-500" />
+                            <div className="text-[11px] text-[var(--color-text-muted)] flex items-center gap-1 mt-0.5">
+                              <MapPin size={11} className="text-[var(--color-text-subtle)]" />
                               {call.neighborhood}
                             </div>
                           </td>
 
                           <td className="py-3 px-4">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-800 text-slate-200 border border-slate-700">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--color-surface-alt)] text-[var(--color-text)] border border-[var(--color-border-strong)]">
                               <User size={11} />
                               {cancelledRole}
                             </span>
@@ -1305,14 +1305,14 @@ export default function AdminDashboardPage() {
                                 Pós-Aceite
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-[var(--color-surface-alt)] text-[var(--color-text-muted)] border border-[var(--color-border-strong)]">
                                 Na Busca
                               </span>
                             )}
                           </td>
 
                           <td className="py-3 px-4 max-w-xs">
-                            <p className="text-xs text-slate-300 italic line-clamp-2">
+                            <p className="text-xs text-[var(--color-text-muted)] italic line-clamp-2">
                               &ldquo;{reason}&rdquo;
                             </p>
                           </td>
@@ -1331,35 +1331,35 @@ export default function AdminDashboardPage() {
       {/* ABA 3: LOGS DE AUDITORIA UNIVERSAL */}
       {/* ============================================================ */}
       {activeTab === 'audit' && (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-sm">
+          <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between">
             <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-              <History size={14} className="text-orange-500" />
+              <History size={14} className="text-[var(--color-primary)]" />
               Eventos Imutáveis Registrados por Trigger (service_audit_logs)
             </span>
-            <span className="text-[11px] text-slate-500">Últimos 50 eventos</span>
+            <span className="text-[11px] text-[var(--color-text-subtle)]">Últimos 50 eventos</span>
           </div>
 
           {auditLogs.length === 0 ? (
-            <div className="p-12 text-center text-slate-400">
-              <History className="mx-auto mb-2 text-slate-600" size={32} />
+            <div className="p-12 text-center text-[var(--color-text-muted)]">
+              <History className="mx-auto mb-2 text-[var(--color-text-subtle)]" size={32} />
               <p className="text-sm">Nenhum evento de auditoria gravado no banco ainda.</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-800/60 font-mono text-xs">
+            <div className="divide-y divide-[var(--color-border)]/60 font-mono text-xs">
               {auditLogs.map((log) => (
-                <div key={log.id} className="p-3.5 hover:bg-slate-800/40 transition-colors flex items-start justify-between gap-4">
+                <div key={log.id} className="p-3.5 hover:bg-[var(--color-surface-alt)]/40 transition-colors flex items-start justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${
-                        log.action === 'INSERT' ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'
+                        log.action === 'INSERT' ? 'bg-blue-500/20 text-blue-400' : 'bg-[var(--color-primary)]/20 text-[var(--color-primary)]'
                       }`}>
                         {log.action}
                       </span>
-                      <span className="text-slate-400 text-xs">
+                      <span className="text-[var(--color-text-muted)] text-xs">
                         Chamado #{log.call_id.slice(0, 8)}
                       </span>
-                      <span className="text-slate-500 text-[11px]">
+                      <span className="text-[var(--color-text-subtle)] text-[11px]">
                         {log.previous_status ? `${log.previous_status} ➔ ` : ''}
                         <strong className="text-white">{log.new_status}</strong>
                       </span>
@@ -1372,7 +1372,7 @@ export default function AdminDashboardPage() {
                     )}
                   </div>
 
-                  <div className="text-right text-[11px] text-slate-500 whitespace-nowrap">
+                  <div className="text-right text-[11px] text-[var(--color-text-subtle)] whitespace-nowrap">
                     {new Date(log.created_at).toLocaleTimeString('pt-BR')}
                   </div>
                 </div>
@@ -1386,18 +1386,18 @@ export default function AdminDashboardPage() {
       {/* ABA 4: CENTRAL DE SEGURANÇA SOS */}
       {/* ============================================================ */}
       {activeTab === 'sos' && (
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm space-y-4 p-5">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-sm space-y-4 p-5">
+          <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3">
             <h3 className="text-sm font-bold text-red-400 flex items-center gap-2">
               <ShieldAlert size={18} />
               Registro de Incidentes de Segurança (emergency_alerts)
             </h3>
-            <span className="text-xs text-slate-400">Total: {emergencyAlerts.length}</span>
+            <span className="text-xs text-[var(--color-text-muted)]">Total: {emergencyAlerts.length}</span>
           </div>
 
           {emergencyAlerts.length === 0 ? (
-            <div className="p-12 text-center text-slate-400">
-              <ShieldAlert className="mx-auto mb-2 text-slate-600" size={32} />
+            <div className="p-12 text-center text-[var(--color-text-muted)]">
+              <ShieldAlert className="mx-auto mb-2 text-[var(--color-text-subtle)]" size={32} />
               <p className="text-sm font-medium">Nenhum acionamento do botão SOS registrado. Todos os chamados operando em segurança.</p>
             </div>
           ) : (
@@ -1412,16 +1412,16 @@ export default function AdminDashboardPage() {
                       <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white">
                         SOS POLÍCIA 190
                       </span>
-                      <span className="text-xs text-slate-300 font-semibold">
+                      <span className="text-xs text-[var(--color-text-muted)] font-semibold">
                         Chamado #{alert.call_id.slice(0, 8)}
                       </span>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-[var(--color-text-muted)]">
                         por {alert.caller?.full_name || alert.user_role}
                       </span>
                     </div>
 
                     {alert.latitude && alert.longitude && (
-                      <div className="text-xs text-slate-400 flex items-center gap-1">
+                      <div className="text-xs text-[var(--color-text-muted)] flex items-center gap-1">
                         <MapPin size={12} className="text-red-400" />
                         GPS no momento: {alert.latitude}, {alert.longitude}
                       </div>
@@ -1429,7 +1429,7 @@ export default function AdminDashboardPage() {
                   </div>
 
                   <div className="text-right">
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-[var(--color-text-muted)]">
                       {new Date(alert.created_at).toLocaleString('pt-BR')}
                     </span>
                   </div>
@@ -1445,9 +1445,9 @@ export default function AdminDashboardPage() {
       {/* ============================================================ */}
       {dispatchCall && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 animate-scale-up">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5 animate-scale-up">
             {/* Header */}
-            <div className="flex items-start justify-between border-b border-slate-800 pb-4">
+            <div className="flex items-start justify-between border-b border-[var(--color-border)] pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-red-600 text-white rounded-xl shadow-lg">
                   <Send size={20} />
@@ -1456,7 +1456,7 @@ export default function AdminDashboardPage() {
                   <h3 className="text-base font-bold text-white">
                     Despacho Emergencial no WhatsApp
                   </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
+                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
                     Acione um dos prestadores cadastrados para assumir este chamado na fila.
                   </p>
                 </div>
@@ -1465,16 +1465,16 @@ export default function AdminDashboardPage() {
               <button
                 type="button"
                 onClick={() => setDispatchCall(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+                className="text-[var(--color-text-muted)] hover:text-white p-1 rounded-lg hover:bg-[var(--color-surface-alt)] transition-colors cursor-pointer"
               >
                 <X size={20} />
               </button>
             </div>
 
             {/* Resumo do Chamado */}
-            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <div className="p-3.5 rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-orange-400 font-mono">
+                <span className="text-xs font-bold text-[var(--color-primary)] font-mono">
                   #{dispatchCall.id.slice(0, 8)}
                 </span>
                 <span className="text-xs font-black text-emerald-400">
@@ -1484,11 +1484,11 @@ export default function AdminDashboardPage() {
               <div className="text-sm font-bold text-white">
                 {dispatchCall.service?.name || 'Serviço sob demanda'}
               </div>
-              <div className="text-xs text-slate-300 flex items-center gap-1.5">
+              <div className="text-xs text-[var(--color-text-muted)] flex items-center gap-1.5">
                 <MapPin size={13} className="text-red-400 shrink-0" />
                 <span><strong>{dispatchCall.neighborhood || 'Setor Central'}</strong> · {dispatchCall.client_address || 'Endereço residencial'}</span>
               </div>
-              <div className="pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+              <div className="pt-1.5 border-t border-[var(--color-border)]/80 flex items-center justify-between text-[11px] text-[var(--color-text-muted)]">
                 <span>Cliente: <strong className="text-white">{dispatchCall.client?.full_name || 'Morador'}</strong></span>
                 <button
                   type="button"
@@ -1499,7 +1499,7 @@ export default function AdminDashboardPage() {
                     toast.success('Link de aceite copiado para a área de transferência!')
                     setTimeout(() => setCopiedClaimId(null), 3000)
                   }}
-                  className="inline-flex items-center gap-1 text-orange-400 hover:text-orange-300 font-bold transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1 text-[var(--color-primary)] hover:text-[var(--color-primary)] font-bold transition-colors cursor-pointer"
                 >
                   <Copy size={12} />
                   {copiedClaimId === dispatchCall.id ? 'Link Copiado!' : 'Copiar Link de Aceite'}
@@ -1510,26 +1510,26 @@ export default function AdminDashboardPage() {
             {/* Busca de Prestadores */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                <span className="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
                   Técnicos Cadastrados em Rio Verde ({filteredDispatchProviders.length})
                 </span>
               </div>
 
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-subtle)]" size={14} />
                 <input
                   type="text"
                   placeholder="Filtrar prestador por nome ou fone..."
                   value={dispatchSearch}
                   onChange={(e) => setDispatchSearch(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500"
+                  className="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-[var(--color-primary)]"
                 />
               </div>
 
               {/* Lista com Scroll */}
-              <div className="max-h-60 overflow-y-auto space-y-2 pr-1 divide-y divide-slate-800/50">
+              <div className="max-h-60 overflow-y-auto space-y-2 pr-1 divide-y divide-[var(--color-border)]/50">
                 {filteredDispatchProviders.length === 0 ? (
-                  <p className="text-xs text-slate-500 py-6 text-center">
+                  <p className="text-xs text-[var(--color-text-subtle)] py-6 text-center">
                     Nenhum prestador encontrado com o termo pesquisado.
                   </p>
                 ) : (
@@ -1562,7 +1562,7 @@ export default function AdminDashboardPage() {
                                 Online
                               </span>
                             ) : (
-                              <span className="text-[10px] text-slate-500 font-normal">Offline</span>
+                              <span className="text-[10px] text-[var(--color-text-subtle)] font-normal">Offline</span>
                             )}
                             {hasMp ? (
                               <span className="text-[10px] text-emerald-400 font-bold" title="Mercado Pago Conectado">
@@ -1574,7 +1574,7 @@ export default function AdminDashboardPage() {
                               </span>
                             )}
                           </div>
-                          <div className="text-slate-400 text-[11px] font-mono">{prov.phone}</div>
+                          <div className="text-[var(--color-text-muted)] text-[11px] font-mono">{prov.phone}</div>
                         </div>
 
                         <a
@@ -1594,11 +1594,11 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Footer */}
-            <div className="pt-3 border-t border-slate-800 flex justify-end">
+            <div className="pt-3 border-t border-[var(--color-border)] flex justify-end">
               <button
                 type="button"
                 onClick={() => setDispatchCall(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-300 hover:bg-slate-800 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-alt)] transition-colors cursor-pointer"
               >
                 Fechar
               </button>

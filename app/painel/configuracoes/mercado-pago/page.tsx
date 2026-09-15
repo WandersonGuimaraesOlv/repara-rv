@@ -65,17 +65,17 @@ export default function MercadoPagoSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center items-center px-4 py-12">
-      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+    <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] flex flex-col justify-center items-center px-4 py-12">
+      <div className="w-full max-w-lg bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
         {/* Topo / Voltar */}
         <div className="flex items-center justify-between">
           <Link
             href="/painel"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-muted)] hover:text-white transition-colors"
           >
             <ArrowLeft size={16} /> Voltar ao Painel
           </Link>
-          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
+          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[var(--color-primary)]/20 text-[var(--color-primary)] border border-[var(--color-primary)]/30">
             Split Automático Pix
           </span>
         </div>
@@ -88,13 +88,13 @@ export default function MercadoPagoSettingsPage() {
           <h1 className="text-xl sm:text-2xl font-black text-white">
             Vinculação Mercado Pago
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 max-w-sm mx-auto">
+          <p className="text-xs sm:text-sm text-[var(--color-text-muted)] max-w-sm mx-auto">
             Receba o valor da sua mão de obra instantaneamente na sua conta, direto pelo split oficial sem intermediários.
           </p>
         </div>
 
         {/* Benefícios */}
-        <div className="bg-slate-950/80 rounded-2xl p-4 border border-slate-800/80 space-y-2.5 text-xs text-slate-300">
+        <div className="bg-[var(--color-bg)]/80 rounded-2xl p-4 border border-[var(--color-border)]/80 space-y-2.5 text-xs text-[var(--color-text-muted)]">
           <div className="flex items-center gap-2.5">
             <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
             <span><strong>Split 100% Automático:</strong> o dinheiro cai direto no seu Mercado Pago assim que o serviço é pago.</span>
@@ -111,7 +111,7 @@ export default function MercadoPagoSettingsPage() {
 
         {/* Status e Ação */}
         {loading ? (
-          <div className="py-8 text-center text-slate-500 text-xs">
+          <div className="py-8 text-center text-[var(--color-text-subtle)] text-xs">
             Verificando status da sua conta...
           </div>
         ) : isConnected ? (
@@ -121,13 +121,13 @@ export default function MercadoPagoSettingsPage() {
             </div>
             <div>
               <h3 className="font-bold text-white text-sm">Conta Conectada e Ativa!</h3>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
                 ID da Subconta: <span className="font-mono text-emerald-300">{recipientId}</span>
               </p>
             </div>
             <Link
               href="/painel"
-              className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs transition-colors shadow-lg shadow-emerald-500/20"
+              className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-[var(--color-bg)] font-bold text-xs transition-colors shadow-lg shadow-emerald-500/20"
             >
               Ir para o Painel de Chamados <ArrowRight size={16} />
             </Link>
@@ -139,13 +139,13 @@ export default function MercadoPagoSettingsPage() {
             </div>
             <div>
               <h3 className="font-bold text-white text-sm">Faça login para continuar</h3>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
                 Para vincular seu Mercado Pago à Repara RV, entre com seu telefone cadastrado.
               </p>
             </div>
             <Link
               href="/login?redirect=/painel/configuracoes/mercado-pago"
-              className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs transition-colors shadow-lg shadow-orange-500/20"
+              className="inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white font-bold text-xs transition-colors shadow-lg shadow-[var(--color-primary)]/20"
             >
               Fazer Login com Telefone <ArrowRight size={16} />
             </Link>
@@ -166,7 +166,7 @@ export default function MercadoPagoSettingsPage() {
                 </>
               )}
             </button>
-            <p className="text-[11px] text-center text-slate-500">
+            <p className="text-[11px] text-center text-[var(--color-text-subtle)]">
               Você será redirecionado para o ambiente seguro do Mercado Pago para autorizar o recebimento de repasses.
             </p>
           </div>

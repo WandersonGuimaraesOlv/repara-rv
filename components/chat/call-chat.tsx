@@ -87,7 +87,10 @@ export function CallChat({ callId, currentUserId, userRole }: CallChatProps) {
   }
 
   return (
-    <div className="flex flex-col h-[480px] border border-slate-200/90 rounded-2xl bg-slate-50 overflow-hidden shadow-sm my-4">
+    <div
+      className="flex flex-col h-[480px] rounded-2xl overflow-hidden shadow-sm my-4"
+      style={{ border: '1px solid var(--color-border)', background: 'var(--color-surface)' }}
+    >
       {/* BANNER FIXO OBRIGATÓRIO: AVISO DE MATERIAIS */}
       <div className="bg-amber-50/95 border-b border-amber-200/80 p-3 flex items-start gap-2.5 text-amber-950 text-xs">
         <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
@@ -100,9 +103,9 @@ export function CallChat({ callId, currentUserId, userRole }: CallChatProps) {
       {/* ÁREA DE MENSAGENS */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
+          <div className="h-full flex flex-col items-center justify-center text-center p-6" style={{ color: 'var(--color-text-subtle)' }}>
             <p className="text-xs font-semibold">Nenhuma mensagem ainda.</p>
-            <p className="text-[11px] mt-1 text-slate-400">
+            <p className="text-[11px] mt-1" style={{ color: 'var(--color-text-subtle)' }}>
               Use este canal para alinhar detalhes do serviço, ferramentas e peças antes da chegada.
             </p>
           </div>
@@ -113,16 +116,18 @@ export function CallChat({ callId, currentUserId, userRole }: CallChatProps) {
               <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} animate-fade-in`}>
                 <div
                   className={`max-w-[82%] rounded-2xl px-3.5 py-2 text-xs shadow-sm ${
-                    isMe
-                      ? 'bg-orange-500 text-white rounded-br-none'
-                      : 'bg-white text-slate-800 border border-slate-200/80 rounded-bl-none'
+                    isMe ? 'text-white rounded-br-none' : 'rounded-bl-none'
                   }`}
+                  style={
+                    isMe
+                      ? { background: 'var(--color-primary)' }
+                      : { background: 'var(--color-surface-alt)', color: 'var(--color-text)', border: '1px solid var(--color-border)' }
+                  }
                 >
                   <p className="leading-relaxed whitespace-pre-wrap">{m.message}</p>
                   <span
-                    className={`text-[9px] block mt-1 text-right font-mono ${
-                      isMe ? 'text-orange-100' : 'text-slate-400'
-                    }`}
+                    className="text-[9px] block mt-1 text-right font-mono"
+                    style={{ color: isMe ? 'rgba(255,255,255,0.7)' : 'var(--color-text-subtle)' }}
                   >
                     {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
@@ -136,25 +141,31 @@ export function CallChat({ callId, currentUserId, userRole }: CallChatProps) {
 
       {/* ATALHOS RÁPIDOS DE PERGUNTAS (PRESTADOR) */}
       {userRole === 'provider' && (
-        <div className="px-3 py-2 bg-white border-t border-slate-200/80 flex gap-1.5 overflow-x-auto text-xs whitespace-nowrap scrollbar-none">
+        <div
+          className="px-3 py-2 flex gap-1.5 overflow-x-auto text-xs whitespace-nowrap scrollbar-none"
+          style={{ background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)' }}
+        >
           <button
             type="button"
             onClick={() => handleSend('Você já está com a peça nova em mãos?')}
-            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-full text-slate-700 text-[11px] font-medium transition-all"
+            className="px-2.5 py-1 hover:brightness-125 active:scale-95 rounded-full text-[11px] font-medium transition-all"
+            style={{ background: 'var(--color-surface-alt)', color: 'var(--color-text-muted)' }}
           >
             📦 Já comprou a peça?
           </button>
           <button
             type="button"
             onClick={() => handleSend('A voltagem no local é 110V ou 220V?')}
-            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-full text-slate-700 text-[11px] font-medium transition-all"
+            className="px-2.5 py-1 hover:brightness-125 active:scale-95 rounded-full text-[11px] font-medium transition-all"
+            style={{ background: 'var(--color-surface-alt)', color: 'var(--color-text-muted)' }}
           >
             ⚡ 110V ou 220V?
           </button>
           <button
             type="button"
             onClick={() => handleSend('Já estou me deslocando até o endereço.')}
-            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-full text-slate-700 text-[11px] font-medium transition-all"
+            className="px-2.5 py-1 hover:brightness-125 active:scale-95 rounded-full text-[11px] font-medium transition-all"
+            style={{ background: 'var(--color-surface-alt)', color: 'var(--color-text-muted)' }}
           >
             🚗 A caminho
           </button>
@@ -167,19 +178,26 @@ export function CallChat({ callId, currentUserId, userRole }: CallChatProps) {
           e.preventDefault()
           handleSend()
         }}
-        className="p-3 bg-white border-t border-slate-200/80 flex items-center gap-2"
+        className="p-3 flex items-center gap-2"
+        style={{ background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)' }}
       >
         <input
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Combine os detalhes ou peças..."
-          className="flex-1 rounded-full bg-slate-50 border border-slate-200 px-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
+          className="flex-1 rounded-full px-4 py-2.5 text-xs placeholder-[var(--color-text-subtle)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition-all"
+          style={{
+            background: 'var(--color-surface-alt)',
+            border: '1px solid var(--color-border)',
+            color: 'var(--color-text)',
+          }}
         />
         <button
           type="submit"
           disabled={!text.trim() || sending}
-          className="w-9 h-9 rounded-full bg-orange-500 hover:bg-orange-600 disabled:opacity-40 flex items-center justify-center shrink-0 transition-transform active:scale-95 text-white shadow-sm"
+          className="w-9 h-9 rounded-full hover:brightness-110 disabled:opacity-40 flex items-center justify-center shrink-0 transition-transform active:scale-95 text-white shadow-sm"
+          style={{ background: 'var(--color-primary)' }}
           aria-label="Enviar mensagem"
         >
           {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
