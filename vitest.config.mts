@@ -15,4 +15,10 @@ export default defineConfig({
       '@': path.resolve(dirname, '.'),
     },
   },
+  test: {
+    // e2e/ são specs do Playwright (npm run test:e2e), não do Vitest — sem
+    // isso o Vitest tenta importar e2e/golden-path.spec.ts também, e falha
+    // (usa a API do @playwright/test, não a do vitest).
+    exclude: ['**/node_modules/**', 'e2e/**'],
+  },
 })

@@ -44,8 +44,16 @@ export async function POST(req: Request) {
 
     const supabaseAdmin = await createServiceClient()
 
-    // Verifica se usuário já existe na base
-    const { data: usersData } = await supabaseAdmin.auth.admin.listUsers()
+    // Achado de escalabilidade (14/09/2026, ao rodar E2E real): `listUsers()`
+    // sem paginação só devolve a 1ª página (50 usuários, default da Auth API
+    // do Supabase) — com o projeto já tendo 77 usuários reais, essa checagem
+    // simplesmente não enxergava ~27 deles. O login desses usuários passava a
+    // tentar `createUser()` de novo (achando que era conta nova), que falhava
+    // com "email já existe" — travando o acesso de contas mais antigas
+    // conforme a base crescia além de 50 usuários. Corrigido pedindo
+    // perPage=1000 explicitamente, cobrindo toda a base atual com folga
+    // (revisar se algum dia isso se aproximar de 1000 usuários).
+    const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 })
     const existingUser = usersData?.users.find(u => u.email === email)
 
     if (existingUser) {
