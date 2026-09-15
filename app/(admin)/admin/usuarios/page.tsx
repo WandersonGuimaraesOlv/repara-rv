@@ -254,10 +254,10 @@ export default function AdminUsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-white flex items-center gap-2.5">
-            <ShieldCheck className="text-orange-500" size={28} />
+            <ShieldCheck className="text-[var(--color-primary)]" size={28} />
             Central de Auditoria, Compliance & Split
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm text-[var(--color-text-muted)] mt-1">
             Fiscalização de pagamentos, divisão automática de Pix (Mercado Pago) e homologação de segurança em Rio Verde.
           </p>
         </div>
@@ -265,9 +265,9 @@ export default function AdminUsersPage() {
         <button
           onClick={fetchUsers}
           disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 transition-colors self-start sm:self-auto shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-[var(--color-surface)] hover:bg-[var(--color-surface-alt)] text-[var(--color-text)] border border-[var(--color-border)] transition-colors self-start sm:self-auto shadow-sm"
         >
-          <RefreshCw size={14} className={loading ? 'animate-spin text-orange-500' : 'text-slate-400'} />
+          <RefreshCw size={14} className={loading ? 'animate-spin text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'} />
           Atualizar Lista
         </button>
       </div>
@@ -275,40 +275,40 @@ export default function AdminUsersPage() {
       {/* Grid de KPIs de Auditoria e Split */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Geral */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-[var(--color-text-muted)]">
             <span className="text-xs font-semibold uppercase tracking-wider">Total de Contas</span>
-            <div className="p-2 bg-slate-800 rounded-xl text-slate-300 border border-slate-700">
+            <div className="p-2 bg-[var(--color-surface-alt)] rounded-xl text-[var(--color-text-muted)] border border-[var(--color-border-strong)]">
               <Users size={18} />
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-white">{metrics.total}</div>
-          <div className="text-xs text-slate-500 flex items-center gap-2">
+          <div className="text-xs text-[var(--color-text-subtle)] flex items-center gap-2">
             <span>{metrics.clientsCount} clientes</span>
             <span>•</span>
-            <span className="text-orange-400 font-semibold">{metrics.providersCount} prestadores</span>
+            <span className="text-[var(--color-primary)] font-semibold">{metrics.providersCount} prestadores</span>
           </div>
         </div>
 
         {/* Chave Pix Cadastrada */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-[var(--color-text-muted)]">
             <span className="text-xs font-semibold uppercase tracking-wider">Pix para Repasse</span>
             <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
               <CreditCard size={18} />
             </div>
           </div>
           <div className="text-2xl sm:text-3xl font-black text-emerald-400">
-            {metrics.mpConnectedCount} <span className="text-sm font-normal text-slate-400">/ {metrics.providersCount}</span>
+            {metrics.mpConnectedCount} <span className="text-sm font-normal text-[var(--color-text-muted)]">/ {metrics.providersCount}</span>
           </div>
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-[var(--color-text-subtle)]">
             Técnicos com chave Pix cadastrada
           </div>
         </div>
 
         {/* Homologados / Liberados */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-[var(--color-text-muted)]">
             <span className="text-xs font-semibold uppercase tracking-wider">Técnicos Aptos</span>
             <div className="p-2 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20">
               <ShieldCheck size={18} />
@@ -317,34 +317,34 @@ export default function AdminUsersPage() {
           <div className="text-2xl sm:text-3xl font-black text-blue-400">
             {metrics.approvedComplianceCount}
           </div>
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-[var(--color-text-subtle)]">
             Liberados via autodeclaração
           </div>
         </div>
 
         {/* Bloqueios Preventivos */}
-        <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-slate-400">
+        <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl p-5 shadow-sm space-y-2">
+          <div className="flex items-center justify-between text-[var(--color-text-muted)]">
             <span className="text-xs font-semibold uppercase tracking-wider">Suspensões</span>
             <div className={`p-2 rounded-xl border ${
               metrics.blockedCount > 0 
                 ? 'bg-red-500/10 text-red-400 border-red-500/20' 
-                : 'bg-slate-800 text-slate-400 border-slate-700'
+                : 'bg-[var(--color-surface-alt)] text-[var(--color-text-muted)] border-[var(--color-border-strong)]'
             }`}>
               <Ban size={18} />
             </div>
           </div>
-          <div className={`text-2xl sm:text-3xl font-black ${metrics.blockedCount > 0 ? 'text-red-400' : 'text-slate-400'}`}>
+          <div className={`text-2xl sm:text-3xl font-black ${metrics.blockedCount > 0 ? 'text-red-400' : 'text-[var(--color-text-muted)]'}`}>
             {metrics.blockedCount}
           </div>
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-[var(--color-text-subtle)]">
             {metrics.blockedCount > 0 ? 'Contas bloqueadas preventivamente' : 'Nenhuma conta suspensa'}
           </div>
         </div>
       </div>
 
       {/* Barra de Filtros Rápidos & Abas Segmentadas */}
-      <div className="space-y-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+      <div className="space-y-3 bg-[var(--color-surface)]/60 p-4 rounded-2xl border border-[var(--color-border)]">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           {/* Abas de filtro por papel */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
@@ -352,8 +352,8 @@ export default function AdminUsersPage() {
               onClick={() => setRoleFilter('all')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
                 roleFilter === 'all'
-                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/20'
+                  : 'text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-surface-alt)]'
               }`}
             >
               Todos ({metrics.total})
@@ -363,7 +363,7 @@ export default function AdminUsersPage() {
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 roleFilter === 'provider'
                   ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  : 'text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-surface-alt)]'
               }`}
             >
               <Wrench size={13} />
@@ -374,7 +374,7 @@ export default function AdminUsersPage() {
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 roleFilter === 'client'
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-600/20'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  : 'text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-surface-alt)]'
               }`}
             >
               <UserCheck size={13} />
@@ -384,8 +384,8 @@ export default function AdminUsersPage() {
               onClick={() => setRoleFilter('admin')}
               className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 roleFilter === 'admin'
-                  ? 'bg-orange-600 text-white shadow-md shadow-orange-600/20'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  ? 'bg-[var(--color-primary-hover)] text-white shadow-md shadow-[var(--color-primary-hover)]/20'
+                  : 'text-[var(--color-text-muted)] hover:text-white hover:bg-[var(--color-surface-alt)]'
               }`}
             >
               <Shield size={13} />
@@ -395,26 +395,26 @@ export default function AdminUsersPage() {
 
           {/* Campo de Busca */}
           <div className="relative w-full md:w-80">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-subtle)]" size={16} />
             <input
               type="text"
               placeholder="Buscar nome, telefone, CPF ou Pix..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-950/80 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-500 transition-colors"
+              className="w-full pl-10 pr-4 py-2 bg-[var(--color-bg)]/80 border border-[var(--color-border)] rounded-xl text-xs text-white placeholder-[var(--color-text-subtle)] focus:outline-none focus:border-[var(--color-primary)] transition-colors"
             />
           </div>
         </div>
 
         {/* Sub-Filtros de Auditoria (Chave Pix e Compliance) */}
-        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-slate-800/60 text-xs">
+        <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-[var(--color-border)]/60 text-xs">
           <div className="flex items-center gap-2">
-            <span className="text-slate-400 font-medium">Chave Pix:</span>
-            <div className="inline-flex rounded-lg bg-slate-950 p-0.5 border border-slate-800">
+            <span className="text-[var(--color-text-muted)] font-medium">Chave Pix:</span>
+            <div className="inline-flex rounded-lg bg-[var(--color-bg)] p-0.5 border border-[var(--color-border)]">
               <button
                 onClick={() => setMpFilter('all')}
                 className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-colors ${
-                  mpFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
+                  mpFilter === 'all' ? 'bg-[var(--color-surface-alt)] text-white' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
                 }`}
               >
                 Todos
@@ -422,7 +422,7 @@ export default function AdminUsersPage() {
               <button
                 onClick={() => setMpFilter('connected')}
                 className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-colors flex items-center gap-1 ${
-                  mpFilter === 'connected' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:text-emerald-300'
+                  mpFilter === 'connected' ? 'bg-emerald-500/20 text-emerald-400' : 'text-[var(--color-text-muted)] hover:text-emerald-300'
                 }`}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Pix Ativo
@@ -430,7 +430,7 @@ export default function AdminUsersPage() {
               <button
                 onClick={() => setMpFilter('pending')}
                 className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-colors flex items-center gap-1 ${
-                  mpFilter === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-amber-300'
+                  mpFilter === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'text-[var(--color-text-muted)] hover:text-amber-300'
                 }`}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Sem Pix
@@ -439,12 +439,12 @@ export default function AdminUsersPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="text-slate-400 font-medium">Compliance:</span>
-            <div className="inline-flex rounded-lg bg-slate-950 p-0.5 border border-slate-800">
+            <span className="text-[var(--color-text-muted)] font-medium">Compliance:</span>
+            <div className="inline-flex rounded-lg bg-[var(--color-bg)] p-0.5 border border-[var(--color-border)]">
               <button
                 onClick={() => setComplianceFilter('all')}
                 className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-colors ${
-                  complianceFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
+                  complianceFilter === 'all' ? 'bg-[var(--color-surface-alt)] text-white' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'
                 }`}
               >
                 Todos
@@ -452,7 +452,7 @@ export default function AdminUsersPage() {
               <button
                 onClick={() => setComplianceFilter('approved')}
                 className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-colors text-blue-400 ${
-                  complianceFilter === 'approved' ? 'bg-blue-500/20 text-blue-300' : 'text-slate-400 hover:text-blue-300'
+                  complianceFilter === 'approved' ? 'bg-blue-500/20 text-blue-300' : 'text-[var(--color-text-muted)] hover:text-blue-300'
                 }`}
               >
                 Liberados ({metrics.approvedComplianceCount})
@@ -460,7 +460,7 @@ export default function AdminUsersPage() {
               <button
                 onClick={() => setComplianceFilter('blocked')}
                 className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-colors text-red-400 ${
-                  complianceFilter === 'blocked' ? 'bg-red-500/20 text-red-300' : 'text-slate-400 hover:text-red-300'
+                  complianceFilter === 'blocked' ? 'bg-red-500/20 text-red-300' : 'text-[var(--color-text-muted)] hover:text-red-300'
                 }`}
               >
                 Suspensos ({metrics.blockedCount})
@@ -471,17 +471,17 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Lista / Tabela de Usuários com Auditoria */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-[var(--color-surface)]/90 border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-sm">
         {loading ? (
-          <div className="p-16 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-            <RefreshCw className="animate-spin text-orange-500" size={30} />
+          <div className="p-16 text-center text-[var(--color-text-muted)] flex flex-col items-center justify-center gap-3">
+            <RefreshCw className="animate-spin text-[var(--color-primary)]" size={30} />
             <p className="text-sm font-medium">Carregando usuários e auditorias...</p>
           </div>
         ) : filteredUsers.length === 0 ? (
-          <div className="p-16 text-center text-slate-400">
-            <Users className="mx-auto mb-3 text-slate-600" size={36} />
-            <p className="text-base font-semibold text-slate-300">Nenhum usuário encontrado</p>
-            <p className="text-xs text-slate-500 mt-1">
+          <div className="p-16 text-center text-[var(--color-text-muted)]">
+            <Users className="mx-auto mb-3 text-[var(--color-text-subtle)]" size={36} />
+            <p className="text-base font-semibold text-[var(--color-text-muted)]">Nenhum usuário encontrado</p>
+            <p className="text-xs text-[var(--color-text-subtle)] mt-1">
               Tente alterar os termos de busca ou os filtros aplicados acima.
             </p>
           </div>
@@ -489,7 +489,7 @@ export default function AdminUsersPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="border-b border-slate-800 bg-slate-950/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg)]/80 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
                   <th className="py-3.5 px-4">Usuário & Segurança</th>
                   <th className="py-3.5 px-4">WhatsApp & Contato</th>
                   <th className="py-3.5 px-4">Chave Pix & Repasse</th>
@@ -498,7 +498,7 @@ export default function AdminUsersPage() {
                   <th className="py-3.5 px-4 text-right">Controle Operacional</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-[var(--color-border)]/60">
                 {filteredUsers.map((user) => {
                   const isProvider = user.role === 'provider'
                   const isClient = user.role === 'client'
@@ -510,7 +510,7 @@ export default function AdminUsersPage() {
                   return (
                     <tr 
                       key={user.id} 
-                      className={`hover:bg-slate-800/40 transition-colors ${
+                      className={`hover:bg-[var(--color-surface-alt)]/40 transition-colors ${
                         isBlocked ? 'bg-red-950/10' : ''
                       }`}
                     >
@@ -521,7 +521,7 @@ export default function AdminUsersPage() {
                             isBlocked
                               ? 'bg-red-500/20 text-red-400 border-red-500/40'
                               : isAdmin
-                              ? 'bg-orange-500/10 text-orange-400 border-orange-500/30'
+                              ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-[var(--color-primary)]/30'
                               : isProvider
                               ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                               : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
@@ -544,7 +544,7 @@ export default function AdminUsersPage() {
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {/* Badge de Papel */}
                               {isAdmin && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500/15 text-orange-400 border border-orange-500/30">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--color-primary)]/15 text-[var(--color-primary)] border border-[var(--color-primary)]/30">
                                   <Shield size={10} /> ADMIN
                                 </span>
                               )}
@@ -568,7 +568,7 @@ export default function AdminUsersPage() {
                                       Online
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[var(--color-surface-alt)] text-[var(--color-text-muted)] border border-[var(--color-border-strong)]">
                                       Offline
                                     </span>
                                   )}
@@ -577,16 +577,16 @@ export default function AdminUsersPage() {
                             </div>
 
                             {user.cpf_or_cnpj ? (
-                              <div className="text-[11px] text-slate-400">
-                                CPF/CNPJ: <span className="font-mono text-slate-300">{user.cpf_or_cnpj}</span>
+                              <div className="text-[11px] text-[var(--color-text-muted)]">
+                                CPF/CNPJ: <span className="font-mono text-[var(--color-text-muted)]">{user.cpf_or_cnpj}</span>
                               </div>
                             ) : (
-                              <div className="text-[11px] text-slate-500 italic">
+                              <div className="text-[11px] text-[var(--color-text-subtle)] italic">
                                 CPF não informado
                               </div>
                             )}
 
-                            <div className="text-[10px] text-slate-500 flex items-center gap-1">
+                            <div className="text-[10px] text-[var(--color-text-subtle)] flex items-center gap-1">
                               <Calendar size={10} />
                               Cadastro: {new Date(user.created_at).toLocaleDateString('pt-BR')}
                             </div>
@@ -597,8 +597,8 @@ export default function AdminUsersPage() {
                       {/* Coluna 2: WhatsApp & Contato Direto */}
                       <td className="py-4 px-4">
                         <div className="space-y-1.5">
-                          <div className="text-xs text-slate-200 font-mono flex items-center gap-1.5">
-                            <Phone size={12} className="text-slate-400" />
+                          <div className="text-xs text-[var(--color-text)] font-mono flex items-center gap-1.5">
+                            <Phone size={12} className="text-[var(--color-text-muted)]" />
                             {user.phone}
                           </div>
 
@@ -606,10 +606,10 @@ export default function AdminUsersPage() {
                             href={adminWaUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 border border-emerald-500/30 transition-all shadow-sm group"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500 hover:text-[var(--color-bg)] border border-emerald-500/30 transition-all shadow-sm group"
                             title="Conversar com este usuário via WhatsApp"
                           >
-                            <MessageCircle size={13} className="text-emerald-400 group-hover:text-slate-950" />
+                            <MessageCircle size={13} className="text-emerald-400 group-hover:text-[var(--color-bg)]" />
                             Conversar (wa.me)
                           </a>
                         </div>
@@ -626,12 +626,12 @@ export default function AdminUsersPage() {
                                   Pix Ativo
                                 </span>
                                 <div className="flex items-center gap-1.5 pt-0.5">
-                                  <span className="font-mono text-xs font-bold text-slate-100 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800">
+                                  <span className="font-mono text-xs font-bold text-[var(--color-text)] bg-[var(--color-bg)] px-2 py-1 rounded-lg border border-[var(--color-border)]">
                                     {user.provider_status.pix_key}
                                   </span>
                                   <button
                                     onClick={() => handleCopyPix(user.provider_status?.pix_key || '', user.id)}
-                                    className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors cursor-pointer"
+                                    className="p-1 rounded-lg bg-[var(--color-surface-alt)] hover:bg-[var(--color-border-strong)] text-[var(--color-text-muted)] hover:text-white border border-[var(--color-border-strong)] transition-colors cursor-pointer"
                                     title="Copiar Chave Pix"
                                   >
                                     {copiedPixId === user.id ? (
@@ -648,18 +648,18 @@ export default function AdminUsersPage() {
                                   <AlertTriangle size={11} />
                                   Sem Pix
                                 </span>
-                                <p className="text-[10px] text-slate-500 mt-0.5">Chave não informada</p>
+                                <p className="text-[10px] text-[var(--color-text-subtle)] mt-0.5">Chave não informada</p>
                               </div>
                             )}
 
                             {user.recipient_gateway_id && (
-                              <div className="text-[10px] font-mono text-slate-500">
+                              <div className="text-[10px] font-mono text-[var(--color-text-subtle)]">
                                 Subconta MP: {user.recipient_gateway_id}
                               </div>
                             )}
                           </div>
                         ) : (
-                          <div className="text-xs text-slate-500 italic">
+                          <div className="text-xs text-[var(--color-text-subtle)] italic">
                             Não se aplica (Cliente)
                           </div>
                         )}
@@ -678,20 +678,20 @@ export default function AdminUsersPage() {
                                     e.target.value as 'approved' | 'rejected'
                                   )
                                 }
-                                className={`text-xs font-bold rounded-xl px-2.5 py-1.5 border appearance-none pr-7 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500/40 transition-colors ${
+                                className={`text-xs font-bold rounded-xl px-2.5 py-1.5 border appearance-none pr-7 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 transition-colors ${
                                   user.background_check_status === 'rejected'
                                     ? 'bg-red-500/15 text-red-300 border-red-500/30 hover:bg-red-500/25'
                                     : 'bg-blue-500/15 text-blue-300 border-blue-500/30 hover:bg-blue-500/25'
                                 }`}
                               >
-                                <option value="approved" className="bg-slate-900 text-blue-400">
+                                <option value="approved" className="bg-[var(--color-surface)] text-blue-400">
                                   🟢 Aprovado (Liberado)
                                 </option>
-                                <option value="rejected" className="bg-slate-900 text-red-400">
+                                <option value="rejected" className="bg-[var(--color-surface)] text-red-400">
                                   🔴 Reprovado (Bloqueado)
                                 </option>
                               </select>
-                              <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+                              <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--color-text-muted)]" />
                             </div>
 
                             {user.background_check_status === 'rejected' ? (
@@ -705,13 +705,13 @@ export default function AdminUsersPage() {
                             )}
 
                             {/* Termo e Declaração */}
-                            <div className="text-[10px] text-slate-500 flex items-center gap-2 pt-0.5">
+                            <div className="text-[10px] text-[var(--color-text-subtle)] flex items-center gap-2 pt-0.5">
                               {user.terms_accepted_at ? (
                                 <span className="text-emerald-400/80 flex items-center gap-0.5">
                                   <CheckCircle2 size={9} /> Termo OK
                                 </span>
                               ) : (
-                                <span className="text-slate-500 flex items-center gap-0.5">
+                                <span className="text-[var(--color-text-subtle)] flex items-center gap-0.5">
                                   <XCircle size={9} /> Sem termo
                                 </span>
                               )}
@@ -723,7 +723,7 @@ export default function AdminUsersPage() {
                             </div>
                           </div>
                         ) : (
-                          <div className="text-xs text-slate-400">
+                          <div className="text-xs text-[var(--color-text-muted)]">
                             Consumidor regular
                           </div>
                         )}
@@ -739,12 +739,12 @@ export default function AdminUsersPage() {
                                 <Star size={12} className="fill-amber-400 text-amber-400" />
                                 {Number(user.rating_avg).toFixed(1)}
                               </div>
-                              <span className="text-xs font-semibold text-slate-300">
+                              <span className="text-xs font-semibold text-[var(--color-text-muted)]">
                                 {user.completed_calls_as_provider} atendimentos
                               </span>
                             </div>
 
-                            <div className="text-[11px] text-slate-300">
+                            <div className="text-[11px] text-[var(--color-text-muted)]">
                               Recebido: <strong className="text-white">{formatCurrency(user.total_earned_as_provider)}</strong>
                             </div>
 
@@ -756,7 +756,7 @@ export default function AdminUsersPage() {
                           </div>
                         ) : (
                           <div className="space-y-0.5">
-                            <div className="text-xs font-semibold text-slate-200">
+                            <div className="text-xs font-semibold text-[var(--color-text)]">
                               {user.total_calls_as_client} {user.total_calls_as_client === 1 ? 'chamado' : 'chamados'}
                             </div>
                             {user.unpaid_calls_as_client > 0 ? (
@@ -780,7 +780,7 @@ export default function AdminUsersPage() {
                             onClick={() => setBlockTargetUser(user)}
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                               isBlocked
-                                ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500 hover:text-slate-950 border border-emerald-500/40'
+                                ? 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500 hover:text-[var(--color-bg)] border border-emerald-500/40'
                                 : 'bg-red-500/15 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/30'
                             }`}
                             title={isBlocked ? 'Reativar conta' : 'Suspender conta preventivamente'}
@@ -791,11 +791,11 @@ export default function AdminUsersPage() {
 
                           {/* Edição de Papel */}
                           {editingUserId === user.id ? (
-                            <div className="inline-flex flex-col items-end gap-1.5 bg-slate-950 p-2.5 rounded-xl border border-slate-700 shadow-xl">
+                            <div className="inline-flex flex-col items-end gap-1.5 bg-[var(--color-bg)] p-2.5 rounded-xl border border-[var(--color-border-strong)] shadow-xl">
                               <select
                                 value={selectedRole}
                                 onChange={(e) => setSelectedRole(e.target.value as 'client' | 'provider' | 'admin')}
-                                className="bg-slate-900 border border-slate-700 rounded-lg text-xs text-white px-2 py-1 focus:outline-none focus:border-orange-500"
+                                className="bg-[var(--color-surface)] border border-[var(--color-border-strong)] rounded-lg text-xs text-white px-2 py-1 focus:outline-none focus:border-[var(--color-primary)]"
                               >
                                 <option value="client">Cliente</option>
                                 <option value="provider">Prestador</option>
@@ -805,14 +805,14 @@ export default function AdminUsersPage() {
                                 <button
                                   onClick={() => handleSaveRole(user.id)}
                                   disabled={savingRole}
-                                  className="px-2.5 py-1 rounded bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-bold transition-colors disabled:opacity-50"
+                                  className="px-2.5 py-1 rounded bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white text-[11px] font-bold transition-colors disabled:opacity-50"
                                 >
                                   {savingRole ? 'Salvando...' : 'Salvar'}
                                 </button>
                                 <button
                                   onClick={() => setEditingUserId(null)}
                                   disabled={savingRole}
-                                  className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] transition-colors"
+                                  className="px-2 py-1 rounded bg-[var(--color-surface-alt)] hover:bg-[var(--color-border-strong)] text-[var(--color-text-muted)] text-[11px] transition-colors"
                                 >
                                   Cancelar
                                 </button>
@@ -824,7 +824,7 @@ export default function AdminUsersPage() {
                                 setEditingUserId(user.id)
                                 setSelectedRole(user.role)
                               }}
-                              className="text-[11px] text-slate-400 hover:text-white underline underline-offset-2 transition-colors"
+                              className="text-[11px] text-[var(--color-text-muted)] hover:text-white underline underline-offset-2 transition-colors"
                             >
                               Editar Cargo
                             </button>
@@ -843,7 +843,7 @@ export default function AdminUsersPage() {
       {/* Modal de Confirmação de Bloqueio / Reativação de Conta */}
       {blockTargetUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5">
             <div className="flex items-start gap-3.5">
               <div className={`p-3 rounded-2xl shrink-0 ${
                 blockTargetUser.is_blocked
@@ -856,13 +856,13 @@ export default function AdminUsersPage() {
                 <h3 className="text-lg font-bold text-white">
                   {blockTargetUser.is_blocked ? 'Reativar Usuário?' : 'Suspender Conta de Usuário?'}
                 </h3>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">
                   Usuário: <strong className="text-white">{blockTargetUser.full_name}</strong> ({blockTargetUser.phone})
                 </p>
               </div>
             </div>
 
-            <div className="bg-slate-950/80 rounded-2xl p-4 border border-slate-800/80 text-xs text-slate-300 space-y-2">
+            <div className="bg-[var(--color-bg)]/80 rounded-2xl p-4 border border-[var(--color-border)]/80 text-xs text-[var(--color-text-muted)] space-y-2">
               {blockTargetUser.is_blocked ? (
                 <p>
                   Ao reativar, o usuário poderá fazer login normalmente e, caso seja prestador com Mercado Pago conectado, voltará a poder ficar online para aceitar ordens de serviço.
@@ -878,7 +878,7 @@ export default function AdminUsersPage() {
               <button
                 onClick={() => setBlockTargetUser(null)}
                 disabled={Boolean(blockingUserId)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--color-surface-alt)] hover:bg-[var(--color-border-strong)] text-[var(--color-text-muted)] transition-colors"
               >
                 Cancelar
               </button>
