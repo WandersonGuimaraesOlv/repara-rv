@@ -52,22 +52,6 @@ import { SiteFooter } from '@/components/site-footer'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { performLogout } from '@/lib/auth-logout'
 
-const RIO_VERDE_NEIGHBORHOODS = [
-  'Setor Central',
-  'Bairro Popular',
-  'Bairro Promissão',
-  'Morada do Sol',
-  'Santo Agostinho',
-  'Setor Universitário',
-  'Parque das Laranjeiras',
-  'Gameleira',
-  'Vila Maria',
-  'Eldorado',
-  'Residencial Buriti',
-  'Solar Campestre',
-  'Interlagos',
-]
-
 const CATEGORIES = [
   { id: 'all', name: 'Todos', icon: Sparkles },
   { id: 'Elétrica', name: 'Elétrica', icon: Zap },
@@ -128,15 +112,13 @@ export default function TriiderClientHomePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [isSearchFocused, setIsSearchFocused] = useState<boolean>(false)
-  const [selectedNeighborhood, setSelectedNeighborhood] = useState<string>('Setor Central')
-  const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false)
-  const [customAddress, setCustomAddress] = useState<string>('')
   const [activeTab, setActiveTab] = useState<'home' | 'orders' | 'support' | 'profile'>('home')
   const [currentUser, setCurrentUser] = useState<{
     id: string
     full_name?: string
     phone?: string
     role?: string
+    neighborhood?: string | null
   } | null>(null)
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState<boolean>(false)
   const profileMenuRef = useRef<HTMLDivElement>(null)
@@ -176,11 +158,22 @@ export default function TriiderClientHomePage() {
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data: profile } = await supabase
+        // `neighborhood` é coluna nova (migration 20260915_profile_cep_neighborhood) —
+        // se ainda não foi aplicada no banco, cai no fallback sem essa coluna.
+        let { data: profile } = await supabase
           .from('profiles')
-          .select('id, role, full_name, phone')
+          .select('id, role, full_name, phone, neighborhood')
           .eq('id', user.id)
           .maybeSingle()
+
+        if (!profile) {
+          const fallback = await supabase
+            .from('profiles')
+            .select('id, role, full_name, phone')
+            .eq('id', user.id)
+            .maybeSingle()
+          profile = fallback.data ? { ...fallback.data, neighborhood: null } : null
+        }
 
         if (profile) {
           setCurrentUser(profile)
@@ -342,30 +335,27 @@ export default function TriiderClientHomePage() {
         <div className="content-container">
           <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
 
-            {/* Esquerda: Logo + Seletor de Bairro */}
+            {/* Esquerda: Logo + Bairro (quando o cliente tiver informado no cadastro) */}
             <div className="flex items-center gap-2 sm:gap-4 min-w-0 shrink-0">
               <Link href="/" className="flex items-center transition-opacity hover:opacity-85 shrink-0">
                 <Logo variant="full" width={148} height={38} className="hidden sm:block" />
                 <Logo variant="compact" className="sm:hidden" />
               </Link>
 
-              {/* Seletor de Localização (Desktop) */}
-              <button
-                type="button"
-                onClick={() => setIsAddressModalOpen(true)}
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer"
-                style={{
-                  background: 'var(--color-surface-alt)',
-                  border: '1px solid var(--color-border)',
-                  color: 'var(--color-text-muted)',
-                }}
-                aria-label={`Bairro: ${selectedNeighborhood}. Clique para alterar.`}
-              >
-                <MapPin size={13} style={{ color: 'var(--color-primary)' }} className="shrink-0" />
-                <span>Bairro:</span>
-                <strong style={{ color: 'var(--color-text)' }}>{selectedNeighborhood}</strong>
-                <ChevronDown size={13} style={{ color: 'var(--color-text-subtle)' }} />
-              </button>
+              {currentUser?.neighborhood && (
+                <div
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+                  style={{
+                    background: 'var(--color-surface-alt)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text-muted)',
+                  }}
+                >
+                  <MapPin size={13} style={{ color: 'var(--color-primary)' }} className="shrink-0" />
+                  <span>Bairro:</span>
+                  <strong style={{ color: 'var(--color-text)' }}>{currentUser.neighborhood}</strong>
+                </div>
+              )}
             </div>
 
             {/* Centro: Nav Desktop */}
@@ -579,24 +569,24 @@ export default function TriiderClientHomePage() {
             </div>
           </div>
 
-          {/* Seletor de Bairro para Mobile */}
+          {/* Localização para Mobile */}
           <div
             className="md:hidden pb-2 pt-1 flex items-center gap-2 text-xs"
             style={{ borderTop: '1px solid var(--color-border)' }}
           >
-            <button
-              type="button"
-              onClick={() => setIsAddressModalOpen(true)}
-              className="flex items-center gap-1.5 text-left transition-colors cursor-pointer py-0.5 flex-1 min-w-0"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
+            <div className="flex items-center gap-1.5 py-0.5 flex-1 min-w-0" style={{ color: 'var(--color-text-muted)' }}>
               <MapPin size={13} style={{ color: 'var(--color-primary)' }} className="shrink-0" />
-              <div className="truncate flex-1 min-w-0">
-                <span style={{ color: 'var(--color-text-subtle)' }}>Você está em: </span>
-                <strong style={{ color: 'var(--color-text)' }}>{selectedNeighborhood}, Rio Verde</strong>
-              </div>
-              <ChevronDown size={13} style={{ color: 'var(--color-text-subtle)' }} className="shrink-0 ml-1" />
-            </button>
+              <span className="truncate">
+                {currentUser?.neighborhood ? (
+                  <>
+                    <span style={{ color: 'var(--color-text-subtle)' }}>Você está em: </span>
+                    <strong style={{ color: 'var(--color-text)' }}>{currentUser.neighborhood}, Rio Verde</strong>
+                  </>
+                ) : (
+                  'Atendemos Rio Verde — GO'
+                )}
+              </span>
+            </div>
             <ThemeToggle className="shrink-0" />
           </div>
         </div>
@@ -1347,96 +1337,6 @@ export default function TriiderClientHomePage() {
               <LogOut size={16} />
               <span>Sair da Conta</span>
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* ────────────────────────────────────────────────────────
-          MODAL DE SELEÇÃO DE BAIRRO
-          ──────────────────────────────────────────────────────── */}
-      {isAddressModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
-          style={{ background: 'rgba(7, 16, 15, 0.8)', backdropFilter: 'blur(6px)' }}
-        >
-          <div
-            className="w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up"
-            style={{
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              boxShadow: '0 -16px 48px rgba(0,0,0,0.5)',
-            }}
-          >
-            <div
-              className="flex items-center justify-between pb-4 mb-4"
-              style={{ borderBottom: '1px solid var(--color-border)' }}
-            >
-              <div>
-                <h3 className="text-base font-black" style={{ color: 'var(--color-text)' }}>Selecionar Localização</h3>
-                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Rio Verde — Goiás</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsAddressModalOpen(false)}
-                className="p-1.5 rounded-full transition-colors cursor-pointer"
-                style={{ color: 'var(--color-text-muted)', background: 'var(--color-surface-alt)' }}
-                aria-label="Fechar"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <label className="label">Endereço ou Bairro específico:</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={customAddress}
-                  onChange={e => setCustomAddress(e.target.value)}
-                  placeholder="Ex: Rua 10, Qd 20, Bairro..."
-                  className="input py-2.5 text-sm flex-1"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (customAddress.trim()) {
-                      setSelectedNeighborhood(customAddress.trim())
-                      setIsAddressModalOpen(false)
-                      setCustomAddress('')
-                    }
-                  }}
-                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-white cursor-pointer transition-all hover:opacity-90 shrink-0"
-                  style={{ background: 'var(--color-primary)' }}
-                >
-                  Confirmar
-                </button>
-              </div>
-            </div>
-
-            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--color-text-subtle)' }}>
-              Bairros Atendidos
-            </p>
-            <div className="max-h-60 overflow-y-auto space-y-1 pr-1">
-              {RIO_VERDE_NEIGHBORHOODS.map(bairro => (
-                <button
-                  key={bairro}
-                  type="button"
-                  onClick={() => {
-                    setSelectedNeighborhood(bairro)
-                    setIsAddressModalOpen(false)
-                  }}
-                  className="w-full text-left px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
-                  style={{
-                    background: selectedNeighborhood === bairro ? 'var(--color-primary-soft)' : 'transparent',
-                    color: selectedNeighborhood === bairro ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                    border: selectedNeighborhood === bairro ? '1px solid var(--color-border)' : '1px solid transparent',
-                  }}
-                >
-                  <span>{bairro}</span>
-                  {selectedNeighborhood === bairro && <CheckCircle2 size={15} style={{ color: 'var(--color-primary)' }} />}
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       )}

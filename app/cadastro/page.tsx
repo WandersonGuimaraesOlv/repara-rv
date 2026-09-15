@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { User, Phone, Lock, Eye, EyeOff, ShieldCheck, Wrench, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { User, Phone, Lock, Eye, EyeOff, ShieldCheck, Wrench, ArrowRight, CheckCircle2, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
 import { Logo } from '@/components/logo'
 
@@ -24,6 +24,10 @@ export default function CadastroPage() {
   const [selfDeclaration, setSelfDeclaration] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [cep, setCep] = useState('')
+  const [neighborhood, setNeighborhood] = useState('')
+  const [loadingCep, setLoadingCep] = useState(false)
+  const [cepError, setCepError] = useState(false)
 
   // Lê papel inicial da URL (?role=provider ou ?tipo=prestador)
   useEffect(() => {
@@ -50,6 +54,35 @@ export default function CadastroPage() {
     if (digits.length <= 2) return `(${digits}`
     if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+  }
+
+  // Busca automática do bairro ao completar 8 dígitos de CEP (ViaCEP) — mesmo
+  // serviço já usado em components/endereco-form.tsx, gratuito e sem chave.
+  const handleCepChange = async (value: string) => {
+    const rawValue = value.replace(/\D/g, '').slice(0, 8)
+    setCep(rawValue)
+    setCepError(false)
+    if (rawValue.length < 8) {
+      setNeighborhood('')
+      return
+    }
+
+    setLoadingCep(true)
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${rawValue}/json/`)
+      const data = await res.json()
+      if (data.erro || !data.bairro) {
+        setNeighborhood('')
+        setCepError(true)
+      } else {
+        setNeighborhood(data.bairro)
+      }
+    } catch {
+      setNeighborhood('')
+      setCepError(true)
+    } finally {
+      setLoadingCep(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,6 +145,8 @@ export default function CadastroPage() {
           pixKey: pixKey.trim(),
           pixKeyType,
           selfDeclaration,
+          cep: cep.trim() || undefined,
+          neighborhood: neighborhood.trim() || undefined,
         }),
       })
 
@@ -296,6 +331,48 @@ export default function CadastroPage() {
                 autoComplete="tel"
               />
             </div>
+          </div>
+
+          {/* CEP e Bairro */}
+          <div>
+            <label htmlFor="cadastro-cep" className="label">
+              CEP <span className="font-normal" style={{ color: 'var(--color-text-subtle)' }}>(opcional — identifica seu bairro automaticamente)</span>
+            </label>
+            <div className="relative flex items-center">
+              <MapPin size={17} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
+              <input
+                id="cadastro-cep"
+                type="tel"
+                value={cep}
+                onChange={e => handleCepChange(e.target.value)}
+                placeholder="75900-000"
+                className="input pl-11"
+                inputMode="numeric"
+                maxLength={9}
+                autoComplete="postal-code"
+              />
+              {loadingCep && (
+                <span
+                  className="absolute right-4 text-xs font-medium animate-pulse"
+                  style={{ color: 'var(--color-primary)' }}
+                >
+                  Buscando...
+                </span>
+              )}
+              {neighborhood && !loadingCep && (
+                <span
+                  className="absolute right-4 text-xs flex items-center gap-1 font-medium"
+                  style={{ color: 'var(--color-success)' }}
+                >
+                  <CheckCircle2 size={14} /> {neighborhood}
+                </span>
+              )}
+            </div>
+            {cepError && (
+              <p className="text-[11px] mt-1" style={{ color: 'var(--color-warning)' }}>
+                CEP não encontrado. Você pode continuar sem informar o bairro.
+              </p>
+            )}
           </div>
 
           {/* PIN e Confirmação */}
