@@ -1,10 +1,11 @@
 'use server'
 
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { 
-  updateUserRoleSchema, 
-  updateBackgroundCheckSchema, 
-  toggleUserBlockedSchema 
+import {
+  updateUserRoleSchema,
+  updateBackgroundCheckSchema,
+  toggleUserBlockedSchema,
+  resetUserPinSchema,
 } from '@/lib/validations/admin-users'
 import { revalidatePath } from 'next/cache'
 
@@ -382,5 +383,41 @@ export async function toggleUserBlockedAction(input: unknown) {
     const msg = err instanceof Error ? err.message : 'Erro inesperado ao alterar status da conta.'
     return { success: false, error: msg }
   }
+}
+
+/**
+ * Reseta o PIN de acesso de um usuário (não existe fluxo de "esqueci minha
+ * senha" self-service, já que o login é feito com celular + PIN e não há
+ * e-mail real por trás — só o admin pode gerar um PIN novo aqui).
+ */
+export async function resetUserPinAction(input: unknown) {
+  const authCheck = await requireAdmin()
+  if (!authCheck.authorized) {
+    return { success: false, error: authCheck.error }
+  }
+
+  const parsed = resetUserPinSchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message || 'Dados inválidos para reset de PIN.' }
+  }
+
+  const { userId, newPin } = parsed.data
+  const adminDb = await createServiceClient()
+
+  const { data: profile } = await adminDb
+    .from('profiles')
+    .select('full_name')
+    .eq('id', userId)
+    .maybeSingle()
+
+  const { error } = await adminDb.auth.admin.updateUserById(userId, {
+    password: `pin_${newPin}`,
+  })
+
+  if (error) {
+    return { success: false, error: `Erro ao resetar PIN: ${error.message}` }
+  }
+
+  return { success: true, data: { full_name: profile?.full_name || 'Usuário' } }
 }
 

@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/client'
 import { User, Phone, Lock, Eye, EyeOff, ShieldCheck, Wrench, ArrowRight, CheckCircle2, MapPin, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Logo } from '@/components/logo'
+import { normalizeBrazilianPhone } from '@/lib/utils'
+import { isValidCpfOrCnpj, isValidPixKey, isWeakPin, type PixKeyType } from '@/lib/validations/br-documents'
 
 export default function CadastroPage() {
   const router = useRouter()
@@ -41,7 +43,7 @@ export default function CadastroPage() {
   }, [])
 
   const handlePhoneChange = (value: string) => {
-    const digits = value.replace(/\D/g, '').slice(0, 11)
+    const digits = normalizeBrazilianPhone(value)
     setPhone(digits)
     // Se prestador e tipo de chave for phone, pré-preenche a chave pix
     if (role === 'provider' && pixKeyType === 'phone' && (!pixKey || pixKey === phone)) {
@@ -124,13 +126,26 @@ export default function CadastroPage() {
       return
     }
 
+    if (isWeakPin(pin)) {
+      toast.error('PIN muito fácil de adivinhar (sequência ou dígitos repetidos). Escolha outro.')
+      return
+    }
+
     if (role === 'provider') {
       if (!cpfOrCnpj.trim()) {
         toast.error('Informe seu CPF ou CNPJ MEI para verificação cadastral')
         return
       }
+      if (!isValidCpfOrCnpj(cpfOrCnpj)) {
+        toast.error('CPF ou CNPJ inválido — confira os dígitos informados')
+        return
+      }
       if (!pixKey.trim()) {
         toast.error('Informe sua chave Pix para receber os repasses dos atendimentos')
+        return
+      }
+      if (!isValidPixKey(pixKey, pixKeyType as PixKeyType)) {
+        toast.error('Chave Pix não corresponde ao formato do tipo selecionado — confira antes de continuar')
         return
       }
       if (!selfDeclaration) {

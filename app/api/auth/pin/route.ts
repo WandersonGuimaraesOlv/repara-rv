@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
+import { normalizeBrazilianPhone } from '@/lib/utils'
 
 const pinSchema = z
   .object({
@@ -8,7 +9,7 @@ const pinSchema = z
     pin: z.string().min(1, 'PIN é obrigatório'),
   })
   .transform((data) => ({
-    cleanPhone: data.phone.replace(/\D/g, ''),
+    cleanPhone: normalizeBrazilianPhone(data.phone),
     cleanPin: data.pin.trim(),
   }))
   .refine((data) => data.cleanPhone.length >= 10 && data.cleanPhone.length <= 11, {

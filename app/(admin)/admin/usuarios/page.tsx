@@ -21,15 +21,18 @@ import {
   Ban,
   ShieldAlert,
   ShieldCheck,
-  ChevronDown
+  ChevronDown,
+  KeyRound
 } from 'lucide-react'
-import { 
-  getAdminUsersListAction, 
-  updateUserRoleAction, 
+import {
+  getAdminUsersListAction,
+  updateUserRoleAction,
   updateBackgroundCheckStatusAction,
   toggleUserBlockedAction,
-  AdminUserListItem 
+  resetUserPinAction,
+  AdminUserListItem
 } from '@/app/actions/admin-users'
+import { isWeakPin } from '@/lib/validations/br-documents'
 import { formatCurrency } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -49,6 +52,11 @@ export default function AdminUsersPage() {
   // Estado para Confirmação de Bloqueio/Desbloqueio
   const [blockingUserId, setBlockingUserId] = useState<string | null>(null)
   const [blockTargetUser, setBlockTargetUser] = useState<AdminUserListItem | null>(null)
+
+  // Estado para Reset de PIN de Acesso
+  const [pinTargetUser, setPinTargetUser] = useState<AdminUserListItem | null>(null)
+  const [newPinValue, setNewPinValue] = useState('')
+  const [resettingPin, setResettingPin] = useState(false)
 
   // Feedback de Cópia
   const [copiedPixId, setCopiedPixId] = useState<string | null>(null)
@@ -245,6 +253,37 @@ export default function AdminUsersPage() {
       toast.error('Erro ao conectar ao servidor para alterar suspensão.')
     } finally {
       setBlockingUserId(null)
+    }
+  }
+
+  // Reset de PIN de acesso (não existe "esqueci minha senha" self-service —
+  // login é celular + PIN, sem e-mail real por trás, então só o admin reseta)
+  const handleConfirmResetPin = async () => {
+    if (!pinTargetUser) return
+
+    if (!/^\d{4,8}$/.test(newPinValue)) {
+      toast.error('O PIN deve conter entre 4 e 8 dígitos numéricos')
+      return
+    }
+    if (isWeakPin(newPinValue)) {
+      toast.error('PIN muito fácil de adivinhar (sequência ou dígitos repetidos). Escolha outro.')
+      return
+    }
+
+    setResettingPin(true)
+    try {
+      const res = await resetUserPinAction({ userId: pinTargetUser.id, newPin: newPinValue })
+      if (res.success) {
+        toast.success(`PIN de ${pinTargetUser.full_name} atualizado com sucesso.`)
+        setPinTargetUser(null)
+        setNewPinValue('')
+      } else {
+        toast.error(res.error || 'Falha ao resetar PIN.')
+      }
+    } catch {
+      toast.error('Erro ao conectar ao servidor para resetar PIN.')
+    } finally {
+      setResettingPin(false)
     }
   }
 
@@ -789,6 +828,16 @@ export default function AdminUsersPage() {
                             {isBlocked ? 'Reativar Conta' : 'Suspender'}
                           </button>
 
+                          {/* Reset de PIN de Acesso */}
+                          <button
+                            onClick={() => { setPinTargetUser(user); setNewPinValue('') }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-[var(--color-surface-alt)] text-[var(--color-text-muted)] hover:bg-[var(--color-border-strong)] hover:text-white border border-[var(--color-border)]"
+                            title="Resetar PIN de acesso"
+                          >
+                            <KeyRound size={12} />
+                            Resetar PIN
+                          </button>
+
                           {/* Edição de Papel */}
                           {editingUserId === user.id ? (
                             <div className="inline-flex flex-col items-end gap-1.5 bg-[var(--color-bg)] p-2.5 rounded-xl border border-[var(--color-border-strong)] shadow-xl">
@@ -892,6 +941,63 @@ export default function AdminUsersPage() {
                 }`}
               >
                 {blockingUserId ? 'Processando...' : blockTargetUser.is_blocked ? 'Sim, Reativar Conta' : 'Sim, Suspender Conta'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Reset de PIN de Acesso */}
+      {pinTargetUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5">
+            <div className="flex items-start gap-3.5">
+              <div className="p-3 rounded-2xl shrink-0 bg-[var(--color-primary-soft)] text-[var(--color-primary)] border border-[var(--color-border)]">
+                <KeyRound size={24} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Resetar PIN de Acesso</h3>
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                  Usuário: <strong className="text-white">{pinTargetUser.full_name}</strong> ({pinTargetUser.phone})
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-[var(--color-bg)]/80 rounded-2xl p-4 border border-[var(--color-border)]/80 text-xs text-[var(--color-text-muted)]">
+              O usuário não tem como recuperar o PIN sozinho (login é feito com celular + PIN, sem e-mail real). Defina um PIN novo e avise a pessoa pelo WhatsApp — ela poderá trocá-lo depois de entrar.
+            </div>
+
+            <div>
+              <label htmlFor="new-pin-input" className="block text-xs font-semibold mb-1.5 text-[var(--color-text-muted)]">
+                Novo PIN (4 a 8 dígitos)
+              </label>
+              <input
+                id="new-pin-input"
+                type="text"
+                inputMode="numeric"
+                value={newPinValue}
+                onChange={(e) => setNewPinValue(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                placeholder="Ex: 4827"
+                maxLength={8}
+                className="w-full bg-[var(--color-bg)] border border-[var(--color-border-strong)] rounded-xl px-3.5 py-2.5 text-sm text-white tracking-widest font-mono focus:outline-none focus:border-[var(--color-primary)]"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => { setPinTargetUser(null); setNewPinValue('') }}
+                disabled={resettingPin}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--color-surface-alt)] hover:bg-[var(--color-border-strong)] text-[var(--color-text-muted)] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmResetPin}
+                disabled={resettingPin}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-lg disabled:opacity-50 bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)]"
+              >
+                {resettingPin ? 'Salvando...' : 'Confirmar Novo PIN'}
               </button>
             </div>
           </div>
