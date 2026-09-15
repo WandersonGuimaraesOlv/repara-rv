@@ -17,7 +17,11 @@ export default function OnboardingPage() {
   const [role, setRole] = useState<UserRole>('client')
   const [pixKey, setPixKey] = useState('')
   const [pixKeyType, setPixKeyType] = useState('phone')
-  const [termsAccepted, setTermsAccepted] = useState(true)
+  // Achado de compliance (14/09/2026): estava true por padrão — o checkbox de
+  // aceite renderizava pré-marcado, permitindo cadastro sem consentimento
+  // ativo. Contraria diretamente o AGENTS.md ("sempre iniciar desmarcado...
+  // Nunca pré-marcar") e o requisito de consentimento informado da LGPD.
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const [selfDeclaration, setSelfDeclaration] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -296,6 +300,7 @@ export default function OnboardingPage() {
             <label className="flex items-start gap-2.5 cursor-pointer text-left">
               <input
                 type="checkbox"
+                id="checkbox-onboarding-terms"
                 checked={termsAccepted}
                 onChange={e => setTermsAccepted(e.target.checked)}
                 className="mt-0.5 w-4 h-4 rounded text-orange-600 border-slate-300 focus:ring-orange-500 shrink-0"
