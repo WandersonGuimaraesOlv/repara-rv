@@ -18,6 +18,7 @@ import {
   Wrench,
 } from 'lucide-react'
 import { Logo } from '@/components/logo'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { createClient } from '@/lib/supabase/client'
 import { performLogout } from '@/lib/auth-logout'
 
@@ -190,6 +191,7 @@ export function SiteHeader({
 
             {/* ── Ações direita ── */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <ThemeToggle className="hidden sm:flex" />
               {!minimal && (
                 <>
                   {/* Meus pedidos */}
@@ -495,6 +497,10 @@ export function SiteHeader({
                 <MessageSquare size={18} />
                 Suporte WhatsApp
               </a>
+              <div className="flex items-center gap-3 px-4 py-2 text-sm font-semibold" style={{ color: 'var(--color-text-muted)' }}>
+                <ThemeToggle />
+                <span>Alternar Tema</span>
+              </div>
             </nav>
 
             <div className="p-4" style={{ borderTop: '1px solid var(--color-border)' }}>
