@@ -73,6 +73,29 @@ export async function POST(req: Request) {
     })
 
     if (createError) {
+      // Achado em produção (15/09/2026): checagem (listUsers) e criação
+      // (createUser) não são atômicas — duas tentativas de login quase
+      // simultâneas com o MESMO telefone ainda sem conta (ex: duplo clique,
+      // duas abas, retry de rede lenta) podem ambas passar pela checagem
+      // achando "não existe" e colidir na criação, travando o acesso com o
+      // erro cru do Supabase em vez de logar.
+      //
+      // Testado contra o banco real (scripts/test-auth-pin-race.mjs, duas
+      // createUser() concorrentes de verdade pro mesmo email): o formato do
+      // erro da corrida NÃO é o `email_exists`/`user_already_exists` limpo
+      // que o GoTrue devolve numa checagem sequencial — é genérico,
+      // `code: undefined`, message "Database error creating new user"
+      // (a segunda escrita esbarra na constraint UNIQUE do Postgres depois
+      // que as duas já passaram pela pré-checagem do GoTrue). Por isso não dá
+      // pra confiar no formato específico do erro: depois de qualquer falha
+      // de criação, reconsulta se o e-mail já existe agora — se existir, foi
+      // a outra requisição que ganhou a corrida, então devolve o mesmo
+      // contrato de login normal em vez de vazar o erro.
+      const { data: retryUsersData } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 })
+      const raceWinner = retryUsersData?.users.find(u => u.email === email)
+      if (raceWinner) {
+        return NextResponse.json({ isNew: false, email, password })
+      }
       return NextResponse.json({ error: createError.message }, { status: 500 })
     }
 
