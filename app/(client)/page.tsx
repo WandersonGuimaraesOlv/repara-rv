@@ -587,7 +587,7 @@ export default function TriiderClientHomePage() {
             <button
               type="button"
               onClick={() => setIsAddressModalOpen(true)}
-              className="flex items-center gap-1.5 text-left transition-colors cursor-pointer py-0.5 w-full"
+              className="flex items-center gap-1.5 text-left transition-colors cursor-pointer py-0.5 flex-1 min-w-0"
               style={{ color: 'var(--color-text-muted)' }}
             >
               <MapPin size={13} style={{ color: 'var(--color-primary)' }} className="shrink-0" />
@@ -597,6 +597,7 @@ export default function TriiderClientHomePage() {
               </div>
               <ChevronDown size={13} style={{ color: 'var(--color-text-subtle)' }} className="shrink-0 ml-1" />
             </button>
+            <ThemeToggle className="shrink-0" />
           </div>
         </div>
       </header>
@@ -604,33 +605,36 @@ export default function TriiderClientHomePage() {
       {/* ────────────────────────────────────────────────────────
           2. HERO SECTION
           ──────────────────────────────────────────────────────── */}
+      {/* ────────────────────────────────────────────────────────
+          2. HERO SECTION
+          ──────────────────────────────────────────────────────── */}
       <section
-        className="relative overflow-hidden pt-8 pb-12 sm:pt-16 sm:pb-24"
+        className="mesh-hero-glow relative overflow-hidden pt-8 pb-14 sm:pt-16 sm:pb-24"
         style={{
-          background: 'linear-gradient(180deg, var(--color-surface) 0%, var(--color-bg) 100%)',
           borderBottom: '1px solid var(--color-border)',
         }}
       >
-        {/* Decoração de fundo */}
+        {/* Grade de fundo sutil e iluminação ambiente */}
+        <div className="absolute inset-0 bg-ambient-grid opacity-35 pointer-events-none" />
         <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-10 pointer-events-none"
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[450px] rounded-full opacity-20 pointer-events-none blur-3xl"
           style={{ background: 'radial-gradient(ellipse at center, var(--color-primary) 0%, transparent 70%)' }}
         />
 
         <div className="content-container relative z-10">
           <div className="max-w-3xl mx-auto text-center">
 
-            {/* Selo Local */}
+            {/* Selo Local com Indicador em Tempo Real */}
             <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase mb-4"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wide mb-4 glass-panel shadow-sm"
               style={{
-                background: 'var(--color-primary-soft)',
-                border: '1px solid var(--color-border)',
-                color: 'var(--color-primary)',
+                borderColor: 'rgba(94, 211, 164, 0.25)',
               }}
             >
-              <Sparkles size={13} className="shrink-0" />
-              <span>Serviços Residenciais • Rio Verde (GO)</span>
+              <span className="live-dot" />
+              <span style={{ color: 'var(--color-text)' }}>Disponível agora</span>
+              <span style={{ color: 'var(--color-text-subtle)' }}>•</span>
+              <span style={{ color: 'var(--color-success)' }}>Rio Verde (GO)</span>
             </div>
 
             {/* Título Principal */}
@@ -639,86 +643,90 @@ export default function TriiderClientHomePage() {
               style={{ color: 'var(--color-text)' }}
             >
               O que você precisa{' '}
-              <span style={{ color: 'var(--color-accent)' }}>
-                resolver
+              <span className="text-gradient-accent">
+                consertar
               </span>{' '}
               hoje?
             </h1>
 
-            {/* Subtítulo */}
+            {/* Subtítulo Humanizado */}
             <p
               className="text-sm sm:text-lg leading-relaxed max-w-2xl mx-auto mb-8 px-1"
               style={{ color: 'var(--color-text-muted)' }}
             >
-              Encanadores, eletricistas e montadores verificados em Rio Verde.
-              Preço fixo transparente, atendimento ágil e garantia de 7 dias.
+              Encanador, eletricista ou montador na sua porta em 30 a 45 minutos.
+              Preço fixo antes de começar, sem surpresas e com garantia de 7 dias.
             </p>
 
-            {/* Barra de Busca */}
+            {/* Barra de Busca Glassmorphic */}
             <div className="relative max-w-2xl mx-auto w-full">
               <div
-                className="relative flex items-center rounded-2xl"
+                className="relative flex items-center rounded-2xl search-glow-container glass-panel"
                 style={{
-                  background: 'var(--color-surface)',
-                  border: '1.5px solid var(--color-border)',
-                  boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+                  borderColor: 'var(--color-border)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.35)',
                 }}
               >
-                <Search size={18} className="absolute left-4 pointer-events-none shrink-0" style={{ color: 'var(--color-text-subtle)' }} />
+                <Search size={19} className="absolute left-4 pointer-events-none shrink-0" style={{ color: 'var(--color-text-subtle)' }} />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
                   onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
-                  placeholder="Busque pelo conserto: chuveiro, torneira, tomada..."
-                  className="w-full pl-12 pr-12 py-4 bg-transparent text-sm outline-none"
+                  placeholder="Busque pelo conserto: chuveiro, torneira, tomada, fechadura..."
+                  className="w-full pl-12 pr-12 py-4 bg-transparent text-sm outline-none font-medium"
                   style={{ color: 'var(--color-text)' }}
                   aria-label="Buscar serviço"
                 />
-                {searchQuery && (
+                {searchQuery ? (
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-4 p-1 transition-colors"
+                    className="absolute right-4 p-1 transition-colors cursor-pointer"
                     style={{ color: 'var(--color-text-subtle)' }}
                     aria-label="Limpar busca"
                   >
                     <X size={16} />
                   </button>
+                ) : (
+                  <div className="absolute right-4 hidden sm:flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md font-mono" style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)', color: 'var(--color-text-subtle)' }}>
+                    Buscar
+                  </div>
                 )}
               </div>
 
               {/* Dropdown de Autocomplete */}
               {isSearchFocused && searchSuggestions.length > 0 && (
                 <div
-                  className="absolute top-full left-0 right-0 mt-2 rounded-2xl py-2 z-30 text-left overflow-hidden animate-fade-in"
+                  className="absolute top-full left-0 right-0 mt-2 rounded-2xl py-2 z-30 text-left overflow-hidden animate-fade-in glass-panel"
                   style={{
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border)',
-                    boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
+                    borderColor: 'var(--color-border-strong)',
+                    boxShadow: '0 16px 36px rgba(0,0,0,0.5)',
                   }}
                 >
                   <div
                     className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider"
                     style={{ color: 'var(--color-text-subtle)' }}
                   >
-                    Sugestões
+                    Sugestões Rápidas
                   </div>
                   {searchSuggestions.map(service => (
                     <Link
                       key={service.id}
                       href={`/chamar/${service.id}`}
                       onClick={() => setIsSearchFocused(false)}
-                      className="flex items-center justify-between px-4 py-3 transition-colors text-sm"
+                      className="flex items-center justify-between px-4 py-3 transition-colors text-sm hover:bg-[rgba(10,155,112,0.12)]"
                       style={{ color: 'var(--color-text-muted)' }}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2.5">
                         <Wrench size={15} style={{ color: 'var(--color-primary)' }} className="shrink-0" />
                         <span className="font-semibold" style={{ color: 'var(--color-text)' }}>{service.name}</span>
-                        <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>({service.category})</span>
+                        <span className="text-xs px-2 py-0.5 rounded-md" style={{ background: 'var(--color-surface-alt)', color: 'var(--color-text-subtle)' }}>
+                          {service.category}
+                        </span>
                       </div>
-                      <span className="font-bold text-sm shrink-0" style={{ color: 'var(--color-accent)' }}>
+                      <span className="font-black text-sm shrink-0" style={{ color: 'var(--color-accent)' }}>
                         {formatCurrency(service.fixed_price)}
                       </span>
                     </Link>
@@ -729,13 +737,13 @@ export default function TriiderClientHomePage() {
 
             {/* Tags de Pesquisas Frequentes */}
             <div className="flex flex-wrap items-center justify-center gap-1.5 mt-4 text-xs max-w-full">
-              <span className="font-semibold mr-0.5 text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>Populares:</span>
+              <span className="font-bold mr-1 text-[11px] uppercase tracking-wider" style={{ color: 'var(--color-text-subtle)' }}>Mais buscados:</span>
               {['Chuveiro', 'Torneira', 'Tomada', 'Ventilador', 'Fechadura', 'Máquina de Lavar', 'Varal', 'Silicone'].map(tag => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => setSearchQuery(tag)}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer active:scale-95"
+                  className="search-tag-pill px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer active:scale-95"
                   style={{
                     background: 'var(--color-surface-alt)',
                     border: '1px solid var(--color-border)',
@@ -747,34 +755,30 @@ export default function TriiderClientHomePage() {
               ))}
             </div>
 
-            {/* 4 Blocos de Garantia */}
+            {/* 4 Blocos de Garantia e Confiança */}
             <div
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-8 pt-8 text-left"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-10 pt-8 text-left"
               style={{ borderTop: '1px solid var(--color-border)' }}
             >
               {[
-                { icon: ShieldCheck, title: 'Cadastro Verificado', desc: 'Identidade e autodeclaração de aptidão técnica.', color: 'var(--color-success)' },
-                { icon: Zap, title: 'Chegada Rápida', desc: 'Técnico no seu endereço em 30 a 45 min em Rio Verde.', color: 'var(--color-accent)' },
-                { icon: Lock, title: 'Pagamento Protegido', desc: 'Pague via Pix com total segurança na plataforma.', color: 'var(--color-info)' },
-                { icon: Sparkles, title: 'Garantia de 7 Dias', desc: 'Se o reparo apresentar defeito, reexecutamos sem custo.', color: 'var(--color-primary)' },
+                { icon: ShieldCheck, title: 'Cadastro Verificado', desc: 'Identidade checada e cadastrada na plataforma.', color: 'var(--color-success)' },
+                { icon: Zap, title: 'Chegada em 30-45 min', desc: 'Profissional mais próximo do seu bairro em Rio Verde.', color: 'var(--color-accent)' },
+                { icon: Lock, title: 'Pagamento Seguro', desc: 'O valor só é repassado após você conferir o reparo.', color: 'var(--color-info)' },
+                { icon: Sparkles, title: 'Garantia de 7 Dias', desc: 'Se o defeito voltar no prazo, o retorno é gratuito.', color: 'var(--color-primary)' },
               ].map(({ icon: Icon, title, desc, color }) => (
                 <div
                   key={title}
-                  className="p-4 rounded-2xl flex items-start gap-3"
-                  style={{
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border)',
-                  }}
+                  className="glass-panel glass-panel-hover rounded-2xl p-4 flex items-start gap-3.5"
                 >
                   <div
-                    className="p-2 rounded-xl shrink-0 mt-0.5"
-                    style={{ background: `${color}18` }}
+                    className="p-2.5 rounded-xl shrink-0 mt-0.5"
+                    style={{ background: `${color}18`, border: `1px solid ${color}30` }}
                   >
                     <Icon size={18} style={{ color }} />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold" style={{ color: 'var(--color-text)' }}>{title}</h4>
-                    <p className="text-[11px] mt-0.5 leading-snug" style={{ color: 'var(--color-text-subtle)' }}>{desc}</p>
+                    <h4 className="text-xs font-bold tracking-tight" style={{ color: 'var(--color-text)' }}>{title}</h4>
+                    <p className="text-[11px] mt-0.5 leading-relaxed" style={{ color: 'var(--color-text-subtle)' }}>{desc}</p>
                   </div>
                 </div>
               ))}
@@ -902,21 +906,9 @@ export default function TriiderClientHomePage() {
               return (
                 <div
                   key={service.id}
-                  className="rounded-2xl p-5 flex flex-col justify-between group transition-all hover:-translate-y-1 cursor-pointer"
+                  className="glass-panel glass-panel-hover rounded-2xl p-5 flex flex-col justify-between group cursor-pointer"
                   style={{
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border)',
                     boxShadow: 'var(--shadow-card)',
-                  }}
-                  onMouseEnter={e => {
-                    const el = e.currentTarget
-                    el.style.borderColor = 'var(--color-border-strong)'
-                    el.style.boxShadow = 'var(--shadow-card-hover)'
-                  }}
-                  onMouseLeave={e => {
-                    const el = e.currentTarget
-                    el.style.borderColor = 'var(--color-border)'
-                    el.style.boxShadow = 'var(--shadow-card)'
                   }}
                 >
                   <div>
@@ -945,7 +937,7 @@ export default function TriiderClientHomePage() {
                         }}
                       >
                         <Clock size={11} />
-                        Até 40 min
+                        Em até 40 min
                       </span>
                     </div>
 
@@ -965,10 +957,17 @@ export default function TriiderClientHomePage() {
                       </p>
                     )}
 
-                    {/* Aviso de Peças */}
-                    <div className="banner-warning text-[10px]">
-                      <AlertCircle size={13} className="shrink-0 mt-0.5" />
-                      <span>Peças e materiais não inclusos. Combinados à parte com o profissional.</span>
+                    {/* Aviso Transparente de Peças */}
+                    <div
+                      className="flex items-center gap-1.5 text-[11px] py-1.5 px-2.5 rounded-xl"
+                      style={{
+                        background: 'rgba(237, 198, 107, 0.08)',
+                        border: '1px solid rgba(237, 198, 107, 0.2)',
+                        color: 'var(--color-warning)',
+                      }}
+                    >
+                      <AlertCircle size={12} className="shrink-0" />
+                      <span className="leading-tight">Peças combinadas à parte com o técnico</span>
                     </div>
                   </div>
 
@@ -979,21 +978,21 @@ export default function TriiderClientHomePage() {
                   >
                     <div>
                       <span className="text-[10px] font-bold uppercase tracking-wider block" style={{ color: 'var(--color-text-subtle)' }}>
-                        Mão de Obra
+                        Mão de obra fixa
                       </span>
-                      <span className="text-xl font-black tracking-tight" style={{ color: 'var(--color-text)' }}>
+                      <span className="text-xl sm:text-2xl font-black tracking-tight" style={{ color: 'var(--color-accent)' }}>
                         {formatCurrency(service.fixed_price)}
                       </span>
                     </div>
 
                     <Link
                       href={`/chamar/${service.id}`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shrink-0"
-                      style={{ background: 'var(--color-primary)', boxShadow: 'var(--shadow-primary)' }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all hover:brightness-110 active:scale-95 shrink-0 group-hover:shadow-[0_4px_16px_rgba(10,155,112,0.4)]"
+                      style={{ background: 'var(--color-primary)' }}
                       aria-label={`Solicitar serviço: ${service.name}`}
                     >
                       <span>Solicitar</span>
-                      <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                      <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </Link>
                   </div>
                 </div>
@@ -1008,15 +1007,15 @@ export default function TriiderClientHomePage() {
           ──────────────────────────────────────────────────────── */}
       <section id="garantia" className="content-container py-10 sm:py-16 w-full">
         <div
-          className="rounded-3xl p-6 sm:p-10"
+          className="rounded-3xl p-6 sm:p-10 glass-panel relative overflow-hidden"
           style={{
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
+            borderColor: 'var(--color-border)',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.35)',
           }}
         >
-          <div className="max-w-2xl mb-8">
+          <div className="max-w-2xl mb-8 relative z-10">
             <div
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3"
+              className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3"
               style={{
                 background: 'var(--color-primary-soft)',
                 color: 'var(--color-primary)',
@@ -1027,37 +1026,37 @@ export default function TriiderClientHomePage() {
               <span>Segurança e Confiabilidade</span>
             </div>
             <h3 className="text-2xl sm:text-3xl font-black tracking-tight mb-2" style={{ color: 'var(--color-text)' }}>
-              Padrão de Garantia Repara RV
+              Compromisso Repara RV
             </h3>
             <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-              Desenvolvemos a plataforma sob os mesmos padrões de segurança das maiores empresas de serviços do país.
+              Sem burocracia e com regras claras. Você só paga quando o conserto estiver devidamente concluído e funcionando.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
             {[
               {
                 icon: CheckCircle2,
                 color: 'var(--color-success)',
                 title: 'Garantia de 7 Dias',
-                desc: 'Se o reparo apresentar qualquer falha técnica dentro de 7 dias corridos, garantimos o retorno do profissional sem cobrança extra.',
+                desc: 'Se o reparo apresentar qualquer falha técnica em até 7 dias corridos, garantimos o retorno do técnico sem cobrança adicional.',
               },
               {
                 icon: ShieldCheck,
                 color: 'var(--color-primary)',
                 title: 'Profissionais de Rio Verde',
-                desc: 'Autônomos cadastrados com checagem de documentos e histórico. Avaliação pública e contínua pela comunidade rio-verdense.',
+                desc: 'Técnicos e autônomos da cidade cadastrados na plataforma com identidade checada e avaliação dos próprios moradores.',
               },
               {
                 icon: Lock,
                 color: 'var(--color-info)',
-                title: 'Pagamento Protegido via Pix',
-                desc: 'O valor do serviço só é repassado ao profissional após você atestar que o reparo foi devidamente finalizado.',
+                title: 'Pagamento Seguro via Pix',
+                desc: 'O valor do serviço fica retido com segurança e só é repassado ao profissional depois que você testar e aprovar o conserto.',
               },
             ].map(({ icon: Icon, color, title, desc }) => (
               <div
                 key={title}
-                className="p-5 rounded-2xl flex items-start gap-4"
+                className="p-5 rounded-2xl flex items-start gap-4 transition-all"
                 style={{
                   background: 'var(--color-surface-alt)',
                   border: '1px solid var(--color-border)',
@@ -1065,7 +1064,7 @@ export default function TriiderClientHomePage() {
               >
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: `${color}1a` }}
+                  style={{ background: `${color}1a`, border: `1px solid ${color}30` }}
                 >
                   <Icon size={20} style={{ color }} />
                 </div>
@@ -1084,32 +1083,33 @@ export default function TriiderClientHomePage() {
           ──────────────────────────────────────────────────────── */}
       <section className="content-container pb-10 sm:pb-16 w-full">
         <div
-          className="rounded-3xl p-6 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-6"
+          className="rounded-3xl p-6 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden"
           style={{
-            background: 'linear-gradient(135deg, var(--color-primary-soft) 0%, var(--color-surface) 100%)',
+            background: 'linear-gradient(135deg, rgba(10, 155, 112, 0.24) 0%, var(--color-surface) 100%)',
             border: '1px solid var(--color-border)',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.3)',
           }}
         >
-          <div>
+          <div className="relative z-10">
             <div
               className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3"
               style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: '1px solid var(--color-border)' }}
             >
               <Bike size={13} />
-              <span>Para Profissionais</span>
+              <span>Para Eletricistas, Encanadores e Técnicos</span>
             </div>
             <h3 className="text-xl sm:text-2xl font-black mb-1" style={{ color: 'var(--color-text)' }}>
-              Quer ganhar mais atendendo em Rio Verde?
+              Quer receber chamados no celular em Rio Verde?
             </h3>
-            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-              Cadastre-se como prestador e receba chamados direto no celular. Sem mensalidade, sem burocracia.
+            <p className="text-sm max-w-xl" style={{ color: 'var(--color-text-muted)' }}>
+              Cadastre-se gratuitamente como prestador autônomo. Você define seus horários, não paga mensalidade e recebe direto na conta.
             </p>
           </div>
           <Link
             href={currentUser ? '/onboarding?role=provider' : '/cadastro?role=provider'}
             id="btn-cta-provider"
-            className="btn-primary sm:w-auto whitespace-nowrap text-sm px-6"
-            style={{ minWidth: '200px' }}
+            className="btn-accent sm:w-auto whitespace-nowrap text-sm px-7 py-3.5 shrink-0 z-10"
+            style={{ minWidth: '220px' }}
           >
             Quero ser Profissional
           </Link>
