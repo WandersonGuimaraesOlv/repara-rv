@@ -193,6 +193,85 @@ export type Database = {
           },
         ]
       }
+      legal_clauses: {
+        Row: {
+          body_markdown: string
+          created_at: string
+          document_slug: string
+          icon_key: string | null
+          id: string
+          order_index: number
+          section_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body_markdown: string
+          created_at?: string
+          document_slug: string
+          icon_key?: string | null
+          id?: string
+          order_index: number
+          section_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body_markdown?: string
+          created_at?: string
+          document_slug?: string
+          icon_key?: string | null
+          id?: string
+          order_index?: number
+          section_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_clauses_document_slug_fkey"
+            columns: ["document_slug"]
+            isOneToOne: false
+            referencedRelation: "legal_documents"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      legal_documents: {
+        Row: {
+          effective_date: string
+          slug: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: string
+        }
+        Insert: {
+          effective_date?: string
+          slug: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: string
+        }
+        Update: {
+          effective_date?: string
+          slug?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_documents_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1048,6 +1127,10 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      reorder_legal_clauses: {
+        Args: { p_document_slug: string; p_ordered_ids: string[] }
+        Returns: undefined
+      }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown
