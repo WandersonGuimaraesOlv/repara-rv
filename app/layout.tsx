@@ -67,6 +67,20 @@ export default function RootLayout({
         <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
         <link rel="shortcut icon" href="/icons/icon-192.png" />
         <link rel="manifest" href="/manifest.json" />
+        {/* Achado em produção (15/09/2026): o script "sem-flash" que o next-themes
+            injeta via Function.prototype.toString() sai do bundle do OpenNext
+            Cloudflare com uma chamada __name(...) órfã (artefato do keepNames do
+            esbuild ao processar o pacote) — lança ReferenceError no navegador e o
+            script original nunca chega a aplicar a classe de tema antes da
+            hidratação. Não existe flag no next-themes pra desativar essa injeção
+            (só nonce/scriptProps), então replicamos a mesma lógica aqui como script
+            literal (nunca passa pela serialização de função que quebra) — evita o
+            flash de tema errado independente do script do next-themes falhar. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `!function(){try{var t=localStorage.getItem('theme')||'dark';var d=document.documentElement;d.classList.remove('light','dark');d.classList.add(t);if(t==='light'||t==='dark')d.style.colorScheme=t}catch(e){}}()`,
+          }}
+        />
       </head>
       <body style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
         <ThemeProvider
