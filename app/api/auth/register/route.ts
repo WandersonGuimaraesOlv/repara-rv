@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
 import { normalizeBrazilianPhone } from '@/lib/utils'
+import { isValidCpfOrCnpj, isValidPixKey, isWeakPin } from '@/lib/validations/br-documents'
 
 const registerSchema = z
   .object({
@@ -36,12 +37,24 @@ const registerSchema = z
     message: 'O PIN deve conter entre 4 e 8 dígitos numéricos',
     path: ['pin'],
   })
+  .refine((data) => !isWeakPin(data.cleanPin), {
+    message: 'PIN muito fácil de adivinhar (sequência ou dígitos repetidos). Escolha outro.',
+    path: ['pin'],
+  })
   .refine((data) => /^\d{8}$/.test(data.cleanCep), {
     message: 'Digite um CEP válido com 8 dígitos',
     path: ['cep'],
   })
   .refine((data) => data.role !== 'provider' || Boolean(data.pixKey && data.pixKey.length > 0), {
     message: 'Profissionais precisam informar a chave Pix para receber os repasses de serviços',
+    path: ['pixKey'],
+  })
+  .refine((data) => data.role !== 'provider' || isValidCpfOrCnpj(data.cpfOrCnpj || ''), {
+    message: 'CPF ou CNPJ inválido — confira os dígitos informados',
+    path: ['cpfOrCnpj'],
+  })
+  .refine((data) => data.role !== 'provider' || isValidPixKey(data.pixKey || '', data.pixKeyType), {
+    message: 'Chave Pix não corresponde ao formato do tipo selecionado — confira antes de continuar',
     path: ['pixKey'],
   })
 
