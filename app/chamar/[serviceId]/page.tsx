@@ -21,6 +21,8 @@ export default function ChamarServicePage() {
   const [structuredAddress, setStructuredAddress] = useState<StructuredAddress | null>(null)
   const [confirmed, setConfirmed] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [defaultNeighborhood, setDefaultNeighborhood] = useState<string | undefined>(undefined)
+  const [profileChecked, setProfileChecked] = useState(false)
 
   const scope = useMemo(() => {
     return getServiceScope(service?.name)
@@ -67,6 +69,27 @@ export default function ChamarServicePage() {
   useEffect(() => {
     getPosition()
   }, [getPosition])
+
+  // Pré-preenche o campo de bairro com o bairro registrado no cadastro do
+  // cliente (via CEP), em vez do "Setor Central" fixo do EnderecoForm — o
+  // GPS acima só captura lat/lng para o dispatch, nunca resolveu bairro.
+  useEffect(() => {
+    async function loadClientNeighborhood() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('neighborhood')
+          .eq('id', user.id)
+          .maybeSingle()
+        if (profile?.neighborhood) {
+          setDefaultNeighborhood(profile.neighborhood)
+        }
+      }
+      setProfileChecked(true)
+    }
+    loadClientNeighborhood()
+  }, [supabase])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -131,7 +154,7 @@ export default function ChamarServicePage() {
     }
   }
 
-  if (!service) {
+  if (!service || !profileChecked) {
     return (
       <div className="page-container items-center justify-center">
         <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
@@ -223,7 +246,7 @@ export default function ChamarServicePage() {
           </div>
 
           {/* Endereço Inteligente Estruturado */}
-          <EnderecoForm onAddressChange={setStructuredAddress} />
+          <EnderecoForm onAddressChange={setStructuredAddress} initialNeighborhood={defaultNeighborhood} />
 
           {/* Escopo Claro: O que está incluso vs Não incluso */}
           <div className="space-y-2 pt-1 text-left">
