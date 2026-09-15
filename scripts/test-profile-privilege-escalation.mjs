@@ -25,6 +25,12 @@
 //      silenciosamente revertidos.
 //   2. Escritas legítimas (ex: full_name) continuam funcionando normalmente
 //      — o trigger não quebrou o autoatendimento de perfil.
+//   3. O painel admin (app/actions/admin-users.ts — toggleUserBlockedAction
+//      e updateBackgroundCheckStatusAction) continua funcionando: essas
+//      actions usam createServiceClient() (Service Role), que o trigger
+//      explicitamente deixa passar. Sem essa checagem, o fix desta sessão
+//      poderia ter corrigido a escalação de privilégio e quebrado a única
+//      forma legítima de bloquear/aprovar um usuário ao mesmo tempo.
 //
 // PRÉ-REQUISITO:
 //   node --env-file=.env.local scripts/test-profile-privilege-escalation.mjs
@@ -108,6 +114,21 @@ async function run() {
   const { error: nameErr } = await asUser.from('profiles').update({ full_name: '[TESTE ESCALACAO PRIVILEGIO] nome atualizado' }).eq('id', userId)
   const { data: afterName } = await admin.from('profiles').select('full_name').eq('id', userId).single()
   results.push(record('full_name foi atualizado normalmente (trigger não quebrou autoatendimento)', !nameErr && afterName?.full_name?.includes('atualizado')))
+
+  console.log('\n🛡️  Confirmando que o painel admin (Service Role) ainda consegue bloquear/aprovar de verdade...')
+  const { error: adminBlockErr } = await admin.from('profiles').update({ is_blocked: true }).eq('id', userId)
+  const { error: adminApproveErr } = await admin.from('profiles').update({ background_check_status: 'approved' }).eq('id', userId)
+  const { data: afterAdminWrites } = await admin
+    .from('profiles')
+    .select('is_blocked, background_check_status')
+    .eq('id', userId)
+    .single()
+  results.push(
+    record(
+      'Service Role (painel admin) consegue escrever is_blocked/background_check_status normalmente',
+      !adminBlockErr && !adminApproveErr && afterAdminWrites?.is_blocked === true && afterAdminWrites?.background_check_status === 'approved'
+    )
+  )
 
   const pass = results.every(Boolean)
   if (pass) {
