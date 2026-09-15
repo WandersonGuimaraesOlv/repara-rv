@@ -138,29 +138,35 @@ export function PixPaymentModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
-      style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)' }}
+      style={{ background: 'rgba(7, 16, 15, 0.85)', backdropFilter: 'blur(10px)' }}
       id="pix-payment-modal"
     >
       <div
         className="w-full max-w-md rounded-3xl p-6 animate-slide-up overflow-hidden shadow-2xl"
-        style={{ background: 'var(--color-surface, #ffffff)', border: '1px solid rgba(249, 115, 22, 0.2)' }}
+        style={{
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+        }}
       >
         {isPaid ? (
           <div className="text-center py-6 animate-scale-in">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ background: 'var(--color-primary-soft)', color: 'var(--color-success)' }}
+            >
               <CheckCircle size={36} />
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">
+            <h3 className="text-xl font-black mb-2" style={{ color: 'var(--color-text)' }}>
               Pagamento Confirmado!
             </h3>
-            <p className="text-sm text-slate-600 mb-6">
-              Seu pagamento de <strong>{formatCurrency(amount)}</strong> foi aprovado. O prestador foi notificado e o atendimento está concluído.
+            <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
+              Seu pagamento de <strong style={{ color: 'var(--color-text)' }}>{formatCurrency(amount)}</strong> foi aprovado. O prestador foi notificado e o atendimento está concluído.
             </p>
             {onClose && (
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full py-3.5 rounded-2xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors shadow-md"
+                className="btn-primary w-full"
               >
                 Concluir e Fechar
               </button>
@@ -170,28 +176,39 @@ export function PixPaymentModal({
           <>
             {/* Header */}
             <div className="text-center mb-4">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-xs font-bold uppercase tracking-wider mb-2">
-                <ShieldCheck size={14} className="text-orange-600" />
+              <div
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2"
+                style={{
+                  background: 'var(--color-primary-soft)',
+                  color: 'var(--color-accent)',
+                  border: '1px solid var(--color-border)',
+                }}
+              >
+                <ShieldCheck size={14} style={{ color: 'var(--color-primary-hover)' }} />
                 <span>Pagamento Seguro Mercado Pago</span>
               </div>
-              <h3 className="text-xl font-black text-slate-900">
+              <h3 className="text-xl font-black" style={{ color: 'var(--color-text)' }}>
                 Pagar pelo Serviço
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
                 Escolha pagar via Pix instantâneo ou Cartão de Crédito / Débito
               </p>
             </div>
 
             {/* Abas de Seleção: Pix ou Cartão */}
-            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl mb-4 text-xs font-bold">
+            <div
+              className="grid grid-cols-2 gap-2 p-1 rounded-2xl mb-4 text-xs font-bold"
+              style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}
+            >
               <button
                 type="button"
                 onClick={() => setActiveTab('pix')}
-                className={`py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-                  activeTab === 'pix'
-                    ? 'bg-white text-orange-600 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className="py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                style={{
+                  background: activeTab === 'pix' ? 'var(--color-primary-soft)' : 'transparent',
+                  color: activeTab === 'pix' ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                  boxShadow: activeTab === 'pix' ? '0 1px 4px rgba(0,0,0,0.3)' : 'none',
+                }}
               >
                 <QrCode size={15} />
                 <span>Pix Instantâneo</span>
@@ -199,11 +216,12 @@ export function PixPaymentModal({
               <button
                 type="button"
                 onClick={() => setActiveTab('card')}
-                className={`py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all ${
-                  activeTab === 'card'
-                    ? 'bg-white text-orange-600 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
+                className="py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                style={{
+                  background: activeTab === 'card' ? 'var(--color-primary-soft)' : 'transparent',
+                  color: activeTab === 'card' ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                  boxShadow: activeTab === 'card' ? '0 1px 4px rgba(0,0,0,0.3)' : 'none',
+                }}
               >
                 <CreditCard size={15} />
                 <span>Cartão (Crédito/Débito)</span>
@@ -211,13 +229,30 @@ export function PixPaymentModal({
             </div>
 
             {/* Resumo do Valor */}
-            <div className="rounded-2xl p-3.5 mb-4 bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+            <div
+              className="rounded-2xl p-3.5 mb-4 flex items-center justify-between"
+              style={{
+                background: 'var(--color-surface-alt)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
               <div>
-                <span className="text-[11px] font-semibold text-slate-500 block">Total a pagar</span>
-                <span className="text-2xl font-black text-slate-900">{formatCurrency(amount)}</span>
+                <span className="text-[11px] font-semibold block" style={{ color: 'var(--color-text-subtle)' }}>
+                  Total a pagar
+                </span>
+                <span className="text-2xl font-black" style={{ color: 'var(--color-accent)' }}>
+                  {formatCurrency(amount)}
+                </span>
               </div>
               <div className="text-right">
-                <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                <span
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                  style={{
+                    background: 'var(--color-primary-soft)',
+                    color: 'var(--color-primary-hover)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
                   Sem acréscimos
                 </span>
               </div>
@@ -228,18 +263,26 @@ export function PixPaymentModal({
               <div className="animate-fade-in">
                 {loading ? (
                   <div className="flex flex-col items-center justify-center py-8">
-                    <Loader2 size={32} className="animate-spin text-orange-600 mb-2" />
-                    <p className="text-xs text-slate-500 font-medium">Gerando QR Code oficial no Mercado Pago...</p>
+                    <Loader2 size={32} className="animate-spin mb-2" style={{ color: 'var(--color-primary)' }} />
+                    <p className="text-xs font-medium" style={{ color: 'var(--color-text-muted)' }}>
+                      Gerando QR Code oficial no Mercado Pago...
+                    </p>
                   </div>
                 ) : error && !qrCode ? (
-                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-3 my-2">
-                    <p className="text-xs text-amber-800 font-semibold leading-relaxed">
+                  <div
+                    className="p-4 rounded-2xl text-center space-y-3 my-2"
+                    style={{
+                      background: 'rgba(237, 198, 107, 0.1)',
+                      border: '1px solid var(--color-warning)',
+                    }}
+                  >
+                    <p className="text-xs font-semibold leading-relaxed" style={{ color: 'var(--color-warning)' }}>
                       {error}
                     </p>
                     <button
                       type="button"
                       onClick={generatePayment}
-                      className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-xl shadow transition"
+                      className="btn-primary text-xs py-2 px-4"
                     >
                       Tentar Gerar Novamente
                     </button>
@@ -254,7 +297,7 @@ export function PixPaymentModal({
                           src={`data:image/png;base64,${qrCode}`}
                           alt="QR Code Pix"
                           className="w-44 h-44 rounded-2xl shadow-sm"
-                          style={{ border: '4px solid #ffffff' }}
+                          style={{ border: '4px solid white', background: 'white' }}
                         />
                       </div>
                     )}
@@ -266,7 +309,7 @@ export function PixPaymentModal({
                           type="button"
                           onClick={handleCopy}
                           id="btn-copy-pix-code"
-                          className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl font-bold text-sm text-white bg-orange-600 hover:bg-orange-700 active:scale-95 transition-all shadow-md shadow-orange-600/20"
+                          className="btn-primary w-full flex items-center justify-center gap-2"
                         >
                           {copied ? (
                             <>
@@ -280,7 +323,7 @@ export function PixPaymentModal({
                             </>
                           )}
                         </button>
-                        <p className="text-[11px] text-center text-slate-500">
+                        <p className="text-[11px] text-center" style={{ color: 'var(--color-text-subtle)' }}>
                           Abra o app do seu banco, escolha <strong>Pix Copia e Cola</strong> e efetue o pagamento.
                         </p>
                       </div>
@@ -293,14 +336,23 @@ export function PixPaymentModal({
             {/* Conteúdo da Aba Cartão */}
             {activeTab === 'card' && (
               <div className="animate-fade-in space-y-4 py-2">
-                <div className="p-4 rounded-2xl bg-orange-50/70 border border-orange-200 text-center">
-                  <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-2">
+                <div
+                  className="p-4 rounded-2xl text-center"
+                  style={{
+                    background: 'var(--color-surface-alt)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-2"
+                    style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary-hover)' }}
+                  >
                     <CreditCard size={20} />
                   </div>
-                  <h4 className="font-bold text-sm text-slate-900 mb-1">
+                  <h4 className="font-bold text-sm mb-1" style={{ color: 'var(--color-text)' }}>
                     Pague com Cartão de Crédito ou Débito
                   </h4>
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
                     Você será direcionado para o ambiente seguro do Mercado Pago, onde pode parcelar no cartão de crédito ou pagar com cartão de débito virtual da Caixa e bancos conveniados.
                   </p>
                 </div>
@@ -310,7 +362,7 @@ export function PixPaymentModal({
                     href={cardUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl font-bold text-sm text-white bg-slate-900 hover:bg-slate-800 active:scale-95 transition-all shadow-md"
+                    className="btn-primary w-full flex items-center justify-center gap-2"
                   >
                     <span>Pagar com Cartão no Mercado Pago</span>
                     <ExternalLink size={16} />
@@ -319,7 +371,12 @@ export function PixPaymentModal({
                   <button
                     type="button"
                     disabled
-                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl font-bold text-xs text-slate-400 bg-slate-100"
+                    className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl font-bold text-xs"
+                    style={{
+                      background: 'var(--color-surface-alt)',
+                      color: 'var(--color-text-subtle)',
+                      border: '1px solid var(--color-border)',
+                    }}
                   >
                     <Loader2 size={16} className="animate-spin" />
                     <span>Carregando opções de cartão...</span>
@@ -328,14 +385,14 @@ export function PixPaymentModal({
                   <button
                     type="button"
                     onClick={generatePayment}
-                    className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl font-bold text-sm text-white bg-orange-600 hover:bg-orange-700 transition-colors shadow-md"
+                    className="btn-primary w-full flex items-center justify-center gap-2"
                   >
                     <span>Gerar Link de Cartão no Mercado Pago</span>
                     <ExternalLink size={16} />
                   </button>
                 )}
 
-                <p className="text-[11px] text-center text-slate-500">
+                <p className="text-[11px] text-center" style={{ color: 'var(--color-text-subtle)' }}>
                   Após concluir o pagamento no Mercado Pago, a confirmação é registrada automaticamente aqui!
                 </p>
               </div>
@@ -346,7 +403,8 @@ export function PixPaymentModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full mt-2 py-2 text-xs font-semibold text-slate-400 hover:text-slate-600 text-center"
+                className="w-full mt-2 py-2 text-xs font-semibold text-center cursor-pointer transition"
+                style={{ color: 'var(--color-text-subtle)' }}
               >
                 Fechar janela
               </button>

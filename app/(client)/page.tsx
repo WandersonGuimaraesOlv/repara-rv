@@ -39,7 +39,7 @@ import {
   AlertCircle,
   Shield,
   FileText,
-  Loader2
+  Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { DEFAULT_SERVICES } from '@/lib/catalog'
@@ -48,7 +48,7 @@ import { formatCurrency } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/logo'
 import { PwaInstallBanner } from '@/components/pwa-install-banner'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { SiteFooter } from '@/components/site-footer'
 import { performLogout } from '@/lib/auth-logout'
 
 const RIO_VERDE_NEIGHBORHOODS = [
@@ -68,12 +68,12 @@ const RIO_VERDE_NEIGHBORHOODS = [
 ]
 
 const CATEGORIES = [
-  { id: 'all', name: 'Todos', icon: Sparkles, color: '#0F172A' },
-  { id: 'Elétrica', name: 'Elétrica', icon: Zap, color: '#F59E0B' },
-  { id: 'Hidráulica', name: 'Hidráulica', icon: Droplets, color: '#06B6D4' },
-  { id: 'Montagem', name: 'Montagem', icon: Hammer, color: '#8B5CF6' },
-  { id: 'Chaveiro', name: 'Chaveiro', icon: Key, color: '#EAB308' },
-  { id: 'Instalação', name: 'Instalação', icon: WashingMachine, color: '#10B981' },
+  { id: 'all', name: 'Todos', icon: Sparkles },
+  { id: 'Elétrica', name: 'Elétrica', icon: Zap },
+  { id: 'Hidráulica', name: 'Hidráulica', icon: Droplets },
+  { id: 'Montagem', name: 'Montagem', icon: Hammer },
+  { id: 'Chaveiro', name: 'Chaveiro', icon: Key },
+  { id: 'Instalação', name: 'Instalação', icon: WashingMachine },
 ]
 
 const SERVICE_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -93,13 +93,32 @@ const SERVICE_ICONS: Record<string, React.ComponentType<{ size?: number; classNa
   Lock,
   WashingMachine,
   Flame,
-  // Fallbacks
   zap: Zap,
   droplets: Droplet,
   wrench: Wrench,
   hammer: Hammer,
   key: Key,
   lock: Lock,
+}
+
+// Map status to display config using CSS variable colors
+function getStatusConfig(status: string) {
+  switch (status) {
+    case 'queued':
+    case 'searching':
+      return { label: 'Aguardando Profissional', colorVar: '--color-warning', isActive: true }
+    case 'accepted':
+    case 'on_the_way':
+      return { label: 'Técnico a Caminho', colorVar: '--color-info', isActive: true }
+    case 'in_progress':
+      return { label: 'Em Atendimento', colorVar: '--color-primary', isActive: true }
+    case 'completed':
+      return { label: 'Concluído', colorVar: '--color-success', isActive: false }
+    case 'cancelled':
+      return { label: 'Cancelado', colorVar: '--color-danger', isActive: false }
+    default:
+      return { label: status, colorVar: '--color-text-subtle', isActive: false }
+  }
 }
 
 export default function TriiderClientHomePage() {
@@ -298,82 +317,122 @@ export default function TriiderClientHomePage() {
       .slice(0, 4)
   }, [services, searchQuery])
 
+  const userInitial = currentUser?.full_name?.charAt(0)?.toUpperCase() ?? 'U'
+  const userName = currentUser?.full_name?.split(' ')[0] ?? 'Minha Conta'
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col selection:bg-orange-100 selection:text-orange-900 w-full max-w-full overflow-x-hidden transition-colors duration-200">
+    <div
+      className="min-h-screen flex flex-col w-full max-w-full overflow-x-hidden"
+      style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}
+    >
 
       {/* ────────────────────────────────────────────────────────
-          1. HEADER RESPONSIVO (DESKTOP + MOBILE)
+          1. HEADER RESPONSIVO
           ──────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800 transition-all w-full max-w-full">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14 sm:h-20 gap-2 sm:gap-4">
-            
-            {/* Esquerda: Logo + Seletor de Bairro (Desktop) */}
-            <div className="flex items-center gap-2 sm:gap-6 min-w-0 shrink-0">
-              <Link href="/" className="flex items-center group transition-transform hover:opacity-95 shrink-0">
-                <Logo variant="full" width={168} height={42} className="hidden sm:block" />
-                <Logo variant="compact" className="sm:hidden shrink-0" />
+      <header
+        className="sticky top-0 z-30 w-full"
+        style={{
+          background: 'rgba(20, 38, 34, 0.96)',
+          borderBottom: '1px solid var(--color-border)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+        }}
+      >
+        <div className="content-container">
+          <div className="flex items-center justify-between h-14 sm:h-16 gap-2">
+
+            {/* Esquerda: Logo + Seletor de Bairro */}
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0 shrink-0">
+              <Link href="/" className="flex items-center transition-opacity hover:opacity-85 shrink-0">
+                <Logo variant="full" width={148} height={38} className="hidden sm:block" />
+                <Logo variant="compact" className="sm:hidden" />
               </Link>
 
-              {/* Seletor de Localização (Desktop & Tablet) */}
+              {/* Seletor de Localização (Desktop) */}
               <button
                 type="button"
                 onClick={() => setIsAddressModalOpen(true)}
-                className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-orange-50/80 dark:hover:bg-slate-700/80 border border-slate-200/80 dark:border-slate-700 hover:border-orange-200 text-xs text-slate-700 dark:text-slate-300 transition-all group cursor-pointer"
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer"
+                style={{
+                  background: 'var(--color-surface-alt)',
+                  border: '1px solid var(--color-border)',
+                  color: 'var(--color-text-muted)',
+                }}
+                aria-label={`Bairro: ${selectedNeighborhood}. Clique para alterar.`}
               >
-                <MapPin size={14} className="text-orange-600 shrink-0 group-hover:scale-110 transition-transform" />
-                <span className="text-slate-500 dark:text-slate-400 font-medium">Bairro:</span>
-                <strong className="font-bold text-slate-900 dark:text-white">{selectedNeighborhood}</strong>
-                <ChevronDown size={14} className="text-slate-400 ml-0.5" />
+                <MapPin size={13} style={{ color: 'var(--color-primary)' }} className="shrink-0" />
+                <span>Bairro:</span>
+                <strong style={{ color: 'var(--color-text)' }}>{selectedNeighborhood}</strong>
+                <ChevronDown size={13} style={{ color: 'var(--color-text-subtle)' }} />
               </button>
             </div>
 
-            {/* Centro: Links de Navegação (Desktop) */}
-            <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <a href="#categorias" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
-                Categorias
+            {/* Centro: Nav Desktop */}
+            <nav className="hidden lg:flex items-center gap-1" aria-label="Navegação principal">
+              <a
+                href="#categorias"
+                className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                Serviços
               </a>
-              <a href="#servicos" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
-                Serviços Populares
+              <a
+                href="#garantia"
+                className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                Garantia 7 Dias
               </a>
-              <a href="#garantia" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
-                Garantia 30 Dias
+              <a
+                href="https://wa.me/5564999999999?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20no%20Repara%20RV"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                Suporte
               </a>
             </nav>
 
-            {/* Direita: Ações & Perfil (Ultra responsivo para evitar qualquer overflow no mobile) */}
-            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            {/* Direita: Ações */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <button
                 type="button"
                 onClick={handleMyOrders}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-colors cursor-pointer"
+                style={{ color: 'var(--color-text-muted)' }}
+                aria-label="Meus Pedidos"
               >
                 <ClipboardList size={15} />
                 <span>Meus Pedidos</span>
               </button>
 
-              {/* Alternador de tema */}
-              <ThemeToggle />
-
               {/* Botão de Prestador / Painel */}
               {currentUser?.role === 'provider' ? (
                 <Link
                   href="/painel"
-                  aria-label="Painel do Prestador"
-                  title="Painel do Prestador"
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/50 border border-emerald-300 dark:border-emerald-800 shadow-sm transition-all shrink-0"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+                  style={{
+                    color: 'var(--color-success)',
+                    background: 'rgba(94, 211, 164, 0.1)',
+                    border: '1px solid rgba(94, 211, 164, 0.2)',
+                  }}
                 >
-                  <Bike size={14} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span className="hidden xs:inline">Painel</span>
+                  <Bike size={14} className="shrink-0" />
+                  <span>Painel</span>
                 </Link>
               ) : (
                 <Link
-                  href={currentUser ? "/onboarding?role=provider" : "/cadastro?role=provider"}
-                  aria-label="Sou Profissional"
-                  title="Sou Profissional / Prestador"
-                  className="hidden sm:flex items-center gap-1 px-3.5 py-2 rounded-full text-xs font-bold text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-100/80 dark:hover:bg-orange-900/50 border border-orange-200/60 dark:border-orange-800/60 shadow-sm transition-all shrink-0"
+                  href={currentUser ? '/onboarding?role=provider' : '/cadastro?role=provider'}
+                  id="btn-nav-provider"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+                  style={{
+                    color: 'var(--color-primary)',
+                    background: 'var(--color-primary-soft)',
+                    border: '1px solid var(--color-border)',
+                  }}
                 >
-                  <Bike size={14} className="text-orange-600 dark:text-orange-400 shrink-0" />
+                  <Bike size={14} className="shrink-0" />
                   <span>Sou Profissional</span>
                 </Link>
               )}
@@ -385,30 +444,53 @@ export default function TriiderClientHomePage() {
                     type="button"
                     id="btn-user-profile-menu"
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                    className="flex items-center gap-1.5 sm:gap-2 p-1 sm:px-3 sm:py-1.5 rounded-full text-xs font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-sm transition-all cursor-pointer shrink-0"
+                    className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer"
+                    style={{
+                      background: 'var(--color-surface-alt)',
+                      border: '1px solid var(--color-border)',
+                      color: 'var(--color-text)',
+                    }}
+                    aria-label="Menu do usuário"
+                    aria-expanded={isProfileMenuOpen}
                   >
-                    <div className="w-7 h-7 sm:w-6 sm:h-6 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center text-xs sm:text-[10px] font-black uppercase shadow-xs shrink-0">
-                      {currentUser.full_name ? currentUser.full_name.charAt(0) : 'U'}
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black uppercase text-white shrink-0"
+                      style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-hover))' }}
+                    >
+                      {userInitial}
                     </div>
-                    <span className="hidden sm:inline max-w-[120px] truncate">
-                      {currentUser.full_name?.split(' ')[0] || 'Minha Conta'}
-                    </span>
-                    <ChevronDown size={13} className={`text-slate-400 hidden sm:block shrink-0 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
+                    <span className="hidden sm:inline max-w-[110px] truncate">{userName}</span>
+                    <ChevronDown
+                      size={13}
+                      className={`hidden sm:block shrink-0 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`}
+                      style={{ color: 'var(--color-text-subtle)' }}
+                    />
                   </button>
 
-                  {/* Dropdown Menu do Usuário (Desktop) */}
+                  {/* Dropdown desktop */}
                   {isProfileMenuOpen && (
-                    <div className="hidden md:block absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 text-left">
-                      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                    <div
+                      className="hidden md:block absolute right-0 mt-2 w-60 rounded-2xl py-1.5 z-50 animate-fade-in"
+                      style={{
+                        background: 'var(--color-surface)',
+                        border: '1px solid var(--color-border)',
+                        boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
+                      }}
+                      role="menu"
+                    >
+                      <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
+                        <p className="text-xs font-bold truncate" style={{ color: 'var(--color-text)' }}>
                           {currentUser.full_name || 'Usuário Repara RV'}
                         </p>
                         {currentUser.phone && (
-                          <p className="text-[11px] text-slate-500 mt-0.5">
+                          <p className="text-[11px] mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
                             {currentUser.phone}
                           </p>
                         )}
-                        <span className="inline-block mt-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-orange-100 text-orange-700">
+                        <span
+                          className="inline-block mt-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider"
+                          style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}
+                        >
                           {currentUser.role === 'admin' ? 'Administrador' : currentUser.role === 'provider' ? 'Prestador Autônomo' : 'Cliente / Morador'}
                         </span>
                       </div>
@@ -418,38 +500,44 @@ export default function TriiderClientHomePage() {
                           <Link
                             href="/admin/dashboard"
                             onClick={() => setIsProfileMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-slate-700/60 transition-colors"
+                            className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold transition-colors"
+                            style={{ color: 'var(--color-accent)' }}
+                            role="menuitem"
                           >
                             <Shield size={15} />
                             <span>Torre de Controle Admin</span>
                           </Link>
                         )}
-
                         <Link
                           href="/painel"
                           onClick={() => setIsProfileMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-orange-50 dark:hover:bg-slate-700/60 hover:text-orange-700 dark:hover:text-orange-300 transition-colors"
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold transition-colors"
+                          style={{ color: 'var(--color-text-muted)' }}
+                          role="menuitem"
                         >
-                          <Bike size={15} className="text-orange-600 dark:text-orange-400" />
-                          <span>Acessar Painel do Prestador</span>
+                          <Bike size={15} style={{ color: 'var(--color-primary)' }} />
+                          <span>Painel do Prestador</span>
                         </Link>
-
                         <button
                           type="button"
                           onClick={handleMyOrders}
-                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-orange-50 dark:hover:bg-slate-700/60 hover:text-orange-700 dark:hover:text-orange-300 transition-colors cursor-pointer text-left"
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold transition-colors text-left cursor-pointer"
+                          style={{ color: 'var(--color-text-muted)' }}
+                          role="menuitem"
                         >
-                          <ClipboardList size={15} className="text-slate-500 dark:text-slate-400" />
+                          <ClipboardList size={15} style={{ color: 'var(--color-text-subtle)' }} />
                           <span>Meus Chamados & Histórico</span>
                         </button>
                       </div>
 
-                      <div className="border-t border-slate-100 dark:border-slate-700 pt-1">
+                      <div style={{ borderTop: '1px solid var(--color-border)' }} className="pt-1">
                         <button
                           type="button"
                           id="btn-logout"
                           onClick={handleLogout}
-                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer text-left"
+                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold transition-colors text-left cursor-pointer"
+                          style={{ color: 'var(--color-danger)' }}
+                          role="menuitem"
                         >
                           <LogOut size={15} />
                           <span>Sair da Conta</span>
@@ -459,94 +547,140 @@ export default function TriiderClientHomePage() {
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <Link
                     href="/login"
                     id="btn-nav-login"
-                    className="flex items-center gap-1 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700 transition-colors shrink-0"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+                    style={{
+                      color: 'var(--color-text-muted)',
+                      background: 'var(--color-surface-alt)',
+                      border: '1px solid var(--color-border)',
+                    }}
                   >
-                    <User size={14} className="text-slate-600 dark:text-slate-400" />
+                    <User size={14} />
                     <span>Entrar</span>
                   </Link>
                   <Link
                     href="/cadastro"
                     id="btn-nav-cadastro"
-                    className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 shadow-sm shadow-orange-600/20 transition-all hover:scale-[1.02] active:scale-95 shrink-0"
+                    className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold text-white transition-all hover:scale-[1.02] active:scale-95"
+                    style={{
+                      background: 'var(--color-primary)',
+                      boxShadow: 'var(--shadow-primary)',
+                    }}
                   >
-                    <Sparkles size={13} className="text-orange-200" />
                     <span>Cadastre-se</span>
                   </Link>
                 </div>
               )}
             </div>
-
           </div>
 
-          {/* Seletor de Bairro para Mobile (linha dedicada com min-w-0 e truncate) */}
-          <div className="md:hidden pb-2.5 pt-1 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs w-full min-w-0">
+          {/* Seletor de Bairro para Mobile */}
+          <div
+            className="md:hidden pb-2 pt-1 flex items-center gap-2 text-xs"
+            style={{ borderTop: '1px solid var(--color-border)' }}
+          >
             <button
               type="button"
               onClick={() => setIsAddressModalOpen(true)}
-              className="flex items-center gap-1.5 text-left text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white group w-full min-w-0 py-0.5"
+              className="flex items-center gap-1.5 text-left transition-colors cursor-pointer py-0.5 w-full"
+              style={{ color: 'var(--color-text-muted)' }}
             >
-              <MapPin size={14} className="text-orange-600 shrink-0 group-hover:scale-110 transition-transform" />
-              <div className="truncate flex-1 min-w-0 text-xs">
-                <span className="text-slate-400 dark:text-slate-500 font-medium">Você está em: </span>
-                <strong className="text-slate-900 dark:text-white font-bold underline underline-offset-2 decoration-orange-300">
-                  {selectedNeighborhood}, Rio Verde
-                </strong>
+              <MapPin size={13} style={{ color: 'var(--color-primary)' }} className="shrink-0" />
+              <div className="truncate flex-1 min-w-0">
+                <span style={{ color: 'var(--color-text-subtle)' }}>Você está em: </span>
+                <strong style={{ color: 'var(--color-text)' }}>{selectedNeighborhood}, Rio Verde</strong>
               </div>
-              <ChevronDown size={14} className="text-slate-400 shrink-0 ml-1" />
+              <ChevronDown size={13} style={{ color: 'var(--color-text-subtle)' }} className="shrink-0 ml-1" />
             </button>
           </div>
-
         </div>
       </header>
 
       {/* ────────────────────────────────────────────────────────
-          2. HERO SECTION RESPONSIVA (ESTILO TRIIDER MODERNO)
+          2. HERO SECTION
           ──────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-white via-orange-50/20 to-slate-50 dark:from-slate-900 dark:via-slate-900/80 dark:to-slate-950 border-b border-slate-200/60 dark:border-slate-800 pt-6 pb-10 sm:pt-14 sm:pb-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <section
+        className="relative overflow-hidden pt-8 pb-12 sm:pt-16 sm:pb-24"
+        style={{
+          background: 'linear-gradient(180deg, var(--color-surface) 0%, var(--color-bg) 100%)',
+          borderBottom: '1px solid var(--color-border)',
+        }}
+      >
+        {/* Decoração de fundo */}
+        <div
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-10 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse at center, var(--color-primary) 0%, transparent 70%)' }}
+        />
+
+        <div className="content-container relative z-10">
           <div className="max-w-3xl mx-auto text-center">
-            
+
             {/* Selo Local */}
-            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 sm:py-1.5 rounded-full bg-orange-100/80 dark:bg-orange-950/60 border border-orange-200 dark:border-orange-800 text-orange-800 dark:text-orange-300 text-[11px] sm:text-xs font-bold tracking-wide uppercase mb-3 sm:mb-4 shadow-sm max-w-full">
-              <Sparkles size={13} className="text-orange-600 dark:text-orange-400 shrink-0" />
-              <span className="truncate sm:overflow-visible">Serviços Residenciais • Rio Verde (GO)</span>
+            <div
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase mb-4"
+              style={{
+                background: 'var(--color-primary-soft)',
+                border: '1px solid var(--color-border)',
+                color: 'var(--color-primary)',
+              }}
+            >
+              <Sparkles size={13} className="shrink-0" />
+              <span>Serviços Residenciais • Rio Verde (GO)</span>
             </div>
 
-            {/* Título Principal de Alto Impacto */}
-            <h1 className="text-2xl sm:text-4xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight sm:leading-[1.15] mb-3 sm:mb-4">
+            {/* Título Principal */}
+            <h1
+              className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-tight sm:leading-[1.1] mb-4"
+              style={{ color: 'var(--color-text)' }}
+            >
               O que você precisa{' '}
-              <span className="text-orange-600 underline decoration-orange-300 decoration-wavy decoration-2">
-                consertar
+              <span style={{ color: 'var(--color-accent)' }}>
+                resolver
               </span>{' '}
               hoje?
             </h1>
 
             {/* Subtítulo */}
-            <p className="text-xs sm:text-base lg:text-lg text-slate-600 dark:text-slate-300 font-normal leading-relaxed max-w-2xl mx-auto mb-6 sm:mb-8 px-1">
-              Encanadores, eletricistas e montadores verificados em Rio Verde com preço fixo transparente, atendimento ágil e garantia de 30 dias.
+            <p
+              className="text-sm sm:text-lg leading-relaxed max-w-2xl mx-auto mb-8 px-1"
+              style={{ color: 'var(--color-text-muted)' }}
+            >
+              Encanadores, eletricistas e montadores verificados em Rio Verde.
+              Preço fixo transparente, atendimento ágil e garantia de 7 dias.
             </p>
 
-            {/* Barra de Busca Proeminente com Autocomplete */}
+            {/* Barra de Busca */}
             <div className="relative max-w-2xl mx-auto w-full">
-              <div className="relative flex items-center shadow-lg shadow-orange-950/5 dark:shadow-black/40 rounded-2xl bg-white dark:bg-slate-800">
-                <Search size={18} className="absolute left-3.5 sm:left-4 text-slate-400 pointer-events-none shrink-0" />
+              <div
+                className="relative flex items-center rounded-2xl"
+                style={{
+                  background: 'var(--color-surface)',
+                  border: '1.5px solid var(--color-border)',
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+                }}
+              >
+                <Search size={18} className="absolute left-4 pointer-events-none shrink-0" style={{ color: 'var(--color-text-subtle)' }} />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
                   placeholder="Busque pelo conserto: chuveiro, torneira, tomada..."
-                  className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 sm:py-4 bg-transparent border-2 border-slate-200 dark:border-slate-700 focus:border-orange-500 dark:focus:border-orange-500 rounded-2xl text-xs sm:text-base text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 transition-all outline-none"
+                  className="w-full pl-12 pr-12 py-4 bg-transparent text-sm outline-none"
+                  style={{ color: 'var(--color-text)' }}
+                  aria-label="Buscar serviço"
                 />
                 {searchQuery && (
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3.5 sm:right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                    className="absolute right-4 p-1 transition-colors"
+                    style={{ color: 'var(--color-text-subtle)' }}
+                    aria-label="Limpar busca"
                   >
                     <X size={16} />
                   </button>
@@ -555,23 +689,34 @@ export default function TriiderClientHomePage() {
 
               {/* Dropdown de Autocomplete */}
               {isSearchFocused && searchSuggestions.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 py-2 z-30 text-left overflow-hidden animate-in fade-in slide-in-from-top-2">
-                  <div className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    Sugestões Imediatas
+                <div
+                  className="absolute top-full left-0 right-0 mt-2 rounded-2xl py-2 z-30 text-left overflow-hidden animate-fade-in"
+                  style={{
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    boxShadow: '0 12px 32px rgba(0,0,0,0.4)',
+                  }}
+                >
+                  <div
+                    className="px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider"
+                    style={{ color: 'var(--color-text-subtle)' }}
+                  >
+                    Sugestões
                   </div>
                   {searchSuggestions.map(service => (
                     <Link
                       key={service.id}
                       href={`/chamar/${service.id}`}
                       onClick={() => setIsSearchFocused(false)}
-                      className="flex items-center justify-between px-4 py-3 hover:bg-orange-50/70 dark:hover:bg-slate-700/70 transition-colors text-sm text-slate-800 dark:text-slate-200"
+                      className="flex items-center justify-between px-4 py-3 transition-colors text-sm"
+                      style={{ color: 'var(--color-text-muted)' }}
                     >
                       <div className="flex items-center gap-2">
-                        <Wrench size={15} className="text-orange-600 dark:text-orange-400 shrink-0" />
-                        <span className="font-semibold text-slate-900 dark:text-white">{service.name}</span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500">({service.category})</span>
+                        <Wrench size={15} style={{ color: 'var(--color-primary)' }} className="shrink-0" />
+                        <span className="font-semibold" style={{ color: 'var(--color-text)' }}>{service.name}</span>
+                        <span className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>({service.category})</span>
                       </div>
-                      <span className="text-orange-600 dark:text-orange-400 font-bold text-sm shrink-0">
+                      <span className="font-bold text-sm shrink-0" style={{ color: 'var(--color-accent)' }}>
                         {formatCurrency(service.fixed_price)}
                       </span>
                     </Link>
@@ -581,69 +726,56 @@ export default function TriiderClientHomePage() {
             </div>
 
             {/* Tags de Pesquisas Frequentes */}
-            <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-3.5 sm:mt-4 text-xs max-w-full">
-              <span className="text-slate-400 dark:text-slate-500 font-semibold mr-0.5 text-[11px] sm:text-xs">Populares:</span>
+            <div className="flex flex-wrap items-center justify-center gap-1.5 mt-4 text-xs max-w-full">
+              <span className="font-semibold mr-0.5 text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>Populares:</span>
               {['Chuveiro', 'Torneira', 'Tomada', 'Ventilador', 'Fechadura', 'Máquina de Lavar', 'Varal', 'Silicone'].map(tag => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => setSearchQuery(tag)}
-                  className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 hover:border-orange-300 text-slate-600 dark:text-slate-300 hover:text-orange-600 dark:hover:text-orange-400 text-[11px] sm:text-xs font-medium transition-all shadow-xs cursor-pointer active:scale-95"
+                  className="px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer active:scale-95"
+                  style={{
+                    background: 'var(--color-surface-alt)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-text-muted)',
+                  }}
                 >
                   {tag}
                 </button>
               ))}
             </div>
 
-            {/* 4 Blocos de Garantia / Vantagens no Hero */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-slate-200/60 dark:border-slate-800 text-left">
-              <div className="p-3 sm:p-3.5 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex items-center sm:items-start gap-2.5">
-                <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 shrink-0">
-                  <ShieldCheck size={18} />
+            {/* 4 Blocos de Garantia */}
+            <div
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-8 pt-8 text-left"
+              style={{ borderTop: '1px solid var(--color-border)' }}
+            >
+              {[
+                { icon: ShieldCheck, title: 'Cadastro Verificado', desc: 'Identidade e autodeclaração de aptidão técnica.', color: 'var(--color-success)' },
+                { icon: Zap, title: 'Chegada Rápida', desc: 'Técnico no seu endereço em 30 a 45 min em Rio Verde.', color: 'var(--color-accent)' },
+                { icon: Lock, title: 'Pagamento Protegido', desc: 'Pague via Pix com total segurança na plataforma.', color: 'var(--color-info)' },
+                { icon: Sparkles, title: 'Garantia de 7 Dias', desc: 'Se o reparo apresentar defeito, reexecutamos sem custo.', color: 'var(--color-primary)' },
+              ].map(({ icon: Icon, title, desc, color }) => (
+                <div
+                  key={title}
+                  className="p-4 rounded-2xl flex items-start gap-3"
+                  style={{
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  <div
+                    className="p-2 rounded-xl shrink-0 mt-0.5"
+                    style={{ background: `${color}18` }}
+                  >
+                    <Icon size={18} style={{ color }} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold" style={{ color: 'var(--color-text)' }}>{title}</h4>
+                    <p className="text-[11px] mt-0.5 leading-snug" style={{ color: 'var(--color-text-subtle)' }}>{desc}</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">Cadastro Verificado</h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
-                    Identidade e autodeclaração de aptidão técnica.
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 sm:p-3.5 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex items-center sm:items-start gap-2.5">
-                <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 shrink-0">
-                  <Zap size={18} />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">Chegada Rápida</h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
-                    Técnico no seu endereço em 30 a 45 min em Rio Verde.
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 sm:p-3.5 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex items-center sm:items-start gap-2.5">
-                <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 shrink-0">
-                  <Lock size={18} />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">Pagamento Protegido</h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
-                    Pague via Pix com total segurança na plataforma.
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 sm:p-3.5 rounded-2xl bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex items-center sm:items-start gap-2.5">
-                <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 shrink-0">
-                  <Sparkles size={18} />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">Garantia de 30 Dias</h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
-                    Se o reparo apresentar defeito, reexecutamos sem custo.
-                  </p>
-                </div>
-              </div>
+              ))}
             </div>
 
           </div>
@@ -651,15 +783,15 @@ export default function TriiderClientHomePage() {
       </section>
 
       {/* ────────────────────────────────────────────────────────
-          3. CATEGORIAS DE SERVIÇOS (GRID ULTRA FLUIDO)
+          3. CATEGORIAS
           ──────────────────────────────────────────────────────── */}
-      <section id="categorias" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-12 w-full">
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
+      <section id="categorias" className="content-container py-8 sm:py-12 w-full">
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight" style={{ color: 'var(--color-text)' }}>
               Categorias de Serviços
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+            <p className="text-xs sm:text-sm mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
               Escolha a área do reparo para filtrar os serviços disponíveis
             </p>
           </div>
@@ -667,15 +799,15 @@ export default function TriiderClientHomePage() {
             <button
               type="button"
               onClick={() => setSelectedCategory('all')}
-              className="text-xs sm:text-sm font-bold text-orange-600 dark:text-orange-400 hover:text-orange-700 underline cursor-pointer shrink-0 ml-2"
+              className="text-xs font-bold hover:underline cursor-pointer shrink-0 ml-2"
+              style={{ color: 'var(--color-primary)' }}
             >
               Ver todos
             </button>
           )}
         </div>
 
-        {/* Grid Responsivo de Categorias: 3 colunas no mobile -> 6 no desktop */}
-        <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-4">
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-2 sm:gap-3">
           {CATEGORIES.map(cat => {
             const Icon = cat.icon
             const isSelected = selectedCategory === cat.id
@@ -684,22 +816,27 @@ export default function TriiderClientHomePage() {
                 key={cat.id}
                 type="button"
                 onClick={() => setSelectedCategory(isSelected ? 'all' : cat.id)}
-                className={`p-2.5 sm:p-5 rounded-2xl sm:rounded-3xl border text-center flex flex-col items-center justify-center gap-1.5 sm:gap-2 transition-all active:scale-95 group cursor-pointer ${
-                  isSelected
-                    ? 'bg-orange-50/90 dark:bg-orange-950/40 border-orange-500 shadow-md shadow-orange-500/10 ring-2 ring-orange-400/20'
-                    : 'bg-white dark:bg-slate-800/90 border-slate-200/80 dark:border-slate-700/80 hover:border-orange-300 dark:hover:border-orange-500/50 hover:shadow-md hover:-translate-y-0.5'
-                }`}
+                className="p-3 sm:p-5 rounded-2xl border text-center flex flex-col items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer group"
+                style={{
+                  background: isSelected ? 'var(--color-primary-soft)' : 'var(--color-surface)',
+                  border: `1px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                  boxShadow: isSelected ? 'var(--shadow-primary)' : 'none',
+                }}
+                aria-pressed={isSelected}
               >
                 <div
-                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-xs shrink-0"
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 shrink-0"
                   style={{
-                    background: isSelected ? 'rgba(249, 115, 22, 0.2)' : 'rgba(241, 245, 249, 0.9)',
-                    color: isSelected ? '#EA580C' : cat.color,
+                    background: isSelected ? 'rgba(10, 155, 112, 0.2)' : 'var(--color-surface-alt)',
+                    color: isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)',
                   }}
                 >
                   <Icon size={20} />
                 </div>
-                <span className={`text-[11px] sm:text-xs font-bold leading-tight ${isSelected ? 'text-orange-700 dark:text-orange-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                <span
+                  className="text-[11px] sm:text-xs font-bold leading-tight"
+                  style={{ color: isSelected ? 'var(--color-primary)' : 'var(--color-text-muted)' }}
+                >
                   {cat.name}
                 </span>
               </button>
@@ -709,98 +846,151 @@ export default function TriiderClientHomePage() {
       </section>
 
       {/* ────────────────────────────────────────────────────────
-          4. SERVIÇOS MAIS PEDIDOS (GRID MULTI-COLUNA NO PC)
+          4. SERVIÇOS MAIS PEDIDOS
           ──────────────────────────────────────────────────────── */}
-      <section id="servicos" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 w-full flex-1">
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
+      <section id="servicos" className="content-container pb-8 sm:pb-12 w-full flex-1">
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <h2 className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight" style={{ color: 'var(--color-text)' }}>
               Serviços Mais Pedidos
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-              Preço tabelado para mão de obra com chegada em até 40 min
+            <p className="text-xs sm:text-sm mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+              Preço tabelado de mão de obra com chegada em até 40 min
             </p>
           </div>
-          <span className="px-2.5 py-1 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] sm:text-xs font-bold shrink-0 ml-2">
+          <span
+            className="px-2.5 py-1 rounded-full text-xs font-bold shrink-0 ml-2"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-muted)',
+            }}
+          >
             {filteredServices.length} {filteredServices.length === 1 ? 'serviço' : 'serviços'}
           </span>
         </div>
 
         {filteredServices.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 p-8 sm:p-12 text-center my-6 shadow-sm">
-            <Search size={36} className="mx-auto text-slate-400 mb-3" />
-            <h3 className="text-base font-bold text-slate-800 dark:text-white">Nenhum serviço encontrado</h3>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+          <div
+            className="rounded-3xl p-10 sm:p-16 text-center my-4"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px dashed var(--color-border-strong)',
+            }}
+          >
+            <Search size={40} className="mx-auto mb-4" style={{ color: 'var(--color-text-subtle)' }} />
+            <h3 className="text-base font-bold mb-2" style={{ color: 'var(--color-text)' }}>
+              Nenhum serviço encontrado
+            </h3>
+            <p className="text-sm max-w-md mx-auto mb-6" style={{ color: 'var(--color-text-muted)' }}>
               Não encontramos resultados para sua busca. Tente palavras simples como &quot;chuveiro&quot;, &quot;torneira&quot; ou confira nosso catálogo completo.
             </p>
             <button
               type="button"
               onClick={() => { setSearchQuery(''); setSelectedCategory('all') }}
-              className="mt-4 px-5 py-2.5 rounded-full bg-orange-600 text-white text-xs sm:text-sm font-bold hover:bg-orange-700 shadow-md shadow-orange-600/20 transition-all cursor-pointer active:scale-95"
+              className="btn-primary max-w-xs mx-auto"
             >
               Exibir todos os serviços
             </button>
           </div>
         ) : (
-          /* Grid Responsivo: 1 coluna no mobile, 2 no tablet, 3 ou 4 no desktop */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredServices.map(service => {
               const ServiceIcon = (service.icon && SERVICE_ICONS[service.icon]) || Wrench
               return (
                 <div
                   key={service.id}
-                  className="bg-white dark:bg-slate-800/90 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-slate-700/80 p-4 sm:p-5 shadow-sm hover:shadow-xl hover:border-orange-300 dark:hover:border-orange-500/50 transition-all flex flex-col justify-between group hover:-translate-y-1"
+                  className="rounded-2xl p-5 flex flex-col justify-between group transition-all hover:-translate-y-1 cursor-pointer"
+                  style={{
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                    boxShadow: 'var(--shadow-card)',
+                  }}
+                  onMouseEnter={e => {
+                    const el = e.currentTarget
+                    el.style.borderColor = 'var(--color-border-strong)'
+                    el.style.boxShadow = 'var(--shadow-card-hover)'
+                  }}
+                  onMouseLeave={e => {
+                    const el = e.currentTarget
+                    el.style.borderColor = 'var(--color-border)'
+                    el.style.boxShadow = 'var(--shadow-card)'
+                  }}
                 >
                   <div>
-                    {/* Header do Card: Ícone do Serviço, Categoria e Badge Até 40 min */}
+                    {/* Header: Ícone + Categoria + Tempo */}
                     <div className="flex items-center justify-between gap-2 mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform shadow-xs shrink-0">
-                          <ServiceIcon size={17} />
+                        <div
+                          className="w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0"
+                          style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}
+                        >
+                          <ServiceIcon size={18} />
                         </div>
-                        <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold uppercase tracking-wider">
+                        <span
+                          className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                          style={{ background: 'var(--color-surface-alt)', color: 'var(--color-text-muted)' }}
+                        >
                           {service.category}
                         </span>
                       </div>
-                      <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs shrink-0">
-                        <Clock size={12} className="text-emerald-600 dark:text-emerald-400" />
+                      <span
+                        className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full shrink-0"
+                        style={{
+                          background: 'rgba(94, 211, 164, 0.1)',
+                          color: 'var(--color-success)',
+                          border: '1px solid rgba(94, 211, 164, 0.2)',
+                        }}
+                      >
+                        <Clock size={11} />
                         Até 40 min
                       </span>
                     </div>
 
                     {/* Nome e Descrição */}
-                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors leading-snug mb-1">
+                    <h3
+                      className="text-sm font-bold leading-snug mb-1 transition-colors"
+                      style={{ color: 'var(--color-text)' }}
+                    >
                       {service.name}
                     </h3>
                     {service.description && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed mb-2.5">
+                      <p
+                        className="text-xs line-clamp-2 leading-relaxed mb-3"
+                        style={{ color: 'var(--color-text-muted)' }}
+                      >
                         {service.description}
                       </p>
                     )}
 
-                    {/* Aviso Obrigatório: Peças e Materiais Não Inclusos */}
-                    <div className="text-[10px] font-semibold text-amber-800 dark:text-amber-300 bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200/70 dark:border-amber-800/70 rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 mt-2">
-                      <AlertCircle size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />
-                      <span>Peças e materiais não inclusos</span>
+                    {/* Aviso de Peças */}
+                    <div className="banner-warning text-[10px]">
+                      <AlertCircle size={13} className="shrink-0 mt-0.5" />
+                      <span>Peças e materiais não inclusos. Combinados à parte com o profissional.</span>
                     </div>
                   </div>
 
-                  {/* Preço e Botão de Ação */}
-                  <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                  {/* Preço e Botão */}
+                  <div
+                    className="mt-4 pt-4 flex items-center justify-between"
+                    style={{ borderTop: '1px solid var(--color-border)' }}
+                  >
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+                      <span className="text-[10px] font-bold uppercase tracking-wider block" style={{ color: 'var(--color-text-subtle)' }}>
                         Mão de Obra
                       </span>
-                      <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                      <span className="text-xl font-black tracking-tight" style={{ color: 'var(--color-text)' }}>
                         {formatCurrency(service.fixed_price)}
                       </span>
                     </div>
 
                     <Link
                       href={`/chamar/${service.id}`}
-                      className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-xs font-bold shadow-md shadow-orange-600/20 group-hover:shadow-orange-600/30 transition-all shrink-0"
+                      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90 active:scale-95 shrink-0"
+                      style={{ background: 'var(--color-primary)', boxShadow: 'var(--shadow-primary)' }}
+                      aria-label={`Solicitar serviço: ${service.name}`}
                     >
-                      <span>Chamar</span>
+                      <span>Solicitar</span>
                       <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
                     </Link>
                   </div>
@@ -812,219 +1002,210 @@ export default function TriiderClientHomePage() {
       </section>
 
       {/* ────────────────────────────────────────────────────────
-          5. BANNER DE CONFIANÇA & GARANTIA (ESTILO TRIIDER)
+          5. GARANTIA E CONFIANÇA
           ──────────────────────────────────────────────────────── */}
-      <section id="garantia" className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-8 sm:py-16 w-full">
-        <div className="rounded-2xl sm:rounded-3xl border border-orange-200/80 dark:border-slate-700 p-4 sm:p-10 bg-gradient-to-br from-orange-50/60 via-white to-amber-50/40 dark:from-slate-900 dark:via-slate-800/70 dark:to-slate-900 shadow-sm">
-          
-          <div className="max-w-3xl mb-6 sm:mb-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-950/60 text-orange-800 dark:text-orange-300 text-xs font-bold uppercase tracking-wider mb-2">
-              <ShieldCheck size={16} className="text-orange-600 dark:text-orange-400 shrink-0" />
+      <section id="garantia" className="content-container py-10 sm:py-16 w-full">
+        <div
+          className="rounded-3xl p-6 sm:p-10"
+          style={{
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <div className="max-w-2xl mb-8">
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3"
+              style={{
+                background: 'var(--color-primary-soft)',
+                color: 'var(--color-primary)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
+              <ShieldCheck size={14} className="shrink-0" />
               <span>Segurança e Confiabilidade</span>
             </div>
-            <h3 className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h3 className="text-2xl sm:text-3xl font-black tracking-tight mb-2" style={{ color: 'var(--color-text)' }}>
               Padrão de Garantia Repara RV
             </h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-              Desenvolvemos a plataforma sob os mesmos padrões de segurança das maiores empresas de serviços do país:
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              Desenvolvemos a plataforma sob os mesmos padrões de segurança das maiores empresas de serviços do país.
             </p>
           </div>
 
-          {/* 3 Blocos de Confiança (1 coluna no mobile -> 3 no desktop) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-6">
-            
-            <div className="bg-white/90 dark:bg-slate-800/90 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
-                <CheckCircle2 size={20} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              {
+                icon: CheckCircle2,
+                color: 'var(--color-success)',
+                title: 'Garantia de 7 Dias',
+                desc: 'Se o reparo apresentar qualquer falha técnica dentro de 7 dias corridos, garantimos o retorno do profissional sem cobrança extra.',
+              },
+              {
+                icon: ShieldCheck,
+                color: 'var(--color-primary)',
+                title: 'Profissionais de Rio Verde',
+                desc: 'Autônomos cadastrados com checagem de documentos e histórico. Avaliação pública e contínua pela comunidade rio-verdense.',
+              },
+              {
+                icon: Lock,
+                color: 'var(--color-info)',
+                title: 'Pagamento Protegido via Pix',
+                desc: 'O valor do serviço só é repassado ao profissional após você atestar que o reparo foi devidamente finalizado.',
+              },
+            ].map(({ icon: Icon, color, title, desc }) => (
+              <div
+                key={title}
+                className="p-5 rounded-2xl flex items-start gap-4"
+                style={{
+                  background: 'var(--color-surface-alt)',
+                  border: '1px solid var(--color-border)',
+                }}
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: `${color}1a` }}
+                >
+                  <Icon size={20} style={{ color }} />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold mb-1" style={{ color: 'var(--color-text)' }}>{title}</h4>
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>{desc}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1">Garantia de 30 Dias</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Se o reparo apresentar qualquer falha técnica dentro de 30 dias, garantimos o retorno do profissional sem cobrança extra.
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white/90 dark:bg-slate-800/90 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 flex items-center justify-center shrink-0">
-                <ShieldCheck size={20} />
-              </div>
-              <div>
-                <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1">Profissionais de Rio Verde</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Autônomos cadastrados com checagem de documentos e histórico. Avaliação pública e contínua pela comunidade rio-verdense.
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white/90 dark:bg-slate-800/90 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0">
-                <Lock size={20} />
-              </div>
-              <div>
-                <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1">Pagamento Protegido via Pix</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  O valor do serviço só é repassado ao profissional após você atestar que o reparo foi devidamente finalizado e testado.
-                </p>
-              </div>
-            </div>
-
+            ))}
           </div>
-
         </div>
       </section>
 
       {/* ────────────────────────────────────────────────────────
-          6. FOOTER COMPLETO PARA DESKTOP
+          6. CTA PARA PROFISSIONAIS
           ──────────────────────────────────────────────────────── */}
-      <footer className="bg-slate-900 text-slate-400 border-t border-slate-800 mt-auto hidden md:block">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            
-            {/* Coluna 1: Marca & Descrição */}
-            <div className="space-y-3">
-              <Link href="/" className="inline-block transition-opacity hover:opacity-90">
-                <Logo variant="full" width={180} height={45} inverted />
-              </Link>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                A plataforma sob demanda de serviços residenciais de Rio Verde (GO). Conectando moradores a prestadores qualificados com preço fixo e transparência.
-              </p>
-              <div className="pt-2 text-[11px] text-slate-500 border-t border-slate-800 space-y-1">
-                <p className="font-semibold text-slate-400">Repara RV Tecnologia e Intermediação Ltda</p>
-                <p>CNAE 7490-1/04 • Sede em Rio Verde - GO • CEP 75901-000</p>
-                <div className="flex items-center gap-3 pt-1 text-slate-400 flex-wrap">
-                  <Link href="/termos" className="hover:text-white underline transition-colors">
-                    Termos de Uso
-                  </Link>
-                  <span>•</span>
-                  <Link href="/privacidade" className="hover:text-white underline transition-colors">
-                    Privacidade (LGPD)
-                  </Link>
-                  <span>•</span>
-                  <Link href="/contrato" className="hover:text-white underline transition-colors">
-                    Contrato Técnico
-                  </Link>
-                </div>
-                <p className="pt-0.5">© {new Date().getFullYear()} Repara RV • Todos os direitos reservados.</p>
-              </div>
+      <section className="content-container pb-10 sm:pb-16 w-full">
+        <div
+          className="rounded-3xl p-6 sm:p-10 flex flex-col sm:flex-row items-center justify-between gap-6"
+          style={{
+            background: 'linear-gradient(135deg, var(--color-primary-soft) 0%, var(--color-surface) 100%)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <div>
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3"
+              style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: '1px solid var(--color-border)' }}
+            >
+              <Bike size={13} />
+              <span>Para Profissionais</span>
             </div>
-
-            {/* Coluna 2: Serviços */}
-            <div>
-              <h5 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-3">
-                Categorias
-              </h5>
-              <ul className="space-y-2 text-xs">
-                <li><button type="button" onClick={() => setSelectedCategory('Elétrica')} className="hover:text-white transition-colors">Eletricistas</button></li>
-                <li><button type="button" onClick={() => setSelectedCategory('Hidráulica')} className="hover:text-white transition-colors">Encanadores & Desentupimento</button></li>
-                <li><button type="button" onClick={() => setSelectedCategory('Montagem')} className="hover:text-white transition-colors">Montagem de Móveis</button></li>
-                <li><button type="button" onClick={() => setSelectedCategory('Pintura')} className="hover:text-white transition-colors">Pintura Residencial</button></li>
-                <li><button type="button" onClick={() => setSelectedCategory('Emergência')} className="hover:text-white transition-colors">Socorro Emergencial 24h</button></li>
-              </ul>
-            </div>
-
-            {/* Coluna 3: Bairros Atendidos */}
-            <div>
-              <h5 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-3">
-                Bairros em Rio Verde
-              </h5>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Setor Central, Morada do Sol, Universitário, Bairro Popular, Promissão, Gameleira, Vila Maria, Eldorado e toda a região urbana de Rio Verde (GO).
-              </p>
-            </div>
-
-            {/* Coluna 4: Suporte e Contato */}
-            <div>
-              <h5 className="text-xs font-bold uppercase tracking-wider text-slate-200 mb-3">
-                Atendimento & Ajuda
-              </h5>
-              <p className="text-xs text-slate-400 mb-3">
-                Dúvidas ou suporte para o seu chamado?
-              </p>
-              <a
-                href="https://wa.me/5564999999999?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20no%20Repara%20RV"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all"
-              >
-                <MessageSquare size={14} />
-                <span>WhatsApp de Suporte</span>
-              </a>
-            </div>
-
+            <h3 className="text-xl sm:text-2xl font-black mb-1" style={{ color: 'var(--color-text)' }}>
+              Quer ganhar mais atendendo em Rio Verde?
+            </h3>
+            <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
+              Cadastre-se como prestador e receba chamados direto no celular. Sem mensalidade, sem burocracia.
+            </p>
           </div>
+          <Link
+            href={currentUser ? '/onboarding?role=provider' : '/cadastro?role=provider'}
+            id="btn-cta-provider"
+            className="btn-primary sm:w-auto whitespace-nowrap text-sm px-6"
+            style={{ minWidth: '200px' }}
+          >
+            Quero ser Profissional
+          </Link>
         </div>
-      </footer>
+      </section>
 
       {/* ────────────────────────────────────────────────────────
-          7. BARRA DE NAVEGAÇÃO INFERIOR (SOMENTE MOBILE: md:hidden)
+          7. FOOTER DESKTOP
           ──────────────────────────────────────────────────────── */}
-      <nav className="md:hidden sticky bottom-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-4 py-2 flex items-center justify-around shadow-lg shadow-slate-900/5 w-full max-w-full" style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
-        <button
-          type="button"
-          onClick={() => setActiveTab('home')}
-          className={`flex flex-col items-center gap-1 transition-colors ${
-            activeTab === 'home' ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
-          }`}
-        >
-          <Home size={20} />
-          <span className="text-[10px] font-bold">Início</span>
-        </button>
+      <div className="hidden md:block mt-auto">
+        <SiteFooter onCategorySelect={setSelectedCategory} />
+      </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab('orders')
-            handleMyOrders()
-          }}
-          className={`flex flex-col items-center gap-1 transition-colors ${
-            activeTab === 'orders' ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
-          }`}
-        >
-          <ClipboardList size={20} />
-          <span className="text-[10px] font-bold">Meus Pedidos</span>
-        </button>
-
-        <a
-          href="https://wa.me/5564999999999?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20no%20Repara%20RV"
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => setActiveTab('support')}
-          className={`flex flex-col items-center gap-1 transition-colors ${
-            activeTab === 'support' ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
-          }`}
-        >
-          <MessageSquare size={20} />
-          <span className="text-[10px] font-bold">Suporte</span>
-        </a>
-
-        {currentUser ? (
+      {/* ────────────────────────────────────────────────────────
+          8. BARRA DE NAVEGAÇÃO INFERIOR — MOBILE
+          ──────────────────────────────────────────────────────── */}
+      <nav
+        className="md:hidden sticky bottom-0 z-40 w-full"
+        style={{
+          background: 'rgba(20, 38, 34, 0.97)',
+          borderTop: '1px solid var(--color-border)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
+        }}
+        aria-label="Navegação mobile"
+      >
+        <div className="flex items-center justify-around px-4 pt-2">
           <button
             type="button"
-            onClick={() => setIsProfileMenuOpen(true)}
-            className={`flex flex-col items-center gap-1 transition-colors ${
-              isProfileMenuOpen ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
-            }`}
+            onClick={() => setActiveTab('home')}
+            className="flex flex-col items-center gap-0.5 transition-colors"
+            style={{ color: activeTab === 'home' ? 'var(--color-primary)' : 'var(--color-text-subtle)' }}
+            aria-label="Início"
+            aria-current={activeTab === 'home' ? 'page' : undefined}
           >
-            <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center text-[9px] font-black uppercase">
-              {currentUser.full_name ? currentUser.full_name.charAt(0) : 'U'}
-            </div>
-            <span className="text-[10px] font-bold truncate max-w-[50px]">
-              {currentUser.full_name?.split(' ')[0] || 'Perfil'}
-            </span>
+            <Home size={20} />
+            <span className="text-[10px] font-bold">Início</span>
           </button>
-        ) : (
-          <Link
-            href="/login"
-            onClick={() => setActiveTab('profile')}
-            className={`flex flex-col items-center gap-1 transition-colors ${
-              activeTab === 'profile' ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
-            }`}
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('orders')
+              handleMyOrders()
+            }}
+            className="flex flex-col items-center gap-0.5 transition-colors"
+            style={{ color: activeTab === 'orders' ? 'var(--color-primary)' : 'var(--color-text-subtle)' }}
+            aria-label="Meus Pedidos"
           >
-            <User size={20} />
-            <span className="text-[10px] font-bold">Entrar</span>
-          </Link>
-        )}
+            <ClipboardList size={20} />
+            <span className="text-[10px] font-bold">Pedidos</span>
+          </button>
+
+          <a
+            href="https://wa.me/5564999999999?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20no%20Repara%20RV"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setActiveTab('support')}
+            className="flex flex-col items-center gap-0.5 transition-colors"
+            style={{ color: activeTab === 'support' ? 'var(--color-primary)' : 'var(--color-text-subtle)' }}
+            aria-label="Suporte WhatsApp"
+          >
+            <MessageSquare size={20} />
+            <span className="text-[10px] font-bold">Suporte</span>
+          </a>
+
+          {currentUser ? (
+            <button
+              type="button"
+              onClick={() => setIsProfileMenuOpen(true)}
+              className="flex flex-col items-center gap-0.5 transition-colors"
+              style={{ color: isProfileMenuOpen ? 'var(--color-primary)' : 'var(--color-text-subtle)' }}
+              aria-label="Perfil"
+            >
+              <div
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black uppercase text-white"
+                style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-hover))' }}
+              >
+                {userInitial}
+              </div>
+              <span className="text-[10px] font-bold truncate max-w-[50px]">
+                {currentUser.full_name?.split(' ')[0] || 'Perfil'}
+              </span>
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              onClick={() => setActiveTab('profile')}
+              className="flex flex-col items-center gap-0.5 transition-colors"
+              style={{ color: activeTab === 'profile' ? 'var(--color-primary)' : 'var(--color-text-subtle)' }}
+              aria-label="Entrar"
+            >
+              <User size={20} />
+              <span className="text-[10px] font-bold">Entrar</span>
+            </Link>
+          )}
+        </div>
       </nav>
 
       {/* ────────────────────────────────────────────────────────
@@ -1032,40 +1213,55 @@ export default function TriiderClientHomePage() {
           ──────────────────────────────────────────────────────── */}
       {isProfileMenuOpen && currentUser && (
         <div
-          className="md:hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center p-0 animate-in fade-in"
+          className="md:hidden fixed inset-0 z-50 flex items-end justify-center"
           onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setIsProfileMenuOpen(false)
-            }
+            if (e.target === e.currentTarget) setIsProfileMenuOpen(false)
           }}
+          style={{ background: 'rgba(7, 16, 15, 0.75)', backdropFilter: 'blur(4px)' }}
         >
           <div
-            className="w-full max-h-[85vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-t-3xl p-6 shadow-2xl border-t border-slate-200 dark:border-slate-800 animate-in slide-in-from-bottom-6"
-            onClick={(e) => e.stopPropagation()}
+            className="w-full max-h-[85vh] overflow-y-auto rounded-t-3xl p-6 animate-slide-up"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              boxShadow: '0 -16px 48px rgba(0,0,0,0.5)',
+            }}
+            onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
+            <div
+              className="flex items-center justify-between pb-4 mb-4"
+              style={{ borderBottom: '1px solid var(--color-border)' }}
+            >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-500 to-amber-400 text-white flex items-center justify-center text-sm font-black uppercase">
-                  {currentUser.full_name ? currentUser.full_name.charAt(0) : 'U'}
+                <div
+                  className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-black uppercase text-white"
+                  style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-hover))' }}
+                >
+                  {userInitial}
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                  <h3 className="text-sm font-bold truncate" style={{ color: 'var(--color-text)' }}>
                     {currentUser.full_name || 'Minha Conta'}
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{currentUser.phone || 'Repara RV'}</p>
+                  <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>{currentUser.phone || 'Repara RV'}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsProfileMenuOpen(false)}
-                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="p-1.5 rounded-full transition-colors"
+                style={{ color: 'var(--color-text-muted)', background: 'var(--color-surface-alt)' }}
+                aria-label="Fechar menu"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
             <div className="space-y-2 mb-4">
-              <span className="inline-block px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 mb-2">
+              <span
+                className="inline-block px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider mb-2"
+                style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}
+              >
                 {currentUser.role === 'admin' ? 'Administrador' : currentUser.role === 'provider' ? 'Prestador Autônomo' : 'Cliente / Morador'}
               </span>
 
@@ -1073,7 +1269,8 @@ export default function TriiderClientHomePage() {
                 <Link
                   href="/admin/dashboard"
                   onClick={() => setIsProfileMenuOpen(false)}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-orange-500 text-white font-bold text-xs shadow-sm hover:bg-orange-600 transition-colors"
+                  className="flex items-center gap-3 p-3.5 rounded-xl font-bold text-xs w-full transition-colors"
+                  style={{ background: 'var(--color-primary)', color: '#ffffff' }}
                 >
                   <Shield size={18} />
                   <span>Torre de Controle (Admin)</span>
@@ -1083,42 +1280,48 @@ export default function TriiderClientHomePage() {
               <Link
                 href="/painel"
                 onClick={() => setIsProfileMenuOpen(false)}
-                className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors"
+                className="flex items-center gap-3 p-3.5 rounded-xl font-semibold text-xs w-full transition-colors"
+                style={{
+                  color: 'var(--color-success)',
+                  background: 'rgba(94, 211, 164, 0.1)',
+                  border: '1px solid rgba(94, 211, 164, 0.15)',
+                }}
               >
-                <Bike size={18} className="text-orange-600 dark:text-orange-400" />
-                <span>Acessar Painel do Prestador</span>
+                <Bike size={18} />
+                <span>Painel do Prestador</span>
               </Link>
 
               <button
                 type="button"
                 onClick={handleMyOrders}
-                className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-semibold text-xs border border-slate-200 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-slate-700 cursor-pointer text-left transition-colors"
+                className="w-full flex items-center gap-3 p-3.5 rounded-xl font-semibold text-xs transition-colors cursor-pointer text-left"
+                style={{
+                  color: 'var(--color-text-muted)',
+                  background: 'var(--color-surface-alt)',
+                  border: '1px solid var(--color-border)',
+                }}
               >
-                <ClipboardList size={18} className="text-slate-600 dark:text-slate-400" />
+                <ClipboardList size={18} style={{ color: 'var(--color-text-subtle)' }} />
                 <span>Meus Chamados & Histórico</span>
               </button>
-              <div className="flex items-center justify-center gap-3 py-2 text-[11px] text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 mt-2 flex-wrap">
-                <Link
-                  href="/termos"
-                  onClick={() => setIsProfileMenuOpen(false)}
-                  className="hover:text-slate-800 dark:hover:text-white underline transition-colors"
-                >
+
+              <div
+                className="flex items-center justify-center gap-3 py-2 text-[11px] flex-wrap"
+                style={{
+                  borderTop: '1px solid var(--color-border)',
+                  color: 'var(--color-text-subtle)',
+                  marginTop: 8,
+                }}
+              >
+                <Link href="/termos" onClick={() => setIsProfileMenuOpen(false)} className="hover:underline" style={{ color: 'var(--color-text-muted)' }}>
                   Termos de Uso
                 </Link>
                 <span>•</span>
-                <Link
-                  href="/privacidade"
-                  onClick={() => setIsProfileMenuOpen(false)}
-                  className="hover:text-slate-800 dark:hover:text-white underline transition-colors"
-                >
+                <Link href="/privacidade" onClick={() => setIsProfileMenuOpen(false)} className="hover:underline" style={{ color: 'var(--color-text-muted)' }}>
                   Privacidade (LGPD)
                 </Link>
                 <span>•</span>
-                <Link
-                  href="/contrato"
-                  onClick={() => setIsProfileMenuOpen(false)}
-                  className="hover:text-slate-800 dark:hover:text-white underline transition-colors"
-                >
+                <Link href="/contrato" onClick={() => setIsProfileMenuOpen(false)} className="hover:underline" style={{ color: 'var(--color-text-muted)' }}>
                   Contrato Técnico
                 </Link>
               </div>
@@ -1132,7 +1335,12 @@ export default function TriiderClientHomePage() {
                 e.stopPropagation()
                 await handleLogout()
               }}
-              className="w-full flex items-center justify-center gap-2 p-3.5 rounded-xl font-bold text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800/80 transition-colors cursor-pointer active:scale-95 shadow-sm"
+              className="w-full flex items-center justify-center gap-2 p-3.5 rounded-xl font-bold text-sm cursor-pointer active:scale-95 transition-all"
+              style={{
+                color: 'var(--color-danger)',
+                background: 'rgba(244, 124, 124, 0.08)',
+                border: '1px solid rgba(244, 124, 124, 0.15)',
+              }}
             >
               <LogOut size={16} />
               <span>Sair da Conta</span>
@@ -1142,37 +1350,49 @@ export default function TriiderClientHomePage() {
       )}
 
       {/* ────────────────────────────────────────────────────────
-          MODAL DE SELEÇÃO DE BAIRRO (RIO VERDE - GO)
+          MODAL DE SELEÇÃO DE BAIRRO
           ──────────────────────────────────────────────────────── */}
       {isAddressModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in slide-in-from-bottom-6">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
+          style={{ background: 'rgba(7, 16, 15, 0.8)', backdropFilter: 'blur(6px)' }}
+        >
+          <div
+            className="w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 animate-slide-up"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              boxShadow: '0 -16px 48px rgba(0,0,0,0.5)',
+            }}
+          >
+            <div
+              className="flex items-center justify-between pb-4 mb-4"
+              style={{ borderBottom: '1px solid var(--color-border)' }}
+            >
               <div>
-                <h3 className="text-base font-black text-slate-900 dark:text-white">Selecionar Localização</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Rio Verde - Goiás</p>
+                <h3 className="text-base font-black" style={{ color: 'var(--color-text)' }}>Selecionar Localização</h3>
+                <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Rio Verde — Goiás</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAddressModalOpen(false)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                className="p-1.5 rounded-full transition-colors cursor-pointer"
+                style={{ color: 'var(--color-text-muted)', background: 'var(--color-surface-alt)' }}
+                aria-label="Fechar"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
-            {/* Digitação Livre */}
             <div className="mb-4">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-                Endereço ou Bairro específico:
-              </label>
+              <label className="label">Endereço ou Bairro específico:</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={customAddress}
                   onChange={e => setCustomAddress(e.target.value)}
                   placeholder="Ex: Rua 10, Qd 20, Bairro..."
-                  className="input py-2 text-xs bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500"
+                  className="input py-2.5 text-sm flex-1"
                 />
                 <button
                   type="button"
@@ -1183,15 +1403,15 @@ export default function TriiderClientHomePage() {
                       setCustomAddress('')
                     }
                   }}
-                  className="px-4 py-2 bg-orange-600 text-white rounded-xl text-xs font-bold hover:bg-orange-700 shrink-0 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-white cursor-pointer transition-all hover:opacity-90 shrink-0"
+                  style={{ background: 'var(--color-primary)' }}
                 >
                   Confirmar
                 </button>
               </div>
             </div>
 
-            {/* Lista dos Principais Bairros de Rio Verde */}
-            <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--color-text-subtle)' }}>
               Bairros Atendidos
             </p>
             <div className="max-h-60 overflow-y-auto space-y-1 pr-1">
@@ -1203,14 +1423,15 @@ export default function TriiderClientHomePage() {
                     setSelectedNeighborhood(bairro)
                     setIsAddressModalOpen(false)
                   }}
-                  className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer ${
-                    selectedNeighborhood === bairro
-                      ? 'bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800/60'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
+                  className="w-full text-left px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer"
+                  style={{
+                    background: selectedNeighborhood === bairro ? 'var(--color-primary-soft)' : 'transparent',
+                    color: selectedNeighborhood === bairro ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                    border: selectedNeighborhood === bairro ? '1px solid var(--color-border)' : '1px solid transparent',
+                  }}
                 >
                   <span>{bairro}</span>
-                  {selectedNeighborhood === bairro && <CheckCircle2 size={16} className="text-orange-600 dark:text-orange-400" />}
+                  {selectedNeighborhood === bairro && <CheckCircle2 size={15} style={{ color: 'var(--color-primary)' }} />}
                 </button>
               ))}
             </div>
@@ -1219,19 +1440,35 @@ export default function TriiderClientHomePage() {
       )}
 
       {/* ────────────────────────────────────────────────────────
-          MODAL DE MEUS CHAMADOS & HISTÓRICO COMPLETO
+          MODAL DE MEUS CHAMADOS
           ──────────────────────────────────────────────────────── */}
       {isOrdersModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in">
-          <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in slide-in-from-bottom-6 max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4 shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 dark:text-orange-400">
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
+          style={{ background: 'rgba(7, 16, 15, 0.8)', backdropFilter: 'blur(6px)' }}
+        >
+          <div
+            className="w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 max-h-[90vh] flex flex-col animate-slide-up"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              boxShadow: '0 -16px 48px rgba(0,0,0,0.5)',
+            }}
+          >
+            <div
+              className="flex items-center justify-between pb-4 mb-4 shrink-0"
+              style={{ borderBottom: '1px solid var(--color-border)' }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="p-2 rounded-xl"
+                  style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}
+                >
                   <ClipboardList size={20} />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">Meus Chamados & Histórico</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Acompanhe seus pedidos ou veja comprovantes</p>
+                  <h3 className="text-base font-black" style={{ color: 'var(--color-text)' }}>Meus Chamados & Histórico</h3>
+                  <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Acompanhe seus pedidos ou veja comprovantes</p>
                 </div>
               </div>
               <button
@@ -1240,28 +1477,32 @@ export default function TriiderClientHomePage() {
                   setIsOrdersModalOpen(false)
                   setActiveTab('home')
                 }}
-                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1.5 rounded-full transition-colors cursor-pointer"
+                style={{ color: 'var(--color-text-muted)', background: 'var(--color-surface-alt)' }}
+                aria-label="Fechar"
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </div>
 
-            {/* Conteúdo Dinâmico */}
-            <div className="overflow-y-auto flex-1 pr-1 space-y-3">
+            <div className="overflow-y-auto flex-1 space-y-3">
               {loadingOrders ? (
                 <div className="py-12 flex flex-col items-center justify-center text-center">
-                  <Loader2 size={36} className="animate-spin text-orange-600 dark:text-orange-400 mb-3" />
-                  <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Buscando seus chamados...</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Conectando ao banco de dados</p>
+                  <Loader2 size={36} className="animate-spin mb-3" style={{ color: 'var(--color-primary)' }} />
+                  <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>Buscando seus chamados...</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>Conectando ao banco de dados</p>
                 </div>
               ) : userOrders.length === 0 ? (
                 <div className="py-10 px-4 text-center flex flex-col items-center">
-                  <div className="w-16 h-16 rounded-full bg-orange-50 dark:bg-orange-950/40 text-orange-400 flex items-center justify-center mb-3">
+                  <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+                    style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}
+                  >
                     <ClipboardList size={30} />
                   </div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">Nenhum chamado registrado</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mt-1 mb-5">
-                    Você ainda não possui pedidos ou atendimentos na Repara RV. Escolha um serviço abaixo para chamar um profissional!
+                  <h4 className="text-sm font-bold mb-1" style={{ color: 'var(--color-text)' }}>Nenhum chamado registrado</h4>
+                  <p className="text-xs max-w-xs mb-5" style={{ color: 'var(--color-text-muted)' }}>
+                    Você ainda não possui pedidos na Repara RV. Escolha um serviço abaixo para chamar um profissional!
                   </p>
                   <button
                     type="button"
@@ -1270,7 +1511,7 @@ export default function TriiderClientHomePage() {
                       const el = document.getElementById('servicos')
                       if (el) el.scrollIntoView({ behavior: 'smooth' })
                     }}
-                    className="px-5 py-2.5 bg-orange-600 text-white rounded-xl text-xs font-bold hover:bg-orange-700 transition-all shadow-sm shadow-orange-600/20 cursor-pointer"
+                    className="btn-primary max-w-xs"
                   >
                     Solicitar Serviço Agora
                   </button>
@@ -1280,41 +1521,25 @@ export default function TriiderClientHomePage() {
                   const serviceName = Array.isArray(order.service)
                     ? order.service[0]?.name
                     : order.service?.name || 'Serviço Repara RV'
-                  const isActive = ['queued', 'searching', 'accepted', 'on_the_way', 'in_progress'].includes(order.status)
+                  const { label, colorVar, isActive } = getStatusConfig(order.status)
                   const isCompleted = order.status === 'completed'
                   const isCancelled = order.status === 'cancelled'
-
-                  const statusConfig = (() => {
-                    switch (order.status) {
-                      case 'queued':
-                        return { label: 'Na Fila de Espera', badgeClass: 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60', dotClass: 'bg-amber-500' }
-                      case 'searching':
-                        return { label: 'Buscando Técnico', badgeClass: 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/60', dotClass: 'bg-amber-500 animate-ping' }
-                      case 'accepted':
-                      case 'on_the_way':
-                        return { label: 'Técnico a Caminho', badgeClass: 'bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/60', dotClass: 'bg-blue-500' }
-                      case 'in_progress':
-                        return { label: 'Em Execução', badgeClass: 'bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800/60', dotClass: 'bg-purple-500' }
-                      case 'completed':
-                        return { label: 'Concluído', badgeClass: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60', dotClass: 'bg-emerald-500' }
-                      case 'cancelled':
-                        return { label: 'Cancelado', badgeClass: 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800/60', dotClass: 'bg-rose-500' }
-                      default:
-                        return { label: order.status, badgeClass: 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700', dotClass: 'bg-slate-400' }
-                    }
-                  })()
 
                   return (
                     <div
                       key={order.id}
-                      className="border border-slate-200 dark:border-slate-700/80 rounded-2xl p-4 bg-white dark:bg-slate-800/90 hover:border-orange-300 dark:hover:border-orange-500/50 hover:shadow-md transition-all flex flex-col gap-3"
+                      className="rounded-2xl p-4 flex flex-col gap-3 transition-all"
+                      style={{
+                        background: 'var(--color-surface-alt)',
+                        border: '1px solid var(--color-border)',
+                      }}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">
+                          <h4 className="text-xs font-bold leading-tight" style={{ color: 'var(--color-text)' }}>
                             {serviceName}
                           </h4>
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                          <div className="flex items-center gap-1.5 text-[11px] mt-1" style={{ color: 'var(--color-text-subtle)' }}>
                             <Clock size={12} />
                             <span>
                               {new Date(order.created_at).toLocaleDateString('pt-BR', {
@@ -1326,21 +1551,36 @@ export default function TriiderClientHomePage() {
                             </span>
                           </div>
                         </div>
-
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border shrink-0 ${statusConfig.badgeClass}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dotClass}`} />
-                          {statusConfig.label}
+                        <span
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold shrink-0"
+                          style={{
+                            background: `color-mix(in srgb, var(${colorVar}) 12%, transparent)`,
+                            color: `var(${colorVar})`,
+                            border: `1px solid color-mix(in srgb, var(${colorVar}) 25%, transparent)`,
+                          }}
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{
+                              background: `var(${colorVar})`,
+                              animation: isActive && order.status === 'searching' ? 'pulse 1s infinite' : 'none',
+                            }}
+                          />
+                          {label}
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between text-xs py-2 px-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                        <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
-                          <MapPin size={13} className="text-orange-600 dark:text-orange-400 shrink-0" />
-                          <span className="truncate max-w-[180px] sm:max-w-[240px] text-[11px] font-medium">
+                      <div
+                        className="flex items-center justify-between text-xs py-2 px-3 rounded-xl"
+                        style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+                      >
+                        <div className="flex items-center gap-1.5" style={{ color: 'var(--color-text-muted)' }}>
+                          <MapPin size={12} style={{ color: 'var(--color-primary)' }} className="shrink-0" />
+                          <span className="truncate max-w-[180px] text-[11px] font-medium">
                             {order.neighborhood || 'Rio Verde - GO'}
                           </span>
                         </div>
-                        <span className="font-black text-slate-900 dark:text-white text-xs">
+                        <span className="font-black text-xs" style={{ color: 'var(--color-text)' }}>
                           {formatCurrency(order.total_price || 0)}
                         </span>
                       </div>
@@ -1350,7 +1590,8 @@ export default function TriiderClientHomePage() {
                           <Link
                             href={`/acompanhar/${order.id}`}
                             onClick={() => setIsOrdersModalOpen(false)}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl shadow-sm shadow-orange-600/20 transition-all hover:scale-[1.01]"
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-white transition-all hover:opacity-90"
+                            style={{ background: 'var(--color-primary)', boxShadow: 'var(--shadow-primary)' }}
                           >
                             <span>Acompanhar em Tempo Real</span>
                             <ArrowRight size={14} />
@@ -1359,9 +1600,14 @@ export default function TriiderClientHomePage() {
                           <Link
                             href={`/acompanhar/${order.id}`}
                             onClick={() => setIsOrdersModalOpen(false)}
-                            className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-600 transition-all"
+                            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl text-xs font-semibold transition-all"
+                            style={{
+                              color: 'var(--color-text-muted)',
+                              background: 'var(--color-surface)',
+                              border: '1px solid var(--color-border)',
+                            }}
                           >
-                            <FileText size={14} className="text-slate-600 dark:text-slate-400" />
+                            <FileText size={14} style={{ color: 'var(--color-text-subtle)' }} />
                             <span>Ver Detalhes / Comprovante</span>
                           </Link>
                         ) : isCancelled ? (
@@ -1372,7 +1618,8 @@ export default function TriiderClientHomePage() {
                               const el = document.getElementById('servicos')
                               if (el) el.scrollIntoView({ behavior: 'smooth' })
                             }}
-                            className="w-full text-center py-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
+                            className="w-full text-center py-1.5 text-xs font-bold hover:underline cursor-pointer transition-colors"
+                            style={{ color: 'var(--color-primary)' }}
                           >
                             Solicitar este serviço novamente
                           </button>
@@ -1387,7 +1634,7 @@ export default function TriiderClientHomePage() {
         </div>
       )}
 
-      {/* Banner Inteligente de Instalação PWA */}
+      {/* Banner de instalação PWA */}
       <PwaInstallBanner />
 
     </div>

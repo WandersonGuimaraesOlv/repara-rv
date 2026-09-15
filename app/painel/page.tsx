@@ -500,7 +500,7 @@ export default function PainelPage() {
   if (!profile) {
     return (
       <div className="page-container items-center justify-center">
-        <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-brand)' }} />
+        <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
       </div>
     )
   }
@@ -514,8 +514,11 @@ export default function PainelPage() {
 
       {/* Indicador de Alerta Sonoro */}
       <div className="flex items-center justify-between mb-3 px-1">
-        <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-sm">
-          <Volume2 size={13} className="text-emerald-600" />
+        <span
+          className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1.5"
+          style={{ background: 'rgba(94, 211, 164, 0.12)', color: 'var(--color-success)', border: '1px solid rgba(94, 211, 164, 0.2)' }}
+        >
+          <Volume2 size={13} style={{ color: 'var(--color-success)' }} />
           Alerta sonoro ativo
         </span>
         <button
@@ -532,7 +535,8 @@ export default function PainelPage() {
               toast.error('Erro ao acionar som de alerta.')
             }
           }}
-          className="text-[11px] font-bold text-emerald-600 hover:text-emerald-500 underline cursor-pointer flex items-center gap-1 transition-colors"
+          className="text-[11px] font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
+          style={{ color: 'var(--color-primary)' }}
         >
           Testar som 🔔
         </button>
@@ -546,48 +550,60 @@ export default function PainelPage() {
           {firstName} 👋
         </h2>
         {totalToday > 0 && (
-          <div className="mt-2.5 p-3.5 bg-emerald-500/10 border border-emerald-500/25 rounded-2xl">
+          <div
+            className="mt-2.5 p-3.5 rounded-2xl"
+            style={{ background: 'rgba(94, 211, 164, 0.1)', border: '1px solid rgba(94, 211, 164, 0.2)' }}
+          >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-400">
+              <span className="text-xs font-bold" style={{ color: 'var(--color-success)' }}>
                 Ganhos de hoje (liquidado)
               </span>
-              <span className="text-base font-black text-emerald-300">
+              <span className="text-base font-black" style={{ color: 'var(--color-success)' }}>
                 R$ {totalToday.toFixed(2).replace('.', ',')}
               </span>
             </div>
-            <div className="text-[11px] text-slate-300 mt-1.5 leading-snug">
+            <div className="text-[11px] mt-1.5 leading-snug" style={{ color: 'var(--color-text-muted)' }}>
               ✨ Saldo acumulado na plataforma para repasse via Pix.
               {providerPixKey && (
-                <div className="mt-1.5 pt-1.5 border-t border-emerald-500/20 flex items-center justify-between text-[11px]">
-                  <span className="text-slate-400">Chave Pix de repasse:</span>
-                  <strong className="font-mono text-emerald-300 font-semibold">{providerPixKey}</strong>
+                <div className="mt-1.5 pt-1.5 flex items-center justify-between text-[11px]" style={{ borderTop: '1px solid rgba(94, 211, 164, 0.2)' }}>
+                  <span style={{ color: 'var(--color-text-subtle)' }}>Chave Pix de repasse:</span>
+                  <strong className="font-mono font-semibold" style={{ color: 'var(--color-success)' }}>{providerPixKey}</strong>
                 </div>
               )}
             </div>
           </div>
         )}
         {pendingToday > 0 && (
-          <p className="text-xs mt-2 font-medium text-amber-500">
+          <p className="text-xs mt-2 font-medium" style={{ color: 'var(--color-warning)' }}>
             ⏳ {pendingToday} serviço(s) finalizado(s) — aguardando confirmação do pagamento do cliente via Pix/Cartão
           </p>
         )}
       </section>
 
-      {/* Card Chave Pix para Recebimento */}
-      <section className="mb-6 p-4 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-sm animate-slide-up space-y-3">
+      {/* Card Chave Pix */}
+      <section
+        className="mb-6 p-4 rounded-2xl animate-slide-up space-y-3"
+        style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CreditCard size={18} className="text-emerald-400" />
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+            <CreditCard size={18} style={{ color: 'var(--color-primary)' }} />
+            <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-text)' }}>
               Chave Pix de Recebimento
             </h3>
           </div>
           {providerPixKey ? (
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <span
+              className="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+              style={{ background: 'rgba(94, 211, 164, 0.12)', color: 'var(--color-success)', border: '1px solid rgba(94, 211, 164, 0.25)' }}
+            >
               Pix Ativo ✅
             </span>
           ) : (
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <span
+              className="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+              style={{ background: 'rgba(237, 198, 107, 0.12)', color: 'var(--color-warning)', border: '1px solid rgba(237, 198, 107, 0.25)' }}
+            >
               Chave Pix Obrigatória ⚠️
             </span>
           )}
@@ -596,15 +612,13 @@ export default function PainelPage() {
         {editingPix ? (
           <form onSubmit={handleSavePixKey} className="space-y-3 pt-1">
             <div>
-              <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                Informe sua Chave Pix (CPF, Celular, E-mail ou Aleatória):
-              </label>
+              <label className="label">Informe sua Chave Pix (CPF, Celular, E-mail ou Aleatória):</label>
               <input
                 type="text"
                 value={newPixKeyInput}
                 onChange={(e) => setNewPixKeyInput(e.target.value)}
                 placeholder="Ex: 64999999999 ou seu CPF"
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:border-emerald-500 outline-none font-mono"
+                className="input font-mono"
                 autoFocus
                 required
               />
@@ -613,7 +627,7 @@ export default function PainelPage() {
               <button
                 type="submit"
                 disabled={savingPix}
-                className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+                className="btn-primary py-2 text-xs disabled:opacity-50"
               >
                 {savingPix ? 'Salvando...' : 'Salvar Chave Pix'}
               </button>
@@ -621,7 +635,7 @@ export default function PainelPage() {
                 type="button"
                 onClick={() => setEditingPix(false)}
                 disabled={savingPix}
-                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+                className="btn-secondary py-2 text-xs"
               >
                 Cancelar
               </button>
@@ -629,18 +643,19 @@ export default function PainelPage() {
           </form>
         ) : (
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
-            <div className="text-xs text-slate-300">
+            <div className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
               {providerPixKey ? (
                 <>
                   <p>
-                    💰 <strong>Chave Pix cadastrada:</strong> <span className="font-mono text-emerald-400 font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-800 ml-1">{providerPixKey}</span>
+                    💰 <strong>Chave Pix cadastrada:</strong>{' '}
+                    <span className="font-mono font-bold px-2 py-0.5 rounded ml-1" style={{ background: 'var(--color-surface-alt)', color: 'var(--color-success)', border: '1px solid var(--color-border)' }}>{providerPixKey}</span>
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] mt-1" style={{ color: 'var(--color-text-subtle)' }}>
                     Seus repasses líquidos de R$ 50 a R$ 110 por serviço serão transferidos diretamente para esta chave.
                   </p>
                 </>
               ) : (
-                <p className="text-xs text-amber-300">
+                <p style={{ color: 'var(--color-warning)' }}>
                   Cadastre sua chave Pix para poder ficar Online e receber chamados em Rio Verde.
                 </p>
               )}
@@ -651,7 +666,7 @@ export default function PainelPage() {
                 setNewPixKeyInput(providerPixKey)
                 setEditingPix(true)
               }}
-              className="text-[11px] font-bold text-slate-200 hover:text-white py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors shrink-0 cursor-pointer"
+              className="btn-secondary py-1.5 text-[11px] shrink-0"
             >
               ✏️ Alterar Chave
             </button>
@@ -671,18 +686,24 @@ export default function PainelPage() {
 
       {/* Oportunidades na Fila de Espera Prioritária */}
       {queuedCalls.length > 0 && (
-        <section className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 animate-slide-up shadow-md">
+        <section
+          className="mb-6 p-4 rounded-2xl animate-slide-up shadow-md"
+          style={{ background: 'rgba(94, 211, 164, 0.06)', border: '1px solid rgba(94, 211, 164, 0.2)' }}
+        >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ background: 'var(--color-primary)' }}></span>
+                <span className="relative inline-flex rounded-full h-3 w-3" style={{ background: 'var(--color-primary)' }}></span>
               </span>
-              <h3 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+              <h3 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-primary)' }}>
                 Fila Prioritária ({queuedCalls.length} cliente{queuedCalls.length > 1 ? 's' : ''} aguardando)
               </h3>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+            <span
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: '1px solid var(--color-border)' }}
+            >
               🔄 Atualização automática
             </span>
           </div>
@@ -691,16 +712,17 @@ export default function PainelPage() {
             {queuedCalls.map(qCall => (
               <div
                 key={qCall.id}
-                className="p-3 bg-slate-900/80 border border-slate-800 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                className="p-3 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-white truncate">
+                  <p className="text-sm font-bold truncate" style={{ color: 'var(--color-text)' }}>
                     {(qCall.service as { name?: string })?.name || 'Serviço residencial'}
                   </p>
-                  <p className="text-xs text-slate-400 mt-0.5 truncate">
+                  <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--color-text-muted)' }}>
                     📍 {qCall.neighborhood || 'Rio Verde (GO)'}
                   </p>
-                  <p className="text-xs font-semibold text-emerald-400 mt-1">
+                  <p className="text-xs font-semibold mt-1" style={{ color: 'var(--color-success)' }}>
                     Ganhos: R$ {Number(qCall.provider_cut || 0).toFixed(2).replace('.', ',')} (Total: R$ {Number(qCall.total_price || 0).toFixed(2).replace('.', ',')})
                   </p>
                 </div>
@@ -709,7 +731,7 @@ export default function PainelPage() {
                   type="button"
                   onClick={() => handleClaimQueued(qCall.id)}
                   disabled={claimingCallId === qCall.id}
-                  className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                  className="btn-primary w-full sm:w-auto text-xs py-2 shrink-0 disabled:opacity-50"
                 >
                   {claimingCallId === qCall.id ? (
                     <>
@@ -718,7 +740,7 @@ export default function PainelPage() {
                     </>
                   ) : (
                     <>
-                      <Zap size={13} className="text-yellow-300" />
+                      <Zap size={13} />
                       <span>Atender Chamado Agora</span>
                     </>
                   )}
@@ -731,10 +753,13 @@ export default function PainelPage() {
 
       {/* Alerta de Obrigatoriedade da Chave Pix */}
       {!hasPixKey && (
-        <div className="w-full max-w-md mx-auto mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 flex items-start gap-3 animate-slide-up shadow-lg">
-          <AlertTriangle size={20} className="text-amber-400 shrink-0 mt-0.5" />
+        <div
+          className="w-full max-w-md mx-auto mb-6 p-4 rounded-2xl flex items-start gap-3 animate-slide-up"
+          style={{ background: 'rgba(237, 198, 107, 0.08)', border: '1px solid rgba(237, 198, 107, 0.25)', color: 'var(--color-warning)' }}
+        >
+          <AlertTriangle size={20} className="shrink-0 mt-0.5" style={{ color: 'var(--color-warning)' }} />
           <div className="text-xs leading-relaxed">
-            <strong className="block font-bold text-amber-200 text-sm mb-1">
+            <strong className="block font-bold text-sm mb-1" style={{ color: 'var(--color-warning)' }}>
               Chave Pix Obrigatória
             </strong>
             Cadastre sua Chave Pix acima para desbloquear sua disponibilidade e receber seus repasses diretamente na sua conta.
@@ -841,7 +866,7 @@ export default function PainelPage() {
               <div key={n} className="flex items-start gap-3">
                 <span
                   className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                  style={{ background: 'var(--color-brand-glow)', color: 'var(--color-brand-light)' }}
+                  style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}
                 >
                   {n}
                 </span>
@@ -853,14 +878,18 @@ export default function PainelPage() {
       )}
 
       {/* Botão Sair da Conta no Painel */}
-      <div className="mt-8 mb-6 pt-4 border-t border-slate-800 text-center">
+      <div
+        className="mt-8 mb-6 pt-4 text-center"
+        style={{ borderTop: '1px solid var(--color-border)' }}
+      >
         <button
           type="button"
           onClick={async () => {
             toast.success('Desconectando da conta...')
             await performLogout('/login')
           }}
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold text-red-400 hover:text-red-300 bg-red-950/40 hover:bg-red-950/70 border border-red-900/60 transition-all cursor-pointer active:scale-95 shadow-sm"
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-95"
+          style={{ color: 'var(--color-danger)', background: 'rgba(244, 124, 124, 0.08)', border: '1px solid rgba(244, 124, 124, 0.2)' }}
         >
           <LogOut size={16} />
           <span>Encerrar Turno & Sair da Conta</span>

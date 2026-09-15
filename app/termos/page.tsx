@@ -31,11 +31,21 @@ const sections = [
 
 export default function TermosPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200">
+    <div className="min-h-screen" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
       {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30">
+      <header
+        className="backdrop-blur-md sticky top-0 z-30"
+        style={{
+          background: 'rgba(20, 38, 34, 0.85)',
+          borderBottom: '1px solid var(--color-border)',
+        }}
+      >
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-bold transition-colors"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
             <ArrowLeft size={16} />
             <span>Voltar ao Início</span>
           </Link>
@@ -47,15 +57,26 @@ export default function TermosPage() {
 
         {/* Sumário Lateral (desktop) */}
         <aside className="hidden lg:block">
-          <div className="sticky top-24 bg-slate-900/50 border border-slate-800 rounded-2xl p-4 space-y-1">
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3">Sumário</p>
+          <div
+            className="sticky top-24 rounded-2xl p-4 space-y-1"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--color-text-subtle)' }}>
+              Sumário
+            </p>
             {sections.map((s, i) => (
               <a
                 key={s.id}
                 href={`#${s.id}`}
-                className="flex items-center gap-2 text-[11px] text-slate-400 hover:text-orange-400 transition-colors py-0.5"
+                className="flex items-center gap-2 text-[11px] transition-colors py-0.5 hover:opacity-80"
+                style={{ color: 'var(--color-text-muted)' }}
               >
-                <span className="w-4 text-right text-slate-600 text-[10px]">{String(i + 1).padStart(2, '0')}</span>
+                <span className="w-4 text-right text-[10px]" style={{ color: 'var(--color-text-subtle)' }}>
+                  {String(i + 1).padStart(2, '0')}
+                </span>
                 {s.label}
               </a>
             ))}
@@ -65,19 +86,33 @@ export default function TermosPage() {
         {/* Conteúdo Principal */}
         <main className="space-y-8 min-w-0">
           {/* Cabeçalho do Documento */}
-          <div className="space-y-3 border-b border-slate-800 pb-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20">
+          <div className="space-y-3 border-b pb-6" style={{ borderColor: 'var(--color-border)' }}>
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold"
+              style={{
+                background: 'var(--color-primary-soft)',
+                color: 'var(--color-accent)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
               <FileText size={14} />
               Termos de Uso e Condições Gerais
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white">
+            <h1 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--color-text)' }}>
               Termos de Uso e Condições Gerais de Navegação da Plataforma Repara RV
             </h1>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
               Última atualização: 13 de Setembro de 2026 · Versão 1.0 · Rio Verde — Goiás, Brasil
             </p>
-            <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl text-amber-200 text-xs flex items-start gap-3">
-              <AlertTriangle size={16} className="shrink-0 text-amber-400 mt-0.5" />
+            <div
+              className="p-4 rounded-xl text-xs flex items-start gap-3"
+              style={{
+                background: 'rgba(237, 198, 107, 0.12)',
+                border: '1px solid var(--color-warning)',
+                color: 'var(--color-warning)',
+              }}
+            >
+              <AlertTriangle size={16} className="shrink-0 mt-0.5" style={{ color: 'var(--color-warning)' }} />
               <span>
                 <strong>LEIA COM ATENÇÃO:</strong> O cadastro e a utilização da Plataforma Repara RV implicam a leitura integral,
                 compreensão e aceitação expressa de todas as cláusulas deste instrumento. Caso não concorde com qualquer disposição,
@@ -87,9 +122,9 @@ export default function TermosPage() {
           </div>
 
           {/* ── Cláusula 1 ── */}
-          <section id="abertura" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="abertura" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">1</span>
+              <span className="legal-step-badge">1</span>
               Da Abertura e da Identificação da Plataforma
             </h2>
             <p>
@@ -112,9 +147,9 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 2 ── */}
-          <section id="definicoes" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="definicoes" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">2</span>
+              <span className="legal-step-badge">2</span>
               Das Definições
             </h2>
             <p>Para interpretação uniforme deste instrumento, adotam-se as seguintes definições:</p>
@@ -132,10 +167,10 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 3 ── */}
-          <section id="objeto" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="objeto" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Wrench size={16} className="text-orange-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">3</span>
+              <Wrench size={16} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">3</span>
               Do Objeto e da Natureza dos Serviços (Intermediação Tecnológica)
             </h2>
             <p>
@@ -158,9 +193,9 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 4 ── */}
-          <section id="cadastro" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="cadastro" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">4</span>
+              <span className="legal-step-badge">4</span>
               Do Cadastro, Aceite Eletrônico e Autodeclaração
             </h2>
             <p>
@@ -194,9 +229,9 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 5 ── */}
-          <section id="materiais" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-4 scroll-mt-24">
+          <section id="materiais" className="legal-card space-y-4 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">5</span>
+              <span className="legal-step-badge">5</span>
               Da Delimitação do Escopo: Materiais, Peças e Equipamentos
             </h2>
             <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl text-amber-200 text-xs flex items-start gap-3">
@@ -236,9 +271,9 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 6 ── */}
-          <section id="contratacao" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="contratacao" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">6</span>
+              <span className="legal-step-badge">6</span>
               Do Fluxo de Contratação e do Ciclo do Chamado
             </h2>
             <p>A contratação de serviços na Plataforma segue o seguinte fluxo tecnológico:</p>
@@ -258,10 +293,10 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 7 ── */}
-          <section id="pagamentos" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="pagamentos" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <CreditCard size={16} className="text-orange-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">7</span>
+              <CreditCard size={16} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">7</span>
               Dos Pagamentos, Split de Pix e Taxa de Intermediação
             </h2>
             <p>
@@ -287,10 +322,10 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 8 ── */}
-          <section id="cancelamento" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="cancelamento" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Clock size={16} className="text-orange-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">8</span>
+              <Clock size={16} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">8</span>
               Do Cancelamento e do No-Show (Ausência no Local)
             </h2>
             <div className="space-y-3 text-xs text-slate-300">
@@ -302,10 +337,10 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 9 ── */}
-          <section id="garantia" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="garantia" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Shield size={16} className="text-orange-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">9</span>
+              <Shield size={16} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">9</span>
               Da Garantia do Serviço de 7 Dias
             </h2>
             <p>
@@ -326,9 +361,9 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 10 ── */}
-          <section id="obrigacoes-cliente" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="obrigacoes-cliente" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">10</span>
+              <span className="legal-step-badge">10</span>
               Das Obrigações e Responsabilidades do Cliente
             </h2>
             <ul className="space-y-2 text-xs text-slate-300 list-disc pl-4">
@@ -344,9 +379,9 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 11 ── */}
-          <section id="obrigacoes-prestador" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="obrigacoes-prestador" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">11</span>
+              <span className="legal-step-badge">11</span>
               Das Obrigações e Responsabilidades do Técnico Parceiro
             </h2>
             <ul className="space-y-2 text-xs text-slate-300 list-disc pl-4">
@@ -363,9 +398,9 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 12 ── */}
-          <section id="vedacoes" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="vedacoes" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">12</span>
+              <span className="legal-step-badge">12</span>
               Das Vedações e Condutas Proibidas
             </h2>
             <p>É expressamente proibido a qualquer usuário da Plataforma:</p>
@@ -385,9 +420,9 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 13 ── */}
-          <section id="responsabilidade" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="responsabilidade" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">13</span>
+              <span className="legal-step-badge">13</span>
               Da Limitação de Responsabilidade da Plataforma
             </h2>
             <p>
@@ -409,10 +444,10 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 14 ── */}
-          <section id="avaliacao" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="avaliacao" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Star size={16} className="text-orange-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">14</span>
+              <Star size={16} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">14</span>
               Da Avaliação Pós-Serviço e Sistema de Reputação
             </h2>
             <p>
@@ -432,10 +467,10 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 15 ── */}
-          <section id="seguranca" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="seguranca" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Shield size={16} className="text-orange-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">15</span>
+              <Shield size={16} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">15</span>
               Da Segurança, Verificação de Prestadores e Botão SOS
             </h2>
             <p>
@@ -455,9 +490,9 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 16 ── */}
-          <section id="lgpd" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="lgpd" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">16</span>
+              <span className="legal-step-badge">16</span>
               Da Privacidade, Proteção de Dados e LGPD
             </h2>
             <p>
@@ -479,9 +514,9 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 17 ── */}
-          <section id="vigencia" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="vigencia" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">17</span>
+              <span className="legal-step-badge">17</span>
               Da Vigência, Alterações e Rescisão
             </h2>
             <p>
@@ -502,10 +537,10 @@ export default function TermosPage() {
           </section>
 
           {/* ── Cláusula 18 ── */}
-          <section id="foro" className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3 scroll-mt-24">
+          <section id="foro" className="legal-card space-y-3 scroll-mt-24">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Scale size={16} className="text-orange-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold flex items-center justify-center shrink-0">18</span>
+              <Scale size={16} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">18</span>
               Das Disposições Finais, Lei Aplicável e Foro de Eleição
             </h2>
             <p>

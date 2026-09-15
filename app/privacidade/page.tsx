@@ -10,11 +10,21 @@ export const metadata: Metadata = {
 
 export default function PrivacidadePage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200">
+    <div className="min-h-screen" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
       {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30">
+      <header
+        className="backdrop-blur-md sticky top-0 z-30"
+        style={{
+          background: 'rgba(20, 38, 34, 0.85)',
+          borderBottom: '1px solid var(--color-border)',
+        }}
+      >
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-bold transition-colors"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
             <ArrowLeft size={16} />
             <span>Voltar ao Início</span>
           </Link>
@@ -24,19 +34,33 @@ export default function PrivacidadePage() {
 
       {/* Conteúdo */}
       <main className="max-w-4xl mx-auto px-4 py-10 sm:py-14 space-y-8">
-        <div className="space-y-3 border-b border-slate-800 pb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+        <div className="space-y-3 border-b pb-6" style={{ borderColor: 'var(--color-border)' }}>
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold"
+            style={{
+              background: 'var(--color-primary-soft)',
+              color: 'var(--color-accent)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
             <ShieldCheck size={14} />
             Privacidade e Proteção de Dados — LGPD
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white">
+          <h1 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--color-text)' }}>
             Política de Privacidade e Proteção de Dados Pessoais
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
             Conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018) · Versão 1.0 · Rio Verde — Goiás
           </p>
-          <div className="bg-blue-500/10 border border-blue-500/30 p-4 rounded-xl text-blue-200 text-xs flex items-start gap-3">
-            <ShieldCheck size={16} className="shrink-0 text-blue-400 mt-0.5" />
+          <div
+            className="p-4 rounded-xl text-xs flex items-start gap-3"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-muted)',
+            }}
+          >
+            <ShieldCheck size={16} className="shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} />
             <span>
               A Repara RV respeita sua privacidade. Esta política explica de forma transparente e acessível como coletamos,
               usamos, armazenamos e protegemos seus dados pessoais. Recomendamos a leitura integral antes de utilizar a Plataforma.
@@ -48,9 +72,9 @@ export default function PrivacidadePage() {
         <div className="prose prose-invert max-w-none space-y-6 text-sm text-slate-300 leading-relaxed">
 
           {/* Seção 1 */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0">1</span>
+              <span className="legal-step-badge">1</span>
               Identificação do Controlador e do Encarregado (DPO)
             </h2>
             <p>
@@ -67,10 +91,10 @@ export default function PrivacidadePage() {
           </section>
 
           {/* Seção 2 */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Database size={15} className="text-blue-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0">2</span>
+              <Database size={15} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">2</span>
               Dados Pessoais Coletados e Categorias
             </h2>
             <p>Para a operacionalização segura e eficiente dos chamados, coletamos as seguintes categorias de dados:</p>
@@ -108,10 +132,10 @@ export default function PrivacidadePage() {
           </section>
 
           {/* Seção 3 */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Eye size={15} className="text-blue-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0">3</span>
+              <Eye size={15} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">3</span>
               Finalidade e Base Legal do Tratamento de Dados
             </h2>
             <p>Seus dados são tratados nas seguintes finalidades, com as respectivas bases legais da LGPD:</p>
@@ -136,10 +160,10 @@ export default function PrivacidadePage() {
           </section>
 
           {/* Seção 4 — Localização */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Globe size={15} className="text-blue-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0">4</span>
+              <Globe size={15} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">4</span>
               Tratamento Especial: Dados de Localização Geográfica
             </h2>
             <div className="bg-amber-500/10 border border-amber-500/30 p-3 rounded-xl text-amber-200 text-xs flex items-start gap-3">
@@ -153,9 +177,9 @@ export default function PrivacidadePage() {
           </section>
 
           {/* Seção 5 */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0">5</span>
+              <span className="legal-step-badge">5</span>
               Compartilhamento e Transferência de Dados
             </h2>
             <p>
@@ -175,9 +199,9 @@ export default function PrivacidadePage() {
           </section>
 
           {/* Seção 6 */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0">6</span>
+              <span className="legal-step-badge">6</span>
               Prazo de Retenção dos Dados
             </h2>
             <p>Os dados pessoais são retidos pelos seguintes prazos:</p>
@@ -216,10 +240,10 @@ export default function PrivacidadePage() {
           </section>
 
           {/* Seção 7 */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Fingerprint size={15} className="text-blue-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0">7</span>
+              <Fingerprint size={15} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">7</span>
               Direitos do Titular (LGPD) — Como Exercer
             </h2>
             <p>Nos termos dos artigos 17 a 22 da LGPD, você tem os seguintes direitos em relação aos seus dados pessoais:</p>
@@ -240,10 +264,10 @@ export default function PrivacidadePage() {
           </section>
 
           {/* Seção 8 */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Lock size={15} className="text-blue-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0">8</span>
+              <Lock size={15} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">8</span>
               Segurança da Informação e Medidas Técnicas
             </h2>
             <p>A Repara RV adota um conjunto robusto de medidas técnicas e administrativas para proteger seus dados:</p>
@@ -258,9 +282,9 @@ export default function PrivacidadePage() {
           </section>
 
           {/* Seção 9 */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0">9</span>
+              <span className="legal-step-badge">9</span>
               Cookies e Dados de Navegação
             </h2>
             <p>

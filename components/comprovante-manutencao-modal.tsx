@@ -51,14 +51,14 @@ export function ComprovanteManutencaoModal({ isOpen, onClose, call }: Comprovant
         {/* Ações superiores na tela */}
         <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100 print:hidden">
           <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
-            <FileText size={16} className="text-orange-500" />
+            <FileText size={16} className="text-emerald-600" />
             Comprovante para Imobiliária / Proprietário
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold transition shadow-sm cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm cursor-pointer"
             >
               <Printer size={14} />
               <span>Salvar PDF / Imprimir</span>
@@ -76,13 +76,13 @@ export function ComprovanteManutencaoModal({ isOpen, onClose, call }: Comprovant
         {/* ─── CORPO TIMBRADO DO COMPROVANTE (IMPRESSÃO / PDF) ─── */}
         <div className="space-y-6">
           {/* Cabeçalho */}
-          <div className="flex items-start justify-between border-b-2 border-orange-500 pb-4">
+          <div className="flex items-start justify-between border-b-2 border-emerald-600 pb-4">
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xl font-black tracking-tight text-gray-900">
-                  REPARA <span className="text-orange-600">RV</span>
+                  REPARA <span className="text-emerald-600">RV</span>
                 </span>
-                <span className="text-[10px] uppercase font-bold bg-orange-100 text-orange-800 px-2 py-0.5 rounded">
+                <span className="text-[10px] uppercase font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
                   Rio Verde - GO
                 </span>
               </div>
@@ -110,7 +110,7 @@ export function ComprovanteManutencaoModal({ isOpen, onClose, call }: Comprovant
             <div>
               <span className="text-[10px] text-gray-400 uppercase font-bold block mb-1">Local do Reparo (Imóvel)</span>
               <p className="font-bold text-gray-900 flex items-start gap-1">
-                <MapPin size={13} className="text-orange-600 shrink-0 mt-0.5" />
+                <MapPin size={13} className="text-emerald-600 shrink-0 mt-0.5" />
                 <span>{call.client_address}</span>
               </p>
             </div>
@@ -143,7 +143,7 @@ export function ComprovanteManutencaoModal({ isOpen, onClose, call }: Comprovant
             <div className="p-3.5 rounded-xl border border-gray-200">
               <span className="text-[10px] text-gray-400 uppercase font-bold block mb-1.5">Profissional Parceiro Credenciado</span>
               <p className="font-bold text-gray-900 flex items-center gap-1.5">
-                <Wrench size={13} className="text-orange-600" />
+                <Wrench size={13} className="text-emerald-600" />
                 <span>{call.provider_name || 'Técnico Homologado Repara RV'}</span>
               </p>
               <p className="text-emerald-700 text-[11px] font-medium mt-1 flex items-center gap-1">
@@ -186,7 +186,7 @@ export function ComprovanteManutencaoModal({ isOpen, onClose, call }: Comprovant
           {/* Termo de Garantia e Autenticação */}
           <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 text-[11px] text-gray-600 leading-relaxed">
             <p className="font-bold text-gray-800 mb-1 flex items-center gap-1">
-              <ShieldCheck size={13} className="text-orange-600" />
+              <ShieldCheck size={13} className="text-emerald-600" />
               Garantia do Serviço (7 dias corridos)
             </p>
             <p>

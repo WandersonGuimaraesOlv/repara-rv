@@ -2,7 +2,7 @@
 
 import { QuickService } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
-import { Zap, Droplets, Package, AlertTriangle, Wind, Tv2, Waves, Plug, Ambulance } from 'lucide-react'
+import { Zap, Droplets, Package, AlertCircle, Wind, Tv2, Waves, Plug, Ambulance, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -16,11 +16,14 @@ const ICON_MAP: Record<string, React.ElementType> = {
   ambulance: Ambulance,
 }
 
+// Updated to use green-based palette consistent with the new design system
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  Elétrica:   { bg: 'rgba(99, 102, 241, 0.12)',  text: '#818CF8', border: 'rgba(99, 102, 241, 0.3)'  },
-  Hidráulica: { bg: 'rgba(6, 182, 212, 0.12)',   text: '#22D3EE', border: 'rgba(6, 182, 212, 0.3)'   },
-  Montagem:   { bg: 'rgba(245, 158, 11, 0.12)',  text: '#FCD34D', border: 'rgba(245, 158, 11, 0.3)'  },
-  Emergência: { bg: 'rgba(239, 68, 68, 0.12)',   text: '#FCA5A5', border: 'rgba(239, 68, 68, 0.3)'   },
+  Elétrica:   { bg: 'rgba(10, 155, 112, 0.14)',  text: '#0db982', border: 'rgba(10, 155, 112, 0.3)'  },
+  Hidráulica: { bg: 'rgba(96, 200, 232, 0.12)',  text: '#60c8e8', border: 'rgba(96, 200, 232, 0.28)' },
+  Montagem:   { bg: 'rgba(184, 239, 117, 0.12)', text: '#b8ef75', border: 'rgba(184, 239, 117, 0.28)'},
+  Chaveiro:   { bg: 'rgba(94, 211, 164, 0.12)',  text: '#5ed3a4', border: 'rgba(94, 211, 164, 0.28)' },
+  Instalação: { bg: 'rgba(184, 239, 117, 0.1)',  text: '#b8ef75', border: 'rgba(184, 239, 117, 0.22)'},
+  Emergência: { bg: 'rgba(244, 124, 124, 0.12)', text: '#f47c7c', border: 'rgba(244, 124, 124, 0.28)'},
 }
 
 interface ServiceCardProps {
@@ -73,7 +76,7 @@ export function ServiceCard({ service, index = 0 }: ServiceCardProps) {
           <div className="flex items-center gap-3 mt-3">
             <div>
               <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Você paga</p>
-              <p className="font-bold text-lg" style={{ color: 'var(--color-cta)' }}>
+              <p className="font-bold text-lg" style={{ color: 'var(--color-text)' }}>
                 {formatCurrency(service.fixed_price)}
               </p>
             </div>
@@ -84,14 +87,23 @@ export function ServiceCard({ service, index = 0 }: ServiceCardProps) {
                 {formatCurrency(providerCut)}
               </p>
             </div>
+            <div className="ml-auto">
+              <span
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold text-white transition-all group-hover:opacity-90"
+                style={{ background: 'var(--color-primary)', boxShadow: 'var(--shadow-primary)' }}
+              >
+                <span>Solicitar</span>
+                <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Aviso de peças — inline compacto */}
       <div className="banner-warning mt-3">
-        <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" style={{ color: '#F59E0B' }} />
-        <p className="text-xs" style={{ color: '#FCD34D' }}>
+        <AlertCircle size={14} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--color-warning)' }} />
+        <p className="text-xs" style={{ color: 'var(--color-warning)' }}>
           <strong>Apenas mão de obra.</strong> Peças e materiais são combinados à parte.
         </p>
       </div>

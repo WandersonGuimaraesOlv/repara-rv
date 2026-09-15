@@ -21,13 +21,21 @@ export function PanelHeader({ isOnline }: PanelHeaderProps) {
   }
 
   return (
-    <header className="w-full flex items-center justify-between px-3 py-3 border-b border-slate-200/80 bg-white/95 backdrop-blur-md rounded-2xl mb-5 shadow-sm">
-      {/* Botão de Retorno Seguro */}
+    <header
+      className="w-full flex items-center justify-between px-3 py-3 rounded-2xl mb-5"
+      style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        boxShadow: 'var(--shadow-card)',
+      }}
+    >
+      {/* Botão de Retorno */}
       <button
         type="button"
         onClick={handleBack}
         aria-label="Voltar para a página inicial"
-        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors text-xs font-semibold active:scale-95"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold active:scale-95 transition-colors cursor-pointer"
+        style={{ color: 'var(--color-text-muted)' }}
       >
         <ArrowLeft className="w-4 h-4" />
         <span className="hidden sm:inline">Início</span>
@@ -35,10 +43,21 @@ export function PanelHeader({ isOnline }: PanelHeaderProps) {
 
       {/* Identificação Central */}
       <div className="flex items-center gap-2">
-        <Link href="/" className="font-extrabold text-base text-slate-900 tracking-tight hover:opacity-90 transition-opacity">
-          Repara<span className="text-orange-500">RV</span>
+        <Link
+          href="/"
+          className="font-extrabold text-base tracking-tight hover:opacity-85 transition-opacity"
+          style={{ color: 'var(--color-text)' }}
+        >
+          Repara<span style={{ color: 'var(--color-primary)' }}>RV</span>
         </Link>
-        <span className="text-[10px] font-bold uppercase px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md border border-slate-200">
+        <span
+          className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md"
+          style={{
+            background: 'var(--color-primary-soft)',
+            color: 'var(--color-primary)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
           Painel Prestador
         </span>
       </div>
@@ -46,13 +65,28 @@ export function PanelHeader({ isOnline }: PanelHeaderProps) {
       {/* Status da Conexão & Botão Sair */}
       <div className="flex items-center gap-2">
         <div
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all ${
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all"
+          style={
             isOnline
-              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm'
-              : 'bg-slate-100 text-slate-500 border border-slate-200'
-          }`}
+              ? {
+                  background: 'rgba(94, 211, 164, 0.12)',
+                  color: 'var(--color-success)',
+                  border: '1px solid rgba(94, 211, 164, 0.25)',
+                }
+              : {
+                  background: 'var(--color-surface-alt)',
+                  color: 'var(--color-text-subtle)',
+                  border: '1px solid var(--color-border)',
+                }
+          }
         >
-          <Radio className={`w-3.5 h-3.5 ${isOnline ? 'text-emerald-600 animate-pulse' : 'text-slate-400'}`} />
+          <Radio
+            className="w-3.5 h-3.5"
+            style={{
+              color: isOnline ? 'var(--color-success)' : 'var(--color-text-subtle)',
+              animation: isOnline ? 'pulse 2s infinite' : 'none',
+            }}
+          />
           <span>{isOnline ? 'Online' : 'Offline'}</span>
         </div>
 
@@ -61,7 +95,8 @@ export function PanelHeader({ isOnline }: PanelHeaderProps) {
           onClick={() => performLogout('/login')}
           title="Sair da Conta"
           aria-label="Sair da Conta"
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 border border-slate-200/80 transition-colors text-xs font-semibold active:scale-95 cursor-pointer"
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold active:scale-95 transition-colors cursor-pointer"
+          style={{ color: 'var(--color-danger)', border: '1px solid rgba(244, 124, 124, 0.2)' }}
         >
           <LogOut className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Sair</span>

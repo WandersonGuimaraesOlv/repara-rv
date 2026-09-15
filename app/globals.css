@@ -5,84 +5,81 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ──────────────────────────────────────────────────────────
-   DESIGN TOKENS — Repara RV
+   DESIGN TOKENS — Repara RV  |  Verde-Energia Dark Mode
    ────────────────────────────────────────────────────────── */
 :root {
-  /* Paleta Triider: Fundo limpo, contrastes nítidos e laranja vibrante */
-  --color-bg:           #F8FAFC;
-  --color-surface:      #FFFFFF;
-  --color-surface-alt:  #F1F5F9;
-  --color-border:       #E2E8F0;
-  --color-border-light: #CBD5E1;
+  /* Fundo e Superfícies */
+  --color-bg:              #0d1716;
+  --color-surface:         #142622;
+  --color-surface-alt:     #101f1d;
+  --color-surface-deep:    #07100f;
 
-  /* Laranja / Coral Vibrante (marca Triider) */
-  --color-brand:        #F97316;
-  --color-brand-light:  #FB923C;
-  --color-brand-dark:   #EA580C;
-  --color-brand-glow:   rgba(249, 115, 22, 0.15);
+  /* Bordas */
+  --color-border:          #29483f;
+  --color-border-strong:   #3b6255;
 
-  /* Laranja (CTA / ação) */
-  --color-cta:          #F97316;
-  --color-cta-light:    #FB923C;
-  --color-cta-dark:     #EA580C;
-  --color-cta-glow:     rgba(249, 115, 22, 0.25);
+  /* Verde Primário (botões e ações principais) */
+  --color-primary:         #0a9b70;
+  --color-primary-hover:   #0db982;
+  --color-primary-soft:    #173c32;
+  --color-primary-glow:    rgba(10, 155, 112, 0.22);
 
-  /* Semânticas */
-  --color-success:      #10B981;
-  --color-warning:      #F59E0B;
-  --color-danger:       #EF4444;
-  --color-info:         #2563EB;
+  /* Accent Verde-Lima (destaques e conversão) */
+  --color-accent:          #b8ef75;
+  --color-accent-soft:     #dff7ed;
 
   /* Texto */
-  --color-text:         #0F172A;
-  --color-text-muted:   #475569;
-  --color-text-subtle:  #94A3B8;
+  --color-text:            #edf8f3;
+  --color-text-muted:      #a9bcb5;
+  --color-text-subtle:     #829a91;
 
-  /* Raios e sombras generosos estilo Triider */
+  /* Semânticas */
+  --color-success:         #5ed3a4;
+  --color-danger:          #f47c7c;
+  --color-warning:         #edc66b;
+  --color-info:            #60c8e8;
+
+  /* Sombras */
+  --shadow-card:           0 1px 4px 0 rgba(0, 0, 0, 0.35), 0 1px 2px -1px rgba(0, 0, 0, 0.25);
+  --shadow-card-hover:     0 12px 28px -6px rgba(0, 0, 0, 0.5), 0 6px 12px -4px rgba(0, 0, 0, 0.35);
+  --shadow-primary:        0 6px 20px -4px rgba(10, 155, 112, 0.4);
+  --shadow-primary-hover:  0 10px 28px -4px rgba(10, 155, 112, 0.5);
+
+  /* Raios */
   --radius-sm:   10px;
   --radius-md:   14px;
   --radius-lg:   20px;
   --radius-xl:   28px;
   --radius-full: 9999px;
-
-  --shadow-brand: 0 10px 25px -5px rgba(249, 115, 22, 0.25);
-  --shadow-cta:   0 8px 20px -4px rgba(249, 115, 22, 0.3);
-  --shadow-card:  0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05);
-  --shadow-card-hover: 0 12px 24px -6px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
 }
 
 /* ──────────────────────────────────────────────────────────
-   DARK MODE — tokens sobrepostos pela classe .dark no <html>
-   (gerenciado pelo next-themes)
+   LIGHT MODE — sobrescreve apenas quando .light estiver ativo
    ────────────────────────────────────────────────────────── */
-.dark {
-  --color-bg:           #0A0F1E;
-  --color-surface:      #111827;
-  --color-surface-alt:  #1F2937;
-  --color-border:       #1E293B;
-  --color-border-light: #334155;
-
-  --color-brand:        #F97316;
-  --color-brand-light:  #FB923C;
-  --color-brand-dark:   #EA580C;
-  --color-brand-glow:   rgba(249, 115, 22, 0.20);
-
-  --color-cta:          #F97316;
-  --color-cta-light:    #FB923C;
-  --color-cta-dark:     #EA580C;
-  --color-cta-glow:     rgba(249, 115, 22, 0.30);
-
-  --color-success:      #10B981;
-  --color-warning:      #F59E0B;
-  --color-danger:       #EF4444;
-  --color-info:         #3B82F6;
-
-  --color-text:         #F1F5F9;
-  --color-text-muted:   #94A3B8;
-  --color-text-subtle:  #475569;
-
-  --shadow-card:        0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.2);
-  --shadow-card-hover:  0 12px 24px -6px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+.light {
+  --color-bg:              #f0faf5;
+  --color-surface:         #ffffff;
+  --color-surface-alt:     #e8f6ef;
+  --color-surface-deep:    #d1eddf;
+  --color-border:          #b5d9c5;
+  --color-border-strong:   #7ebfa1;
+  --color-primary:         #0a9b70;
+  --color-primary-hover:   #0db982;
+  --color-primary-soft:    #d6f0e6;
+  --color-primary-glow:    rgba(10, 155, 112, 0.18);
+  --color-accent:          #3ea84f;
+  --color-accent-soft:     #dff7ed;
+  --color-text:            #0c2218;
+  --color-text-muted:      #3d6854;
+  --color-text-subtle:     #6b9b82;
+  --color-success:         #0f8b5e;
+  --color-danger:          #c93a3a;
+  --color-warning:         #9a6d10;
+  --color-info:            #1a7a9a;
+  --shadow-card:           0 1px 3px 0 rgba(12, 34, 24, 0.08), 0 1px 2px -1px rgba(12, 34, 24, 0.05);
+  --shadow-card-hover:     0 10px 24px -6px rgba(12, 34, 24, 0.14), 0 6px 10px -4px rgba(12, 34, 24, 0.08);
+  --shadow-primary:        0 6px 20px -4px rgba(10, 155, 112, 0.3);
+  --shadow-primary-hover:  0 10px 28px -4px rgba(10, 155, 112, 0.4);
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -124,7 +121,7 @@ body {
    COMPONENTES UTILITÁRIOS
    ────────────────────────────────────────────────────────── */
 
-/* Card padrão Triider */
+/* Card padrão */
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -134,35 +131,36 @@ body {
 }
 
 .card:hover {
-  border-color: var(--color-border-light);
+  border-color: var(--color-border-strong);
   transform: translateY(-2px);
   box-shadow: var(--shadow-card-hover);
 }
 
-/* Botão primário (CTA laranja) */
+/* Botão primário (verde vibrante) */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 14px 24px;
-  background: linear-gradient(135deg, var(--color-cta), var(--color-cta-dark));
-  color: white;
+  background: var(--color-primary);
+  color: #ffffff;
   font-weight: 700;
   font-size: 1rem;
   border-radius: var(--radius-full);
   border: none;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 16px var(--color-cta-glow);
+  box-shadow: var(--shadow-primary);
   width: 100%;
   letter-spacing: 0.01em;
+  font-family: inherit;
 }
 
 .btn-primary:hover {
+  background: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px var(--color-cta-glow);
-  filter: brightness(1.08);
+  box-shadow: var(--shadow-primary-hover);
 }
 
 .btn-primary:active {
@@ -170,12 +168,49 @@ body {
 }
 
 .btn-primary:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Botão accent (verde-lima para CTAs de destaque) */
+.btn-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: var(--color-accent);
+  color: #0c2218;
+  font-weight: 700;
+  font-size: 1rem;
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 6px 20px -4px rgba(184, 239, 117, 0.3);
+  width: 100%;
+  letter-spacing: 0.01em;
+  font-family: inherit;
+}
+
+.btn-accent:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.btn-accent:active {
+  transform: scale(0.98);
+}
+
+.btn-accent:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
   transform: none;
 }
 
-/* Botão secundário (outline brand) */
+/* Botão secundário (outline verde) */
 .btn-secondary {
   display: inline-flex;
   align-items: center;
@@ -183,19 +218,21 @@ body {
   gap: 8px;
   padding: 12px 24px;
   background: transparent;
-  color: var(--color-brand-light);
+  color: var(--color-primary);
   font-weight: 600;
   font-size: 0.95rem;
   border-radius: var(--radius-full);
-  border: 1.5px solid var(--color-brand);
+  border: 1.5px solid var(--color-primary);
   cursor: pointer;
   transition: all 0.2s;
   width: 100%;
+  font-family: inherit;
 }
 
 .btn-secondary:hover {
-  background: var(--color-brand-glow);
-  border-color: var(--color-brand-light);
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-hover);
+  color: var(--color-primary-hover);
 }
 
 /* Botão de perigo */
@@ -214,17 +251,18 @@ body {
   cursor: pointer;
   transition: all 0.2s;
   width: 100%;
+  font-family: inherit;
 }
 
 .btn-danger:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(244, 124, 124, 0.12);
 }
 
 /* Input */
 .input {
   width: 100%;
   padding: 14px 18px;
-  background: var(--color-surface);
+  background: var(--color-surface-alt);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-lg);
   color: var(--color-text);
@@ -235,24 +273,35 @@ body {
 }
 
 .input:focus {
-  border-color: var(--color-brand);
-  box-shadow: 0 0 0 3px var(--color-brand-glow);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-glow);
 }
 
 .input::placeholder {
   color: var(--color-text-subtle);
 }
 
+/* Label */
+.label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
 /* Banner de aviso (peças e materiais) */
 .banner-warning {
-  background: #FFFBEB;
-  border: 1px solid #FDE68A;
-  border-radius: var(--radius-lg);
-  padding: 14px 16px;
+  background: rgba(237, 198, 107, 0.12);
+  border: 1px solid rgba(237, 198, 107, 0.3);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-start;
-  color: #92400E;
+  color: var(--color-warning);
 }
 
 /* Badge de categoria */
@@ -266,6 +315,49 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.status-badge--pending {
+  background: rgba(237, 198, 107, 0.15);
+  color: var(--color-warning);
+  border: 1px solid rgba(237, 198, 107, 0.25);
+}
+
+.status-badge--active {
+  background: rgba(10, 155, 112, 0.15);
+  color: var(--color-success);
+  border: 1px solid rgba(10, 155, 112, 0.25);
+}
+
+.status-badge--completed {
+  background: rgba(94, 211, 164, 0.12);
+  color: var(--color-success);
+  border: 1px solid rgba(94, 211, 164, 0.2);
+}
+
+.status-badge--cancelled {
+  background: rgba(244, 124, 124, 0.12);
+  color: var(--color-danger);
+  border: 1px solid rgba(244, 124, 124, 0.2);
+}
+
+/* Divisor sutil */
+.divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 0;
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -284,7 +376,7 @@ body {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 2px solid var(--color-brand);
+  border: 2px solid var(--color-primary);
   animation: pulse-ring 2s ease-out infinite;
 }
 
@@ -328,6 +420,36 @@ body {
   to   { stroke-dashoffset: 0; }
 }
 
+/* Shimmer skeleton */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-alt) 0%,
+    var(--color-surface)     50%,
+    var(--color-surface-alt) 100%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s infinite linear;
+  border-radius: var(--radius-md);
+}
+
+/* Reduz animações se o usuário preferir */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-ring::before,
+  .animate-pulse-ring::after,
+  .animate-slide-up,
+  .animate-fade-in,
+  .animate-bounce-cta,
+  .skeleton {
+    animation: none;
+  }
+}
+
 /* ──────────────────────────────────────────────────────────
    LAYOUT HELPERS
    ────────────────────────────────────────────────────────── */
@@ -338,6 +460,25 @@ body {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+
+.content-container {
+  max-width: 1160px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .content-container {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .content-container {
+    padding: 0 2rem;
+  }
 }
 
 .sticky-bottom {
@@ -354,3 +495,42 @@ body {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 99px; }
+
+/* ──────────────────────────────────────────────────────────
+   LEGAL PAGES
+   ────────────────────────────────────────────────────────── */
+.legal-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.legal-box {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+.legal-step-badge {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  background: var(--color-primary-soft);
+  color: var(--color-accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ──────────────────────────────────────────────────────────
+   FOCUS VISIBLE (acessibilidade)
+   ────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
