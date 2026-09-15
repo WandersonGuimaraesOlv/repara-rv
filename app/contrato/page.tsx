@@ -192,19 +192,18 @@ export default function ContratoPage() {
               <CheckCircle2 size={14} className="inline mr-2 text-green-400" />
               <em>
                 "Declaro, sob as penas da lei, ser profissional autônomo tecnicamente capacitado para a execução dos serviços
-                técnicos residenciais disponíveis no catálogo da Plataforma Repara RV para os quais me credencio; não possuir
-                antecedentes criminais impeditivos para atendimento em domicílios residenciais; assumir integralmente a
-                responsabilidade civil pelos serviços por mim executados; estar ciente de que a Repara RV atua exclusivamente
-                como intermediadora tecnológica, sem qualquer vínculo empregatício, de subordinação ou solidariedade trabalhista
-                de qualquer natureza; e que todas as informações cadastrais por mim fornecidas são verdadeiras, sob pena de
-                cancelamento imediato do credenciamento e responsabilização por eventuais danos causados à Plataforma, Clientes
-                ou terceiros."
+                técnicos residenciais disponíveis no catálogo da Plataforma Repara RV para os quais me credencio; assumir
+                integralmente a responsabilidade civil pelos serviços por mim executados; estar ciente de que a Repara RV atua
+                exclusivamente como intermediadora tecnológica, sem qualquer vínculo empregatício, de subordinação ou
+                solidariedade trabalhista de qualquer natureza; e que todas as informações cadastrais por mim fornecidas são
+                verdadeiras, sob pena de cancelamento imediato do credenciamento e responsabilização por eventuais danos
+                causados à Plataforma, Clientes ou terceiros."
               </em>
             </div>
             <p className="text-xs text-slate-400">
-              Esta autocertificação substitui, para fins de ingresso ágil na Plataforma, a exigência prévia de envio de certidões
-              de antecedentes criminais e comprovantes de residência, sem prejuízo do direito da Plataforma de solicitar tais
-              documentos em caso de incidente ou reclamação fundamentada.
+              Esta autocertificação substitui, para fins de ingresso ágil na Plataforma, a exigência prévia de envio de
+              comprovante de residência, sem prejuízo do direito da Plataforma de solicitar tal documento em caso de
+              incidente ou reclamação fundamentada.
             </p>
           </section>
 

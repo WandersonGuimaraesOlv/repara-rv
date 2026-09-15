@@ -179,7 +179,7 @@ export default function AdminUsersPage() {
     }
   }
 
-  // Alteração de Status de Compliance / Antecedentes Criminais
+  // Alteração de status de liberação operacional do prestador
   const handleChangeCompliance = async (
     userId: string,
     newStatus: 'approved' | 'pending' | 'rejected'

@@ -176,10 +176,9 @@ export default function TermosPage() {
               <CheckCircle2 size={14} className="inline mr-2 text-orange-400" />
               <em>
                 "Declaro, sob as penas da lei, ser profissional autônomo capacitado para a execução dos serviços técnicos
-                residenciais disponíveis no catálogo da Plataforma, não possuir antecedentes criminais impeditivos para
-                atendimento em domicílios, assumir integralmente a responsabilidade civil pelos serviços executados e
-                estar ciente de que a Repara RV atua exclusivamente como intermediadora tecnológica, sem vínculo
-                empregatício ou subordinação de qualquer natureza."
+                residenciais disponíveis no catálogo da Plataforma, assumir integralmente a responsabilidade civil pelos
+                serviços executados e estar ciente de que a Repara RV atua exclusivamente como intermediadora tecnológica,
+                sem vínculo empregatício ou subordinação de qualquer natureza."
               </em>
             </div>
             <p>
