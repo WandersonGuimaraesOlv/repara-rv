@@ -4,7 +4,7 @@ import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/theme-provider'
 
 export const viewport: Viewport = {
-  themeColor: '#0F172A',
+  themeColor: '#0d1716',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -68,11 +68,11 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/icons/icon-192.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className="bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors duration-200">
+      <body style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="dark"
+          enableSystem={false}
           disableTransitionOnChange={false}
         >
           {children}

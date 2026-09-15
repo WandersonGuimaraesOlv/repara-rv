@@ -65,14 +65,14 @@ export function CallAlertModal({
         className="w-full max-w-sm rounded-2xl p-6 animate-slide-up"
         style={{
           background: 'var(--color-surface)',
-          border: '2px solid var(--color-brand)',
-          boxShadow: 'var(--shadow-brand)',
+          border: '2px solid var(--color-primary)',
+          boxShadow: 'var(--shadow-primary)',
         }}
       >
         {/* Cabeçalho com timer circular */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: 'var(--color-brand-light)' }}>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: 'var(--color-accent)' }}>
               🔔 Novo Chamado!
             </p>
             <h3 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>
@@ -86,7 +86,7 @@ export function CallAlertModal({
               <circle cx="32" cy="32" r="28" fill="none" stroke="var(--color-border)" strokeWidth="4" />
               <circle
                 cx="32" cy="32" r="28" fill="none"
-                stroke={secondsLeft <= 10 ? 'var(--color-danger)' : 'var(--color-brand)'}
+                stroke={secondsLeft <= 10 ? 'var(--color-danger)' : 'var(--color-primary)'}
                 strokeWidth="4"
                 strokeLinecap="round"
                 strokeDasharray={circumference}
@@ -110,7 +110,7 @@ export function CallAlertModal({
           className="flex items-start gap-2 p-3 rounded-xl mb-4"
           style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}
         >
-          <MapPin size={16} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--color-cta)' }} />
+          <MapPin size={16} className="mt-0.5 flex-shrink-0" style={{ color: 'var(--color-primary)' }} />
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
             {neighborhood}
           </p>
@@ -121,7 +121,7 @@ export function CallAlertModal({
           <p className="text-xs mb-1" style={{ color: 'var(--color-text-subtle)' }}>
             Você recebe ao concluir
           </p>
-          <p className="text-3xl font-black" style={{ color: 'var(--color-cta)' }}>
+          <p className="text-3xl font-black" style={{ color: 'var(--color-accent)' }}>
             {formatCurrency(providerCut)}
           </p>
           <p className="text-xs mt-1" style={{ color: 'var(--color-text-subtle)' }}>

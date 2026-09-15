@@ -77,19 +77,32 @@ export function PwaInstallBanner() {
 
   return (
     <aside aria-label="Instalação do Aplicativo" className="fixed bottom-16 sm:bottom-6 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-sm z-40 animate-slide-up">
-      <div className="bg-slate-900/95 backdrop-blur-md text-white p-3.5 sm:p-4 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center justify-between gap-3 text-left">
+      <div
+        className="backdrop-blur-md p-3.5 sm:p-4 rounded-2xl shadow-2xl flex items-center justify-between gap-3 text-left"
+        style={{
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          color: 'var(--color-text)',
+        }}
+      >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center text-white shrink-0 shadow-md">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-md text-white"
+            style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-hover))' }}
+          >
             <Smartphone size={20} />
           </div>
           <div>
-            <h4 className="text-xs font-black tracking-tight text-white flex items-center gap-1">
+            <h4 className="text-xs font-black tracking-tight flex items-center gap-1" style={{ color: 'var(--color-text)' }}>
               <span>Instalar Repara RV</span>
-              <span className="text-[9px] uppercase tracking-wider font-bold bg-orange-500/30 text-orange-300 px-1.5 py-0.2 rounded">
+              <span
+                className="text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.2 rounded"
+                style={{ background: 'var(--color-primary-soft)', color: 'var(--color-accent)' }}
+              >
                 App Leve
               </span>
             </h4>
-            <p className="text-[11px] text-slate-300 leading-snug mt-0.5">
+            <p className="text-[11px] leading-snug mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
               Acesso em 1 toque sem ocupar memória do celular.
             </p>
           </div>
@@ -99,7 +112,7 @@ export function PwaInstallBanner() {
           <button
             type="button"
             onClick={handleInstallClick}
-            className="px-3 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-xs font-bold transition shadow-sm cursor-pointer flex items-center gap-1"
+            className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1"
           >
             <Download size={13} />
             <span>Instalar</span>
@@ -107,7 +120,8 @@ export function PwaInstallBanner() {
           <button
             type="button"
             onClick={handleDismiss}
-            className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            className="p-1.5 rounded-full transition cursor-pointer hover:opacity-80"
+            style={{ color: 'var(--color-text-subtle)' }}
           >
             <X size={15} />
           </button>
@@ -116,44 +130,68 @@ export function PwaInstallBanner() {
 
       {/* Modal Guia para iPhone (iOS Safari) */}
       {showIosGuide && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in text-left">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-slate-900 animate-slide-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in text-left" style={{ background: 'rgba(7, 16, 15, 0.85)', backdropFilter: 'blur(8px)' }}>
+          <div
+            className="rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-slide-up"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text)',
+            }}
+          >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-black flex items-center gap-2">
-                <Smartphone size={18} className="text-orange-600" />
+              <h3 className="text-base font-black flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+                <Smartphone size={18} style={{ color: 'var(--color-primary)' }} />
                 Como instalar no iPhone
               </h3>
               <button
                 type="button"
                 onClick={() => setShowIosGuide(false)}
-                className="p-1 rounded-full text-slate-400 hover:text-slate-600"
+                className="p-1 rounded-full transition hover:opacity-80"
+                style={{ color: 'var(--color-text-subtle)' }}
               >
                 <X size={18} />
               </button>
             </div>
 
-            <p className="text-xs text-slate-600 mb-4 leading-relaxed">
+            <p className="text-xs mb-4 leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
               O Safari do iPhone adiciona o app direto à sua tela de início em apenas 2 toques:
             </p>
 
-            <ol className="space-y-3 text-xs text-slate-700 mb-6">
-              <li className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                <div className="p-1.5 rounded-lg bg-orange-100 text-orange-700 shrink-0">
+            <ol className="space-y-3 text-xs mb-6">
+              <li
+                className="flex items-start gap-2.5 p-2.5 rounded-xl"
+                style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}
+              >
+                <div
+                  className="p-1.5 rounded-lg shrink-0"
+                  style={{ background: 'var(--color-primary-soft)', color: 'var(--color-accent)' }}
+                >
                   <Share size={15} />
                 </div>
                 <div>
-                  <strong>1. Toque em Compartilhar</strong>
-                  <p className="text-[11px] text-slate-500 mt-0.5">Localizado na barra inferior do Safari (ícone do quadrado com seta para cima).</p>
+                  <strong style={{ color: 'var(--color-text)' }}>1. Toque em Compartilhar</strong>
+                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
+                    Localizado na barra inferior do Safari (ícone do quadrado com seta para cima).
+                  </p>
                 </div>
               </li>
 
-              <li className="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 shrink-0">
+              <li
+                className="flex items-start gap-2.5 p-2.5 rounded-xl"
+                style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}
+              >
+                <div
+                  className="p-1.5 rounded-lg shrink-0"
+                  style={{ background: 'var(--color-primary-soft)', color: 'var(--color-success)' }}
+                >
                   <PlusSquare size={15} />
                 </div>
                 <div>
-                  <strong>2. Selecione &ldquo;Adicionar à Tela de Início&rdquo;</strong>
-                  <p className="text-[11px] text-slate-500 mt-0.5">Role um pouco para baixo na lista e confirme no topo direito.</p>
+                  <strong style={{ color: 'var(--color-text)' }}>2. Selecione &ldquo;Adicionar à Tela de Início&rdquo;</strong>
+                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
+                    Role um pouco para baixo na lista e confirme no topo direito.
+                  </p>
                 </div>
               </li>
             </ol>
@@ -161,7 +199,7 @@ export function PwaInstallBanner() {
             <button
               type="button"
               onClick={() => setShowIosGuide(false)}
-              className="w-full py-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold transition shadow-sm cursor-pointer"
+              className="btn-primary w-full py-3 text-xs"
             >
               Entendi, vou adicionar
             </button>

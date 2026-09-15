@@ -125,18 +125,30 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-center items-center p-4 sm:p-6 selection:bg-orange-100 selection:text-orange-900">
-      <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200/80 shadow-xl p-6 sm:p-8 animate-fade-in">
-        
+    <div
+      className="min-h-screen flex flex-col justify-center items-center p-4 sm:p-6"
+      style={{ background: 'var(--color-bg)' }}
+    >
+      <div
+        className="w-full max-w-md rounded-3xl p-6 sm:p-8 animate-fade-in"
+        style={{
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+        }}
+      >
         {/* Header */}
         <div className="text-center mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center shadow-md shadow-orange-500/20 mx-auto mb-3">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
+            style={{ background: 'var(--color-primary)', boxShadow: 'var(--shadow-primary)' }}
+          >
             <Wrench size={22} className="text-white" />
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-900">
+          <h1 className="text-2xl font-black tracking-tight" style={{ color: 'var(--color-text)' }}>
             Complete seu Perfil 🚀
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
             Onboarding rápido e sem atrito para Rio Verde (GO)
           </p>
         </div>
@@ -145,9 +157,7 @@ export default function OnboardingPage() {
           
           {/* Seleção de Papel */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              Selecione seu perfil
-            </label>
+            <label className="label">Selecione seu perfil</label>
             <div className="grid grid-cols-2 gap-3">
               {([
                 { value: 'client', label: 'Cliente', desc: 'Contratar reparos', Icon: User },
@@ -158,15 +168,16 @@ export default function OnboardingPage() {
                   type="button"
                   id={`role-${value}`}
                   onClick={() => setRole(value)}
-                  className={`p-3.5 rounded-2xl text-left transition-all border ${
-                    role === value
-                      ? 'bg-orange-50 border-orange-500 shadow-md shadow-orange-500/10 ring-2 ring-orange-400/20'
-                      : 'bg-slate-50/70 border-slate-200 hover:border-slate-300'
-                  }`}
+                  className="p-4 rounded-2xl text-left transition-all flex flex-col gap-1.5"
+                  style={{
+                    border: `2px solid ${role === value ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    background: role === value ? 'var(--color-primary-soft)' : 'var(--color-surface-alt)',
+                  }}
+                  aria-pressed={role === value}
                 >
-                  <Icon size={20} className={role === value ? 'text-orange-600' : 'text-slate-400'} />
-                  <p className="font-bold text-sm text-slate-900 mt-1.5">{label}</p>
-                  <p className="text-[11px] text-slate-500">{desc}</p>
+                  <Icon size={20} style={{ color: role === value ? 'var(--color-primary)' : 'var(--color-text-subtle)' }} />
+                  <p className="font-bold text-sm mt-1.5" style={{ color: 'var(--color-text)' }}>{label}</p>
+                  <p className="text-[11px]" style={{ color: 'var(--color-text-muted)' }}>{desc}</p>
                 </button>
               ))}
             </div>
@@ -174,44 +185,43 @@ export default function OnboardingPage() {
 
           {/* Nome Completo */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              Nome Completo
-            </label>
+            <label htmlFor="input-full-name" className="label">Nome Completo</label>
             <input
               id="input-full-name"
               type="text"
               value={fullName}
               onChange={e => setFullName(e.target.value)}
               placeholder="Ex: João da Silva"
-              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 focus:border-orange-500 outline-none transition-all"
+              className="input"
               required
+              autoFocus
+              autoComplete="name"
             />
           </div>
 
           {/* Celular / WhatsApp */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              Celular (com DDD)
-            </label>
+            <label htmlFor="input-onboarding-phone" className="label">Celular (com DDD)</label>
             <input
               id="input-onboarding-phone"
               type="tel"
               value={phone}
               onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
               placeholder="Ex: 64 99999-9999"
-              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 focus:border-orange-500 outline-none transition-all"
+              className="input"
               inputMode="numeric"
               required
+              autoComplete="tel"
             />
           </div>
 
-          {/* CPF ou CNPJ (Modelo PF Sem Atrito) */}
+          {/* CPF ou CNPJ */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold text-slate-700">
+              <label htmlFor="input-cpf-cnpj" className="label mb-0">
                 CPF {role === 'provider' && 'ou CNPJ MEI'}
               </label>
-              <span className="text-[10px] text-slate-400 font-medium">
+              <span className="text-[10px] font-medium" style={{ color: 'var(--color-text-subtle)' }}>
                 Pessoa Física aceita
               </span>
             </div>
@@ -221,7 +231,7 @@ export default function OnboardingPage() {
               value={cpfOrCnpj}
               onChange={e => setCpfOrCnpj(e.target.value.replace(/\D/g, '').slice(0, 14))}
               placeholder="000.000.000-00"
-              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 focus:border-orange-500 outline-none transition-all font-mono"
+              className="input font-mono"
               inputMode="numeric"
               required
             />
@@ -229,23 +239,25 @@ export default function OnboardingPage() {
 
           {/* Dados Específicos para Prestador */}
           {role === 'provider' && (
-            <div className="space-y-3.5 p-4 rounded-2xl bg-orange-50/50 border border-orange-200/80 animate-slide-up">
+            <div
+              className="space-y-4 p-4 rounded-2xl animate-fade-in"
+              style={{ background: 'var(--color-primary-soft)', border: '1px solid var(--color-border)' }}
+            >
               <div className="flex items-center gap-2">
-                <Lock size={16} className="text-orange-600" />
-                <h4 className="text-xs font-bold text-orange-950 uppercase tracking-wider">
+                <Lock size={16} style={{ color: 'var(--color-primary)' }} />
+                <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--color-primary)' }}>
                   Chave Pix para Repasses Automáticos
                 </h4>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Tipo de Chave Pix
-                </label>
+                <label htmlFor="select-pix-key-type" className="label">Tipo de Chave Pix</label>
                 <select
                   id="select-pix-key-type"
                   value={pixKeyType}
                   onChange={e => setPixKeyType(e.target.value as 'cpf' | 'phone' | 'email' | 'random')}
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:border-orange-500 outline-none cursor-pointer"
+                  className="input py-3 text-sm"
+                  style={{ cursor: 'pointer' }}
                 >
                   <option value="phone">Celular</option>
                   <option value="cpf">CPF</option>
@@ -255,9 +267,7 @@ export default function OnboardingPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Chave Pix
-                </label>
+                <label htmlFor="input-pix-key" className="label">Chave Pix</label>
                 <input
                   id="input-pix-key"
                   type="text"
@@ -270,22 +280,21 @@ export default function OnboardingPage() {
                       ? '000.000.000-00'
                       : 'sua-chave-pix'
                   }
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 placeholder:text-slate-400 focus:border-orange-500 outline-none"
+                  className="input"
                 />
               </div>
 
-              {/* Autodeclaração Vinculante (Dispensa de Certidões - Onboarding Ágil) */}
-              <div className="pt-2 border-t border-orange-200/60">
+              <div style={{ paddingTop: 8, borderTop: '1px solid var(--color-border)' }}>
                 <label className="flex items-start gap-2.5 cursor-pointer text-left">
                   <input
                     type="checkbox"
                     checked={selfDeclaration}
                     onChange={e => setSelfDeclaration(e.target.checked)}
-                    className="mt-1 w-4 h-4 rounded text-orange-600 border-slate-300 focus:ring-orange-500 shrink-0"
+                    className="mt-1 w-4 h-4 rounded accent-green-600 shrink-0"
                     required
                   />
-                  <span className="text-[11px] text-slate-700 leading-snug">
-                    <strong className="text-slate-900 block font-bold mb-0.5">
+                  <span className="text-[11px] leading-snug" style={{ color: 'var(--color-text-muted)' }}>
+                    <strong className="block font-bold mb-0.5" style={{ color: 'var(--color-text)' }}>
                       Autodeclaração de Aptidão Técnica:
                     </strong>
                     &ldquo;Declaro, sob as penas da lei, ser profissional autônomo capacitado e assumir responsabilidade civil direta pelos serviços executados.&rdquo;
@@ -303,16 +312,16 @@ export default function OnboardingPage() {
                 id="checkbox-onboarding-terms"
                 checked={termsAccepted}
                 onChange={e => setTermsAccepted(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded text-orange-600 border-slate-300 focus:ring-orange-500 shrink-0"
+                className="mt-0.5 w-4 h-4 rounded accent-green-600 shrink-0"
                 required
               />
-              <span className="text-xs text-slate-600 leading-tight">
+              <span className="text-xs leading-tight" style={{ color: 'var(--color-text-muted)' }}>
                 Li e concordo com os{' '}
-                <a href="#termos" className="text-orange-600 underline font-semibold">
+                <a href="/termos" target="_blank" rel="noopener noreferrer" className="font-semibold hover:underline" style={{ color: 'var(--color-primary)' }}>
                   Termos de Uso
                 </a>{' '}
                 e a{' '}
-                <a href="#privacidade" className="text-orange-600 underline font-semibold">
+                <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="font-semibold hover:underline" style={{ color: 'var(--color-primary)' }}>
                   Política de Privacidade
                 </a>{' '}
                 (LGPD).
@@ -325,7 +334,7 @@ export default function OnboardingPage() {
             type="submit"
             id="btn-complete-onboarding"
             disabled={loading}
-            className="w-full py-3.5 px-6 rounded-2xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-sm font-bold shadow-lg shadow-orange-600/25 transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
+            className="btn-primary mt-2"
           >
             {loading ? (
               <span>Salvando perfil...</span>

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Phone, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { Phone, Lock, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { Logo } from '@/components/logo'
 
@@ -109,96 +109,117 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-center items-center p-4 sm:p-6 selection:bg-orange-100 selection:text-orange-900">
-      <div className="w-full max-w-sm sm:max-w-md bg-white rounded-3xl border border-slate-200/80 shadow-xl p-6 sm:p-8 animate-fade-in">
-        
-        {/* Logo & Marca */}
+    <div
+      className="min-h-screen flex flex-col justify-center items-center p-4 sm:p-6"
+      style={{ background: 'var(--color-bg)' }}
+    >
+      {/* Card central */}
+      <div
+        className="w-full max-w-sm sm:max-w-md rounded-3xl p-6 sm:p-8 animate-fade-in"
+        style={{
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+        }}
+      >
+
+        {/* Logo & Título */}
         <div className="text-center mb-6">
-          <Link href="/" className="inline-flex items-center group transition-transform hover:scale-[1.02]">
-            <Logo variant="full" width={200} height={50} />
+          <Link href="/" className="inline-flex items-center justify-center transition-opacity hover:opacity-85">
+            <Logo variant="full" width={180} height={46} />
           </Link>
-          <h1 className="text-xl font-black text-slate-900 tracking-tight mt-4">
+          <h1 className="text-xl font-black tracking-tight mt-4" style={{ color: 'var(--color-text)' }}>
             Acesse sua Conta
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
             Acesso com seu celular e PIN de segurança
           </p>
         </div>
 
         {/* Abas: Entrar vs Criar Conta */}
-        <div className="flex bg-slate-100 p-1 rounded-2xl mb-6 border border-slate-200/80">
+        <div
+          className="flex p-1 rounded-2xl mb-6"
+          style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}
+        >
           <button
             type="button"
-            className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all bg-white text-slate-900 shadow-sm"
+            className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all"
+            style={{
+              background: 'var(--color-surface)',
+              color: 'var(--color-text)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            }}
           >
             Entrar
           </button>
           <Link
             href="/cadastro"
-            className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all text-slate-500 hover:text-orange-600 hover:bg-white/60 text-center"
+            className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all text-center hover:opacity-80"
+            style={{ color: 'var(--color-text-muted)' }}
           >
             Criar Nova Conta
           </Link>
         </div>
 
-        {/* Formulário com Celular + PIN */}
+        {/* Formulário */}
         <form onSubmit={handlePinLogin} className="space-y-4">
-          
+
           {/* Celular */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label htmlFor="input-phone" className="label">
               Celular com DDD
             </label>
             <div className="relative flex items-center">
-              <Phone size={18} className="absolute left-3.5 text-slate-400 pointer-events-none" />
+              <Phone size={17} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
               <input
                 id="input-phone"
                 type="tel"
                 value={formatDisplayPhone(phone)}
                 onChange={e => handlePhoneChange(e.target.value)}
                 placeholder="(64) 99999-9999"
-                className="w-full pl-10 pr-4 py-3.5 bg-white border border-slate-200 focus:border-orange-500 rounded-2xl text-sm font-semibold text-slate-900 placeholder-slate-400 outline-none transition-all shadow-xs"
+                className="input pl-11"
                 inputMode="numeric"
                 required
                 autoFocus
+                autoComplete="tel"
               />
             </div>
           </div>
 
-          {/* PIN de Segurança */}
+          {/* PIN */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+              <label htmlFor="input-pin" className="label mb-0">
                 PIN de Acesso (4 a 6 dígitos)
               </label>
               <button
                 type="button"
                 onClick={() => setShowPin(!showPin)}
-                className="text-xs text-slate-400 hover:text-slate-600 flex items-center gap-1 font-medium"
+                className="flex items-center gap-1 text-xs font-medium transition-colors"
+                style={{ color: 'var(--color-text-subtle)' }}
               >
                 {showPin ? <EyeOff size={14} /> : <Eye size={14} />}
                 <span>{showPin ? 'Ocultar' : 'Ver'}</span>
               </button>
             </div>
-            
             <div className="relative flex items-center">
-              <Lock size={18} className="absolute left-3.5 text-slate-400 pointer-events-none" />
+              <Lock size={17} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
               <input
                 id="input-pin"
                 type={showPin ? 'text' : 'password'}
                 value={pin}
                 onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 placeholder="Ex: 1234"
-                className="w-full pl-10 pr-10 py-3.5 bg-white border border-slate-200 focus:border-orange-500 rounded-2xl text-base font-mono tracking-widest text-slate-900 placeholder-slate-400 outline-none transition-all shadow-xs"
+                className="input pl-11 tracking-widest font-mono"
                 inputMode="numeric"
                 required
                 maxLength={6}
+                autoComplete="current-password"
               />
             </div>
-
-            <p className="text-[11px] text-slate-400 mt-1.5 leading-snug">
-              💡 <strong>Primeiro acesso?</strong> Caso ainda não possua conta, você pode{' '}
-              <Link href="/cadastro" className="text-orange-600 font-bold hover:underline">
+            <p className="text-[11px] mt-2 leading-snug" style={{ color: 'var(--color-text-subtle)' }}>
+              💡 <strong>Primeiro acesso?</strong> Você pode{' '}
+              <Link href="/cadastro" className="font-bold hover:underline" style={{ color: 'var(--color-primary)' }}>
                 clicar aqui para se cadastrar
               </Link>.
             </p>
@@ -209,7 +230,7 @@ export default function LoginPage() {
             type="submit"
             id="btn-login-pin"
             disabled={loading || phone.length < 10 || pin.length < 4}
-            className="w-full py-3.5 px-6 rounded-2xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-sm font-bold shadow-lg shadow-orange-600/25 transition-all flex items-center justify-center gap-2 mt-3 disabled:opacity-50 disabled:pointer-events-none"
+            className="btn-primary mt-2"
           >
             {loading ? (
               <span>Autenticando...</span>
@@ -222,13 +243,17 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* Link explícito para cadastro */}
-        <div className="text-center mt-6 pt-4 border-t border-slate-100">
-          <p className="text-xs text-slate-500">
+        {/* Link para cadastro */}
+        <div
+          className="text-center mt-6 pt-4"
+          style={{ borderTop: '1px solid var(--color-border)' }}
+        >
+          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
             Ainda não possui cadastro?{' '}
             <Link
               href="/cadastro"
-              className="font-bold text-orange-600 hover:text-orange-700 hover:underline inline-flex items-center gap-1 ml-1"
+              className="font-bold hover:underline inline-flex items-center gap-1"
+              style={{ color: 'var(--color-primary)' }}
             >
               Criar conta grátis →
             </Link>
@@ -236,13 +261,23 @@ export default function LoginPage() {
         </div>
 
         {/* Rodapé Legal */}
-        <p className="text-[11px] text-center text-slate-400 mt-5 leading-relaxed">
-          Seus dados são protegidos conforme a LGPD.<br />
-          Repara RV • Rio Verde (GO)
-        </p>
+        <div className="flex items-center justify-center gap-1.5 mt-5">
+          <ShieldCheck size={14} style={{ color: 'var(--color-text-subtle)' }} />
+          <p className="text-[11px] text-center leading-relaxed" style={{ color: 'var(--color-text-subtle)' }}>
+            Seus dados são protegidos conforme a LGPD. Repara RV • Rio Verde (GO)
+          </p>
+        </div>
 
       </div>
+
+      {/* Link de volta para o início */}
+      <Link
+        href="/"
+        className="mt-6 text-xs font-medium hover:underline transition-colors"
+        style={{ color: 'var(--color-text-subtle)' }}
+      >
+        ← Voltar para o início
+      </Link>
     </div>
   )
 }
-

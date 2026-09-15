@@ -181,7 +181,7 @@ export default function AcompanharPage() {
   if (loading) {
     return (
       <div className="page-container items-center justify-center">
-        <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-brand)' }} />
+        <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
       </div>
     )
   }
@@ -189,8 +189,8 @@ export default function AcompanharPage() {
   if (!call) {
     return (
       <div className="page-container items-center justify-center p-6 text-center">
-        <p className="text-base font-semibold text-slate-800 mb-2">Chamado não encontrado</p>
-        <p className="text-xs text-slate-500 mb-6">Este chamado não existe ou já foi finalizado.</p>
+        <p className="text-base font-semibold mb-2" style={{ color: 'var(--color-text)' }}>Chamado não encontrado</p>
+        <p className="text-xs mb-6" style={{ color: 'var(--color-text-muted)' }}>Este chamado não existe ou já foi finalizado.</p>
         <Link href="/" className="btn-primary">
           <ArrowLeft size={16} /> Voltar ao início
         </Link>
@@ -202,7 +202,7 @@ export default function AcompanharPage() {
     <div className="page-container p-4">
       {/* Header */}
       <header className="py-4 mb-6 flex items-center justify-between gap-2">
-        <h1 className="font-bold text-slate-900">
+        <h1 className="font-bold" style={{ color: 'var(--color-text)' }}>
           Acompanhar Chamado
         </h1>
         <div className="flex items-center gap-2">
@@ -213,7 +213,10 @@ export default function AcompanharPage() {
             clientAddress={call.client_address}
             clientLocation={call.client_location}
           />
-          <span className="text-xs px-3 py-1 rounded-full font-mono bg-slate-100 border border-slate-200 text-slate-600 font-semibold">
+          <span
+            className="text-xs px-3 py-1 rounded-full font-mono font-semibold"
+            style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)' }}
+          >
             #{callId.slice(0, 8).toUpperCase()}
           </span>
         </div>
@@ -246,7 +249,7 @@ export default function AcompanharPage() {
           {/* Info do serviço */}
           <div
             className="card p-4 mb-4"
-            style={{ borderColor: 'rgba(99,102,241,0.3)' }}
+            style={{ borderColor: 'var(--color-border-strong)' }}
           >
             <div className="flex justify-between items-start">
               <div>
@@ -260,7 +263,7 @@ export default function AcompanharPage() {
               </div>
               <div className="text-right">
                 <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Total</p>
-                <p className="font-bold text-lg" style={{ color: 'var(--color-cta)' }}>
+                <p className="font-bold text-lg" style={{ color: 'var(--color-text)' }}>
                   {formatCurrency(call.total_price)}
                 </p>
               </div>
@@ -282,25 +285,25 @@ export default function AcompanharPage() {
 
       {call.status === 'completed' && (
         call.payment_status === 'paid' ? (
-          <div className="card p-4 mb-4 bg-emerald-500/10 border-emerald-500/30 flex items-center gap-3">
-            <CheckCircle2 size={24} className="text-emerald-400 shrink-0" />
+          <div className="card p-4 mb-4 flex items-center gap-3" style={{ background: 'rgba(94, 211, 164, 0.1)', borderColor: 'rgba(94, 211, 164, 0.25)' }}>
+            <CheckCircle2 size={24} className="shrink-0" style={{ color: 'var(--color-success)' }} />
             <div>
-              <p className="text-sm font-bold text-emerald-300">Pagamento Confirmado!</p>
-              <p className="text-xs text-slate-300">Serviço concluído e quitado via Pix. Obrigado pela preferência!</p>
+              <p className="text-sm font-bold" style={{ color: 'var(--color-success)' }}>Pagamento Confirmado!</p>
+              <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Serviço concluído e quitado via Pix. Obrigado pela preferência!</p>
             </div>
           </div>
         ) : (
-          <div className="card p-4 mb-4 bg-amber-500/10 border-amber-500/30">
+          <div className="card p-4 mb-4" style={{ background: 'rgba(237, 198, 107, 0.08)', borderColor: 'rgba(237, 198, 107, 0.25)' }}>
             <div className="flex items-start gap-3">
-              <AlertTriangle size={22} className="text-amber-400 shrink-0 mt-0.5" />
+              <AlertTriangle size={22} className="shrink-0 mt-0.5" style={{ color: 'var(--color-warning)' }} />
               <div className="flex-1">
-                <p className="text-sm font-bold text-amber-400">Pagamento Pendente</p>
-                <p className="text-xs text-slate-300 mt-0.5">
-                  O técnico finalizou o serviço. Conclua o pagamento de <strong className="text-white">{formatCurrency(call.total_price)}</strong> para obter a quitação.
+                <p className="text-sm font-bold" style={{ color: 'var(--color-warning)' }}>Pagamento Pendente</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+                  O técnico finalizou o serviço. Conclua o pagamento de <strong style={{ color: 'var(--color-text)' }}>{formatCurrency(call.total_price)}</strong> para obter a quitação.
                 </p>
                 <button
                   onClick={() => setShowPix(true)}
-                  className="btn-primary w-full mt-3 py-2.5 text-xs font-bold flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl shadow-md transition-transform active:scale-95"
+                  className="btn-primary mt-3 py-2.5 text-xs"
                 >
                   <CreditCard size={15} /> Pagar agora via Pix / Cartão
                 </button>
@@ -315,7 +318,7 @@ export default function AcompanharPage() {
         <>
           <div
             className="card p-4 mb-4 text-center animate-slide-up"
-            style={{ borderColor: 'rgba(245,158,11,0.4)' }}
+            style={{ borderColor: 'var(--color-border-strong)' }}
           >
             <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text)' }}>
               Como foi o serviço?
@@ -331,8 +334,8 @@ export default function AcompanharPage() {
                 >
                   <Star
                     size={32}
-                    fill={star <= rating ? '#F59E0B' : 'none'}
-                    style={{ color: star <= rating ? '#F59E0B' : 'var(--color-border)' }}
+                    fill={star <= rating ? 'var(--color-accent)' : 'none'}
+                    style={{ color: star <= rating ? 'var(--color-accent)' : 'var(--color-border)' }}
                   />
                 </button>
               ))}
@@ -341,20 +344,23 @@ export default function AcompanharPage() {
           </div>
 
           {/* Comprovante Oficial para Imobiliária / Inquilino */}
-          <div className="card p-4 mb-4 bg-orange-50/80 border-orange-200 shadow-xs animate-slide-up text-left">
+          <div
+            className="card p-4 mb-4 animate-slide-up text-left"
+            style={{ background: 'var(--color-primary-soft)', borderColor: 'var(--color-border)' }}
+          >
             <div className="flex items-start gap-2.5">
-              <div className="p-2 rounded-xl bg-orange-100 text-orange-600 shrink-0 mt-0.5">
+              <div className="p-2 rounded-xl shrink-0 mt-0.5" style={{ background: 'var(--color-surface)', color: 'var(--color-primary)' }}>
                 <FileText size={18} />
               </div>
               <div className="flex-1">
-                <p className="text-xs font-bold text-orange-950">Mora de aluguel ou precisa de recibo?</p>
-                <p className="text-[11px] text-orange-900/80 mt-0.5 leading-snug">
+                <p className="text-xs font-bold" style={{ color: 'var(--color-text)' }}>Mora de aluguel ou precisa de recibo?</p>
+                <p className="text-[11px] mt-0.5 leading-snug" style={{ color: 'var(--color-text-muted)' }}>
                   Gere o comprovante oficial timbrado do Repara RV para abater no aluguel ou comprovação junto à imobiliária em Rio Verde.
                 </p>
                 <button
                   type="button"
                   onClick={() => setShowComprovante(true)}
-                  className="mt-2.5 w-full py-2.5 px-3 rounded-xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="btn-primary mt-2.5 py-2 text-xs"
                 >
                   <FileText size={14} />
                   <span>Baixar Comprovante de Manutenção (PDF)</span>

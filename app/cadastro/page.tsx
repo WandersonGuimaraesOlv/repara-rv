@@ -169,45 +169,60 @@ export default function CadastroPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-center items-center p-4 sm:p-6 selection:bg-orange-100 selection:text-orange-900">
-      <div className="w-full max-w-lg bg-white rounded-3xl border border-slate-200/80 shadow-xl p-6 sm:p-8 animate-fade-in my-6">
-        
-        {/* Logo & Retorno */}
+    <div
+      className="min-h-screen flex flex-col justify-center items-center p-4 sm:p-6"
+      style={{ background: 'var(--color-bg)' }}
+    >
+      <div
+        className="w-full max-w-lg rounded-3xl p-6 sm:p-8 animate-fade-in my-6"
+        style={{
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+        }}
+      >
+
+        {/* Logo & Título */}
         <div className="text-center mb-6">
-          <Link href="/" className="inline-flex items-center group transition-transform hover:scale-[1.02]">
-            <Logo variant="full" width={200} height={50} />
+          <Link href="/" className="inline-flex items-center justify-center transition-opacity hover:opacity-85">
+            <Logo variant="full" width={180} height={46} />
           </Link>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-4">
+          <h1 className="text-xl sm:text-2xl font-black tracking-tight mt-4" style={{ color: 'var(--color-text)' }}>
             Crie sua Conta Grátis
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
             Acesso rápido, seguro e sem atrito para Rio Verde (GO)
           </p>
         </div>
 
         {/* Alternador de Perfil: Cliente vs Prestador */}
         <div className="mb-6">
-          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-            Como você deseja usar o Repara RV?
-          </label>
+          <label className="label">Como você deseja usar o Repara RV?</label>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => setRole('client')}
-              className={`p-3.5 rounded-2xl border-2 text-left transition-all flex flex-col gap-1.5 ${
-                role === 'client'
-                  ? 'border-orange-500 bg-orange-50/50 shadow-sm'
-                  : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600'
-              }`}
+              className="p-4 rounded-2xl text-left transition-all flex flex-col gap-1.5"
+              style={{
+                border: `2px solid ${role === 'client' ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                background: role === 'client' ? 'var(--color-primary-soft)' : 'var(--color-surface-alt)',
+              }}
+              aria-pressed={role === 'client'}
             >
               <div className="flex items-center justify-between">
-                <div className={`p-2 rounded-xl ${role === 'client' ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                <div
+                  className="p-2 rounded-xl"
+                  style={{
+                    background: role === 'client' ? 'var(--color-primary)' : 'var(--color-surface)',
+                    color: role === 'client' ? '#ffffff' : 'var(--color-text-muted)',
+                  }}
+                >
                   <User size={18} />
                 </div>
-                {role === 'client' && <CheckCircle2 size={18} className="text-orange-600" />}
+                {role === 'client' && <CheckCircle2 size={18} style={{ color: 'var(--color-primary)' }} />}
               </div>
-              <strong className="text-sm font-bold text-slate-900">Sou Cliente</strong>
-              <span className="text-[11px] text-slate-500 leading-tight">
+              <strong className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>Sou Cliente</strong>
+              <span className="text-[11px] leading-tight" style={{ color: 'var(--color-text-muted)' }}>
                 Quero solicitar consertos residenciais
               </span>
             </button>
@@ -215,20 +230,27 @@ export default function CadastroPage() {
             <button
               type="button"
               onClick={() => setRole('provider')}
-              className={`p-3.5 rounded-2xl border-2 text-left transition-all flex flex-col gap-1.5 ${
-                role === 'provider'
-                  ? 'border-orange-500 bg-orange-50/50 shadow-sm'
-                  : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600'
-              }`}
+              className="p-4 rounded-2xl text-left transition-all flex flex-col gap-1.5"
+              style={{
+                border: `2px solid ${role === 'provider' ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                background: role === 'provider' ? 'var(--color-primary-soft)' : 'var(--color-surface-alt)',
+              }}
+              aria-pressed={role === 'provider'}
             >
               <div className="flex items-center justify-between">
-                <div className={`p-2 rounded-xl ${role === 'provider' ? 'bg-orange-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                <div
+                  className="p-2 rounded-xl"
+                  style={{
+                    background: role === 'provider' ? 'var(--color-primary)' : 'var(--color-surface)',
+                    color: role === 'provider' ? '#ffffff' : 'var(--color-text-muted)',
+                  }}
+                >
                   <Wrench size={18} />
                 </div>
-                {role === 'provider' && <CheckCircle2 size={18} className="text-orange-600" />}
+                {role === 'provider' && <CheckCircle2 size={18} style={{ color: 'var(--color-primary)' }} />}
               </div>
-              <strong className="text-sm font-bold text-slate-900">Sou Profissional</strong>
-              <span className="text-[11px] text-slate-500 leading-tight">
+              <strong className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>Sou Profissional</strong>
+              <span className="text-[11px] leading-tight" style={{ color: 'var(--color-text-muted)' }}>
                 Quero prestar serviços e receber chamados
               </span>
             </button>
@@ -237,119 +259,122 @@ export default function CadastroPage() {
 
         {/* Formulário Principal */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          
+
           {/* Nome Completo */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Nome Completo
-            </label>
+            <label htmlFor="cadastro-name" className="label">Nome Completo</label>
             <div className="relative flex items-center">
-              <User size={18} className="absolute left-3.5 text-slate-400 pointer-events-none" />
+              <User size={17} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
               <input
                 id="cadastro-name"
                 type="text"
                 value={fullName}
                 onChange={e => setFullName(e.target.value)}
                 placeholder="Ex: João da Silva"
-                className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 focus:border-orange-500 rounded-2xl text-sm font-semibold text-slate-900 placeholder-slate-400 outline-none transition-all shadow-xs"
+                className="input pl-11"
                 required
                 autoFocus
+                autoComplete="name"
               />
             </div>
           </div>
 
-          {/* Celular com DDD */}
+          {/* Celular */}
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-              Celular com DDD (WhatsApp)
-            </label>
+            <label htmlFor="cadastro-phone" className="label">Celular com DDD (WhatsApp)</label>
             <div className="relative flex items-center">
-              <Phone size={18} className="absolute left-3.5 text-slate-400 pointer-events-none" />
+              <Phone size={17} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
               <input
                 id="cadastro-phone"
                 type="tel"
                 value={formatDisplayPhone(phone)}
                 onChange={e => handlePhoneChange(e.target.value)}
                 placeholder="(64) 99999-9999"
-                className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 focus:border-orange-500 rounded-2xl text-sm font-semibold text-slate-900 placeholder-slate-400 outline-none transition-all shadow-xs"
+                className="input pl-11"
                 inputMode="numeric"
                 required
+                autoComplete="tel"
               />
             </div>
           </div>
 
-          {/* Criação de PIN e Confirmação */}
+          {/* PIN e Confirmação */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                <label htmlFor="cadastro-pin" className="label mb-0">
                   Criar PIN (4 a 6 dígitos)
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowPin(!showPin)}
-                  className="text-[11px] text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                  className="flex items-center gap-1 text-[11px] font-medium transition-colors"
+                  style={{ color: 'var(--color-text-subtle)' }}
                 >
                   {showPin ? <EyeOff size={13} /> : <Eye size={13} />}
                 </button>
               </div>
               <div className="relative flex items-center">
-                <Lock size={16} className="absolute left-3 text-slate-400 pointer-events-none" />
+                <Lock size={15} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
                 <input
                   id="cadastro-pin"
                   type={showPin ? 'text' : 'password'}
                   value={pin}
                   onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="Ex: 1234"
-                  className="w-full pl-9 pr-3 py-3 bg-white border border-slate-200 focus:border-orange-500 rounded-2xl text-sm font-mono tracking-widest text-slate-900 placeholder-slate-400 outline-none transition-all shadow-xs"
+                  className="input pl-10 tracking-widest font-mono"
                   inputMode="numeric"
                   maxLength={6}
                   required
+                  autoComplete="new-password"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Confirmar PIN
-              </label>
+              <label htmlFor="cadastro-confirm-pin" className="label">Confirmar PIN</label>
               <div className="relative flex items-center">
-                <Lock size={16} className="absolute left-3 text-slate-400 pointer-events-none" />
+                <Lock size={15} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
                 <input
                   id="cadastro-confirm-pin"
                   type={showPin ? 'text' : 'password'}
                   value={confirmPin}
                   onChange={e => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="Repita o PIN"
-                  className="w-full pl-9 pr-3 py-3 bg-white border border-slate-200 focus:border-orange-500 rounded-2xl text-sm font-mono tracking-widest text-slate-900 placeholder-slate-400 outline-none transition-all shadow-xs"
+                  className="input pl-10 tracking-widest font-mono"
                   inputMode="numeric"
                   maxLength={6}
                   required
+                  autoComplete="new-password"
                 />
               </div>
             </div>
           </div>
 
-          {/* Seção Extra para Profissionais (Prestadores) */}
+          {/* Seção Extra para Profissionais */}
           {role === 'provider' && (
-            <div className="p-4 bg-orange-50/70 border border-orange-200 rounded-2xl space-y-3.5 animate-in fade-in">
-              <div className="flex items-center gap-2 text-xs font-black text-orange-950 uppercase tracking-wider">
-                <ShieldCheck size={16} className="text-orange-600" />
+            <div
+              className="p-4 rounded-2xl space-y-4 animate-fade-in"
+              style={{
+                background: 'var(--color-primary-soft)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
+              <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider" style={{ color: 'var(--color-primary)' }}>
+                <ShieldCheck size={16} />
                 <span>Dados do Profissional & Repasses Pix</span>
               </div>
 
               {/* CPF ou CNPJ */}
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                  CPF ou CNPJ MEI
-                </label>
+                <label htmlFor="cadastro-cpf" className="label">CPF ou CNPJ MEI</label>
                 <input
                   id="cadastro-cpf"
                   type="text"
                   value={cpfOrCnpj}
                   onChange={e => setCpfOrCnpj(e.target.value)}
                   placeholder="000.000.000-00"
-                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 focus:border-orange-500 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none"
+                  className="input text-sm"
                   required={role === 'provider'}
                 />
               </div>
@@ -357,13 +382,13 @@ export default function CadastroPage() {
               {/* Chave Pix */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                    Tipo de Chave
-                  </label>
+                  <label htmlFor="cadastro-pix-type" className="label">Tipo de Chave</label>
                   <select
+                    id="cadastro-pix-type"
                     value={pixKeyType}
                     onChange={e => setPixKeyType(e.target.value)}
-                    className="w-full px-2 py-2.5 bg-white border border-slate-200 focus:border-orange-500 rounded-xl text-xs font-semibold text-slate-900 outline-none"
+                    className="input py-3 text-sm"
+                    style={{ cursor: 'pointer' }}
                   >
                     <option value="phone">Celular</option>
                     <option value="cpf">CPF</option>
@@ -372,30 +397,29 @@ export default function CadastroPage() {
                   </select>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                    Sua Chave Pix para Recebimentos
-                  </label>
+                  <label htmlFor="cadastro-pix-key" className="label">Chave Pix para Recebimentos</label>
                   <input
                     id="cadastro-pix-key"
                     type="text"
                     value={pixKey}
                     onChange={e => setPixKey(e.target.value)}
                     placeholder={pixKeyType === 'phone' ? 'Ex: 64999999999' : 'Informe sua chave Pix'}
-                    className="w-full px-3 py-2.5 bg-white border border-slate-200 focus:border-orange-500 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 outline-none"
+                    className="input text-sm"
                     required={role === 'provider'}
                   />
                 </div>
               </div>
 
-              {/* Autodeclaração de Aptidão Técnica */}
-              <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+              {/* Autodeclaração */}
+              <label className="flex items-start gap-3 cursor-pointer pt-1">
                 <input
                   type="checkbox"
                   checked={selfDeclaration}
                   onChange={e => setSelfDeclaration(e.target.checked)}
-                  className="mt-0.5 w-4 h-4 rounded text-orange-600 focus:ring-orange-500 border-slate-300"
+                  className="mt-0.5 w-4 h-4 rounded accent-green-600 shrink-0"
+                  id="checkbox-self-declaration"
                 />
-                <span className="text-[11px] text-slate-700 leading-snug">
+                <span className="text-[11px] leading-snug" style={{ color: 'var(--color-text-muted)' }}>
                   Declaro sob as penas da lei possuir capacidade técnica para execução dos serviços residenciais oferecidos na Plataforma em Rio Verde (GO).
                 </span>
               </label>
@@ -403,23 +427,23 @@ export default function CadastroPage() {
           )}
 
           {/* Termos de Uso */}
-          <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+          <label className="flex items-start gap-3 cursor-pointer pt-1">
             <input
               type="checkbox"
               checked={termsAccepted}
               onChange={e => setTermsAccepted(e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded text-orange-600 focus:ring-orange-500 border-slate-300"
+              className="mt-0.5 w-4 h-4 rounded accent-green-600 shrink-0"
               id="terms-checkbox"
             />
-            <span className="text-xs text-slate-600 leading-snug">
+            <span className="text-xs leading-snug" style={{ color: 'var(--color-text-muted)' }}>
               Li e concordo com os{' '}
-              <a href="/termos" target="_blank" rel="noopener noreferrer" className="font-bold text-orange-600 hover:text-orange-700 hover:underline">Termos de Uso</a>
+              <a href="/termos" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: 'var(--color-primary)' }}>Termos de Uso</a>
               {', '}
-              <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="font-bold text-orange-600 hover:text-orange-700 hover:underline">Política de Privacidade</a>
+              <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: 'var(--color-primary)' }}>Política de Privacidade</a>
               {role === 'provider' && (
                 <>
                   {' e '}
-                  <a href="/contrato" target="_blank" rel="noopener noreferrer" className="font-bold text-orange-600 hover:text-orange-700 hover:underline">Contrato de Técnico Parceiro</a>
+                  <a href="/contrato" target="_blank" rel="noopener noreferrer" className="font-bold hover:underline" style={{ color: 'var(--color-primary)' }}>Contrato de Técnico Parceiro</a>
                 </>
               )}
               {' '}da Plataforma Repara RV.
@@ -431,7 +455,7 @@ export default function CadastroPage() {
             type="submit"
             id="btn-submit-cadastro"
             disabled={loading || phone.length < 10 || pin.length < 4 || !fullName.trim() || !termsAccepted}
-            className="w-full py-3.5 px-6 rounded-2xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-sm font-bold shadow-lg shadow-orange-600/25 transition-all flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:pointer-events-none"
+            className="btn-primary mt-2"
           >
             {loading ? (
               <span>Criando conta e entrando...</span>
@@ -444,13 +468,17 @@ export default function CadastroPage() {
           </button>
         </form>
 
-        {/* Link Alternativo para Login */}
-        <div className="text-center mt-6 pt-4 border-t border-slate-100">
-          <p className="text-xs text-slate-500">
+        {/* Link para Login */}
+        <div
+          className="text-center mt-6 pt-4"
+          style={{ borderTop: '1px solid var(--color-border)' }}
+        >
+          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
             Já possui uma conta no Repara RV?{' '}
             <Link
               href="/login"
-              className="font-bold text-orange-600 hover:text-orange-700 hover:underline inline-flex items-center gap-1 ml-1"
+              className="font-bold hover:underline inline-flex items-center gap-1"
+              style={{ color: 'var(--color-primary)' }}
             >
               Fazer Login com PIN
             </Link>
@@ -458,6 +486,14 @@ export default function CadastroPage() {
         </div>
 
       </div>
+
+      <Link
+        href="/"
+        className="mt-4 mb-6 text-xs font-medium hover:underline transition-colors"
+        style={{ color: 'var(--color-text-subtle)' }}
+      >
+        ← Voltar para o início
+      </Link>
     </div>
   )
 }

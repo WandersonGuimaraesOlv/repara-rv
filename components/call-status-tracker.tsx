@@ -54,13 +54,13 @@ export function CallStatusTracker({
           className="w-20 h-20 rounded-full flex items-center justify-center relative z-10 transition-all"
           style={{
             background: isSearching
-              ? 'linear-gradient(135deg, var(--color-brand), var(--color-brand-dark))'
+              ? 'linear-gradient(135deg, var(--color-primary), var(--color-primary-soft))'
               : status === 'completed'
               ? 'linear-gradient(135deg, #10B981, #059669)'
               : status === 'cancelled' || status === 'no_providers_available'
               ? 'linear-gradient(135deg, #EF4444, #DC2626)'
-              : 'linear-gradient(135deg, var(--color-cta), var(--color-cta-dark))',
-            boxShadow: isSearching ? 'var(--shadow-brand)' : '0 0 24px rgba(249,115,22,0.4)',
+              : 'linear-gradient(135deg, var(--color-primary), var(--color-primary-hover))',
+            boxShadow: isSearching ? 'var(--shadow-primary)' : '0 0 24px rgba(10,155,112,0.4)',
           }}
         >
           <Icon size={32} color="white" className={isSearching ? 'animate-pulse' : ''} />
@@ -74,7 +74,7 @@ export function CallStatusTracker({
 
       {providerName && status !== 'cancelled' && status !== 'searching' && (
         <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>
-          Prestador: <strong style={{ color: 'var(--color-brand-light)' }}>{providerName}</strong>
+          Prestador: <strong style={{ color: 'var(--color-accent)' }}>{providerName}</strong>
         </p>
       )}
 
@@ -86,10 +86,10 @@ export function CallStatusTracker({
 
       {isSearching && (
         <div className="space-y-1 mb-4">
-          <p className="text-sm font-semibold text-orange-500 animate-pulse">
+          <p className="text-sm font-semibold animate-pulse" style={{ color: 'var(--color-accent)' }}>
             Conectando ao profissional mais próximo...
           </p>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>
             Aguardando resposta do técnico no radar (até 30 segundos)
           </p>
         </div>
@@ -105,17 +105,17 @@ export function CallStatusTracker({
                 style={{
                   background:
                     idx <= currentStepIdx
-                      ? 'var(--color-brand)'
+                      ? 'var(--color-primary)'
                       : 'var(--color-border)',
                   transform: idx === currentStepIdx ? 'scale(1.4)' : 'scale(1)',
-                  boxShadow: idx === currentStepIdx ? 'var(--shadow-brand)' : 'none',
+                  boxShadow: idx === currentStepIdx ? 'var(--shadow-primary)' : 'none',
                 }}
               />
               {idx < STATUS_STEPS.length - 1 && (
                 <div
                   className="w-6 h-px transition-all duration-500"
                   style={{
-                    background: idx < currentStepIdx ? 'var(--color-brand)' : 'var(--color-border)',
+                    background: idx < currentStepIdx ? 'var(--color-primary)' : 'var(--color-border)',
                   }}
                 />
               )}

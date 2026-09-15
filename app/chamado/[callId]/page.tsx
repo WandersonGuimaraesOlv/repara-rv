@@ -151,7 +151,7 @@ export default function ChamadoProviderPage() {
   if (loading) {
     return (
       <div className="page-container items-center justify-center">
-        <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-brand)' }} />
+        <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
       </div>
     )
   }
@@ -159,7 +159,7 @@ export default function ChamadoProviderPage() {
   if (!call) {
     return (
       <div className="page-container items-center justify-center p-6 text-center">
-        <p className="text-base font-semibold text-slate-800 mb-2">Chamado não encontrado</p>
+        <p className="text-base font-semibold mb-2" style={{ color: 'var(--color-text)' }}>Chamado não encontrado</p>
         <Link href="/painel" className="btn-primary">
           <ArrowLeft size={16} /> Voltar ao Painel
         </Link>
@@ -193,10 +193,10 @@ export default function ChamadoProviderPage() {
       </header>
 
       {/* Card do serviço */}
-      <div className="card p-4 mb-4 animate-slide-up" style={{ borderColor: 'rgba(99,102,241,0.4)' }}>
+      <div className="card p-4 mb-4 animate-slide-up" style={{ borderColor: 'var(--color-border-strong)' }}>
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}>
-            <Wrench size={18} style={{ color: 'var(--color-brand-light)' }} />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'var(--color-primary-soft)', border: '1px solid var(--color-border)' }}>
+            <Wrench size={18} style={{ color: 'var(--color-primary)' }} />
           </div>
           <div>
             <p className="font-bold text-sm" style={{ color: 'var(--color-text)' }}>
@@ -209,7 +209,7 @@ export default function ChamadoProviderPage() {
         </div>
 
         <div className="flex items-center gap-2 mb-3">
-          <MapPin size={14} style={{ color: 'var(--color-cta)' }} />
+          <MapPin size={14} style={{ color: 'var(--color-primary)' }} />
           <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
             {call.client_address}
           </p>

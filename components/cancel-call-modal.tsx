@@ -30,10 +30,16 @@ export function CancelCallModal({ isOpen, onClose, onConfirmCancel, isLoading = 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-gray-100 text-left animate-slide-up">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in" style={{ background: 'rgba(7, 16, 15, 0.8)', backdropFilter: 'blur(8px)' }}>
+      <div
+        className="rounded-3xl p-6 max-w-md w-full shadow-2xl text-left animate-slide-up"
+        style={{
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+        }}
+      >
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 text-amber-600 font-bold text-sm">
+          <div className="flex items-center gap-2 font-bold text-sm" style={{ color: 'var(--color-warning)' }}>
             <AlertTriangle size={18} />
             Confirmar Cancelamento
           </div>
@@ -41,16 +47,17 @@ export function CancelCallModal({ isOpen, onClose, onConfirmCancel, isLoading = 
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition cursor-pointer"
+            className="p-1 rounded-full transition cursor-pointer hover:opacity-80"
+            style={{ color: 'var(--color-text-subtle)' }}
           >
             <X size={18} />
           </button>
         </div>
 
-        <h3 className="text-xl font-black text-gray-900 leading-tight">
+        <h3 className="text-xl font-black leading-tight" style={{ color: 'var(--color-text)' }}>
           Por que você deseja cancelar o chamado?
         </h3>
-        <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+        <p className="text-xs mt-1.5 leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
           Sua resposta ajuda a aprimorar a agilidade e a qualidade do atendimento no Repara RV.
         </p>
 
@@ -65,13 +72,20 @@ export function CancelCallModal({ isOpen, onClose, onConfirmCancel, isLoading = 
                 type="button"
                 onClick={() => setSelectedReason(r.id)}
                 disabled={isLoading}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border text-xs font-semibold transition cursor-pointer text-left ${
-                  isSelected
-                    ? 'border-orange-500 bg-orange-50/70 text-orange-950 shadow-xs ring-1 ring-orange-400'
-                    : 'border-gray-200 bg-gray-50/50 text-gray-700 hover:bg-gray-100/80 hover:border-gray-300'
-                }`}
+                className="w-full flex items-center gap-3 p-3 rounded-xl border text-xs font-semibold transition cursor-pointer text-left"
+                style={{
+                  background: isSelected ? 'var(--color-primary-soft)' : 'var(--color-surface-alt)',
+                  borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
+                  color: isSelected ? 'var(--color-accent)' : 'var(--color-text)',
+                }}
               >
-                <div className={`p-1.5 rounded-lg shrink-0 ${isSelected ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'}`}>
+                <div
+                  className="p-1.5 rounded-lg shrink-0"
+                  style={{
+                    background: isSelected ? 'var(--color-primary)' : 'rgba(255, 255, 255, 0.05)',
+                    color: isSelected ? '#ffffff' : 'var(--color-text-subtle)',
+                  }}
+                >
                   <Icon size={14} />
                 </div>
                 <span>{r.label}</span>
@@ -82,7 +96,7 @@ export function CancelCallModal({ isOpen, onClose, onConfirmCancel, isLoading = 
 
         {/* Observação Adicional */}
         <div className="mt-4">
-          <label className="text-[11px] font-semibold text-gray-500 block mb-1">
+          <label className="text-[11px] font-semibold block mb-1" style={{ color: 'var(--color-text-muted)' }}>
             Detalhes adicionais (opcional)
           </label>
           <input
@@ -92,7 +106,7 @@ export function CancelCallModal({ isOpen, onClose, onConfirmCancel, isLoading = 
             onChange={(e) => setNote(e.target.value)}
             disabled={isLoading}
             maxLength={140}
-            className="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+            className="input"
           />
         </div>
 
@@ -102,7 +116,7 @@ export function CancelCallModal({ isOpen, onClose, onConfirmCancel, isLoading = 
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="flex-1 py-3 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition cursor-pointer"
+            className="btn-secondary flex-1 py-3 text-xs"
           >
             Continuar Aguardando
           </button>
@@ -111,7 +125,7 @@ export function CancelCallModal({ isOpen, onClose, onConfirmCancel, isLoading = 
             type="button"
             onClick={handleConfirm}
             disabled={isLoading}
-            className="flex-1 py-3 text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:scale-95 rounded-xl shadow-md transition cursor-pointer flex items-center justify-center gap-2"
+            className="btn-danger flex-1 py-3 text-xs flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>

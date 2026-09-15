@@ -134,7 +134,7 @@ export default function ChamarServicePage() {
   if (!service) {
     return (
       <div className="page-container items-center justify-center">
-        <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-brand)' }} />
+        <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
       </div>
     )
   }
@@ -155,7 +155,7 @@ export default function ChamarServicePage() {
         {/* Card do serviço */}
         <div
           className="card p-4 mb-6 animate-slide-up"
-          style={{ borderColor: 'rgba(99,102,241,0.4)' }}
+          style={{ borderColor: 'var(--color-border-strong)' }}
         >
           <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--color-text)' }}>
             {service.name}
@@ -168,10 +168,10 @@ export default function ChamarServicePage() {
           <div className="grid grid-cols-2 gap-3">
             <div
               className="rounded-xl p-3 text-center"
-              style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)' }}
+              style={{ background: 'var(--color-primary-soft)', border: '1px solid var(--color-border)' }}
             >
               <p className="text-xs mb-1" style={{ color: 'var(--color-text-muted)' }}>Você paga</p>
-              <p className="text-xl font-black" style={{ color: 'var(--color-cta)' }}>
+              <p className="text-xl font-black" style={{ color: 'var(--color-accent)' }}>
                 {formatCurrency(service.fixed_price)}
               </p>
             </div>
@@ -195,7 +195,7 @@ export default function ChamarServicePage() {
             </label>
             {geoLoading ? (
               <div className="input flex items-center gap-2" style={{ color: 'var(--color-text-muted)' }}>
-                <Loader2 size={16} className="animate-spin" />
+                <Loader2 size={16} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
                 Detectando GPS...
               </div>
             ) : geoError ? (
@@ -214,7 +214,7 @@ export default function ChamarServicePage() {
                 id="btn-get-gps"
                 onClick={getPosition}
                 className="input flex items-center gap-2 cursor-pointer"
-                style={{ color: 'var(--color-brand-light)' }}
+                style={{ color: 'var(--color-primary)' }}
               >
                 <MapPin size={16} />
                 Toque para detectar localização
@@ -233,15 +233,21 @@ export default function ChamarServicePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Bloco Verde: Incluso */}
-              <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 text-left">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 mb-2">
-                  <CheckCircle2 size={15} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <div
+                className="p-3.5 rounded-2xl text-left"
+                style={{
+                  background: 'rgba(94, 211, 164, 0.08)',
+                  border: '1px solid rgba(94, 211, 164, 0.2)',
+                }}
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold mb-2" style={{ color: 'var(--color-success)' }}>
+                  <CheckCircle2 size={15} className="shrink-0" style={{ color: 'var(--color-success)' }} />
                   <span>O que está incluso:</span>
                 </div>
                 <ul className="space-y-1.5">
                   {scope.included.map((item, idx) => (
-                    <li key={idx} className="text-xs text-emerald-950/90 dark:text-emerald-200/90 flex items-start gap-1.5 leading-snug">
-                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">•</span>
+                    <li key={idx} className="text-xs flex items-start gap-1.5 leading-snug" style={{ color: 'var(--color-text-muted)' }}>
+                      <span className="font-bold" style={{ color: 'var(--color-success)' }}>•</span>
                       <span>{item}</span>
                     </li>
                   ))}
@@ -249,15 +255,21 @@ export default function ChamarServicePage() {
               </div>
 
               {/* Bloco Vermelho: Não Incluso */}
-              <div className="p-3.5 rounded-2xl bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/60 text-left">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 dark:text-rose-300 mb-2">
-                  <XCircle size={15} className="text-rose-600 dark:text-rose-400 shrink-0" />
+              <div
+                className="p-3.5 rounded-2xl text-left"
+                style={{
+                  background: 'rgba(244, 124, 124, 0.08)',
+                  border: '1px solid rgba(244, 124, 124, 0.2)',
+                }}
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold mb-2" style={{ color: 'var(--color-danger)' }}>
+                  <XCircle size={15} className="shrink-0" style={{ color: 'var(--color-danger)' }} />
                   <span>O que NÃO está incluso:</span>
                 </div>
                 <ul className="space-y-1.5">
                   {scope.not_included.map((item, idx) => (
-                    <li key={idx} className="text-xs text-rose-950/90 dark:text-rose-200/90 flex items-start gap-1.5 leading-snug">
-                      <span className="text-rose-500 dark:text-rose-400 font-bold">•</span>
+                    <li key={idx} className="text-xs flex items-start gap-1.5 leading-snug" style={{ color: 'var(--color-text-muted)' }}>
+                      <span className="font-bold" style={{ color: 'var(--color-danger)' }}>•</span>
                       <span>{item}</span>
                     </li>
                   ))}
@@ -281,7 +293,7 @@ export default function ChamarServicePage() {
 
           {/* Checkbox de confirmação */}
           <label
-            id="label-confirm-parts"
+            htmlFor="checkbox-confirm-parts"
             className="flex items-start gap-3 cursor-pointer"
           >
             <input
@@ -289,7 +301,7 @@ export default function ChamarServicePage() {
               id="checkbox-confirm-parts"
               checked={confirmed}
               onChange={e => setConfirmed(e.target.checked)}
-              className="mt-1 w-4 h-4 flex-shrink-0 accent-orange-500"
+              className="mt-1 w-4 h-4 flex-shrink-0 accent-green-600"
             />
             <span className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
               Entendi. Sei que o valor cobre apenas a mão de obra e vou providenciar ou combinar as peças necessárias com o prestador.

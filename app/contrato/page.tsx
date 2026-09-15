@@ -10,11 +10,21 @@ export const metadata: Metadata = {
 
 export default function ContratoPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200">
+    <div className="min-h-screen" style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}>
       {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30">
+      <header
+        className="backdrop-blur-md sticky top-0 z-30"
+        style={{
+          background: 'rgba(20, 38, 34, 0.85)',
+          borderBottom: '1px solid var(--color-border)',
+        }}
+      >
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-bold transition-colors"
+            style={{ color: 'var(--color-text-muted)' }}
+          >
             <ArrowLeft size={16} />
             <span>Voltar ao Início</span>
           </Link>
@@ -24,19 +34,33 @@ export default function ContratoPage() {
 
       {/* Conteúdo */}
       <main className="max-w-4xl mx-auto px-4 py-10 sm:py-14 space-y-8">
-        <div className="space-y-3 border-b border-slate-800 pb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-green-500/10 text-green-400 border border-green-500/20">
+        <div className="space-y-3 border-b pb-6" style={{ borderColor: 'var(--color-border)' }}>
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold"
+            style={{
+              background: 'var(--color-primary-soft)',
+              color: 'var(--color-accent)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
             <FileCheck size={14} />
             Contrato para Técnicos Parceiros
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white">
+          <h1 className="text-2xl sm:text-3xl font-black" style={{ color: 'var(--color-text)' }}>
             Contrato de Parceria, Credenciamento e Condições de Operação — Técnico Parceiro Repara RV
           </h1>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
             Instrumento digital vinculante · Versão 1.0 · Rio Verde — Goiás · 13 de Setembro de 2026
           </p>
-          <div className="bg-green-500/10 border border-green-500/30 p-4 rounded-xl text-green-200 text-xs flex items-start gap-3">
-            <CheckCircle2 size={16} className="shrink-0 text-green-400 mt-0.5" />
+          <div
+            className="p-4 rounded-xl text-xs flex items-start gap-3"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              color: 'var(--color-text-muted)',
+            }}
+          >
+            <CheckCircle2 size={16} className="shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} />
             <span>
               Este instrumento é aceito digitalmente pelo Técnico Parceiro no ato do cadastro, mediante marcação do checkbox de
               Autodeclaração de Aptidão e Idoneidade. O aceite eletrônico possui plena validade jurídica nos termos da
@@ -48,9 +72,9 @@ export default function ContratoPage() {
         <div className="space-y-6 text-sm text-slate-300 leading-relaxed">
 
           {/* Identificação das Partes */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-4">
+          <section className="legal-card space-y-4">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 text-xs font-bold flex items-center justify-center shrink-0">1</span>
+              <span className="legal-step-badge">1</span>
               Identificação das Partes Contratantes
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -72,10 +96,10 @@ export default function ContratoPage() {
           </section>
 
           {/* Natureza Jurídica */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Scale size={15} className="text-green-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 text-xs font-bold flex items-center justify-center shrink-0">2</span>
+              <Scale size={15} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">2</span>
               Da Natureza Jurídica da Relação (Autonomia e Ausência de Vínculo)
             </h2>
             <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl text-amber-200 text-xs flex items-start gap-3">
@@ -97,10 +121,10 @@ export default function ContratoPage() {
           </section>
 
           {/* Objeto */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Wrench size={15} className="text-green-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 text-xs font-bold flex items-center justify-center shrink-0">3</span>
+              <Wrench size={15} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">3</span>
               Do Objeto: Acesso ao Radar e Recebimento de Chamados
             </h2>
             <p>
@@ -116,10 +140,10 @@ export default function ContratoPage() {
           </section>
 
           {/* Remuneração */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <CreditCard size={15} className="text-green-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 text-xs font-bold flex items-center justify-center shrink-0">4</span>
+              <CreditCard size={15} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">4</span>
               Da Remuneração, Split de Pix e Taxa de Intermediação
             </h2>
             <p>
@@ -142,10 +166,10 @@ export default function ContratoPage() {
           </section>
 
           {/* Prazo de Repasse */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Clock size={15} className="text-green-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 text-xs font-bold flex items-center justify-center shrink-0">5</span>
+              <Clock size={15} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">5</span>
               Do Prazo de Repasse e da Segurança Financeira
             </h2>
             <p>
@@ -161,9 +185,9 @@ export default function ContratoPage() {
           </section>
 
           {/* Obrigações do Técnico */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 text-xs font-bold flex items-center justify-center shrink-0">6</span>
+              <span className="legal-step-badge">6</span>
               Das Obrigações do Técnico Parceiro
             </h2>
             <ul className="space-y-2 text-xs text-slate-300 list-disc pl-4">
@@ -179,10 +203,10 @@ export default function ContratoPage() {
           </section>
 
           {/* Autocertificação */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Shield size={15} className="text-green-400 shrink-0" />
-              <span className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 text-xs font-bold flex items-center justify-center shrink-0">7</span>
+              <Shield size={15} className="shrink-0" style={{ color: 'var(--color-primary)' }} />
+              <span className="legal-step-badge">7</span>
               Da Autocertificação de Aptidão e Idoneidade
             </h2>
             <p>
@@ -208,9 +232,9 @@ export default function ContratoPage() {
           </section>
 
           {/* Descredenciamento */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 text-xs font-bold flex items-center justify-center shrink-0">8</span>
+              <span className="legal-step-badge">8</span>
               Do Descredenciamento e Encerramento da Parceria
             </h2>
             <p>O descredenciamento do Técnico Parceiro pode ocorrer:</p>
@@ -226,9 +250,9 @@ export default function ContratoPage() {
           </section>
 
           {/* Vigência e Foro */}
-          <section className="bg-slate-900/50 p-6 rounded-2xl border border-slate-800 space-y-3">
+          <section className="legal-card space-y-3">
             <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 text-xs font-bold flex items-center justify-center shrink-0">9</span>
+              <span className="legal-step-badge">9</span>
               Vigência, Lei Aplicável e Foro
             </h2>
             <p>
