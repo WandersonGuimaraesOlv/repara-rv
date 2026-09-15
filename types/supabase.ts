@@ -276,6 +276,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           background_check_status: string | null
+          cep: string | null
           completed_orders_count: number | null
           cpf_or_cnpj: string | null
           created_at: string | null
@@ -285,6 +286,7 @@ export type Database = {
           is_blocked: boolean | null
           is_verified: boolean | null
           mercado_pago_connected: boolean | null
+          neighborhood: string | null
           phone: string
           rating_avg: number | null
           role: Database["public"]["Enums"]["user_role"]
@@ -294,6 +296,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           background_check_status?: string | null
+          cep?: string | null
           completed_orders_count?: number | null
           cpf_or_cnpj?: string | null
           created_at?: string | null
@@ -303,6 +306,7 @@ export type Database = {
           is_blocked?: boolean | null
           is_verified?: boolean | null
           mercado_pago_connected?: boolean | null
+          neighborhood?: string | null
           phone: string
           rating_avg?: number | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -312,6 +316,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           background_check_status?: string | null
+          cep?: string | null
           completed_orders_count?: number | null
           cpf_or_cnpj?: string | null
           created_at?: string | null
@@ -321,6 +326,7 @@ export type Database = {
           is_blocked?: boolean | null
           is_verified?: boolean | null
           mercado_pago_connected?: boolean | null
+          neighborhood?: string | null
           phone?: string
           rating_avg?: number | null
           role?: Database["public"]["Enums"]["user_role"]
