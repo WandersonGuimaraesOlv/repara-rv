@@ -49,6 +49,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/logo'
 import { PwaInstallBanner } from '@/components/pwa-install-banner'
 import { SiteFooter } from '@/components/site-footer'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { performLogout } from '@/lib/auth-logout'
 
 const RIO_VERDE_NEIGHBORHOODS = [
@@ -396,6 +397,7 @@ export default function TriiderClientHomePage() {
 
             {/* Direita: Ações */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <ThemeToggle className="hidden sm:flex" />
               <button
                 type="button"
                 onClick={handleMyOrders}

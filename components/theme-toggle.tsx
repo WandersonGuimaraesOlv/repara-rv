@@ -25,7 +25,8 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
       <button
         type="button"
         aria-label="Alternar tema"
-        className={`w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400 opacity-60 ${className}`}
+        className={`w-9 h-9 rounded-xl flex items-center justify-center opacity-60 ${className}`}
+        style={{ background: 'var(--color-surface-alt)', color: 'var(--color-text-subtle)' }}
         disabled
       >
         <Moon size={18} />
@@ -40,19 +41,17 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
       aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
       title={isDark ? 'Modo claro' : 'Modo escuro'}
       onClick={toggle}
-      className={`
-        w-9 h-9 rounded-xl flex items-center justify-center
-        transition-all duration-200 active:scale-90 cursor-pointer
-        bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/70
-        dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700
-        shadow-xs
-        ${className}
-      `}
+      className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 active:scale-90 cursor-pointer ${className}`}
+      style={{
+        background: 'var(--color-surface-alt)',
+        color: 'var(--color-text-muted)',
+        border: '1px solid var(--color-border)',
+      }}
     >
       {isDark ? (
-        <Sun size={18} className="text-amber-400" />
+        <Sun size={18} style={{ color: 'var(--color-warning)' }} />
       ) : (
-        <Moon size={18} className="text-slate-600 dark:text-slate-300" />
+        <Moon size={18} />
       )}
     </button>
   )
