@@ -224,15 +224,13 @@ export default function LoginPage() {
               </Link>.
             </p>
             <p className="text-[11px] mt-1 leading-snug" style={{ color: 'var(--color-text-subtle)' }}>
-              <a
-                href="https://wa.me/5564999999999?text=Ol%C3%A1%2C%20esqueci%20meu%20PIN%20de%20acesso%20do%20Repara%20RV%20e%20preciso%20de%20ajuda%20para%20recuperar%20minha%20conta."
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href="/recuperar-pin"
                 className="font-bold hover:underline"
                 style={{ color: 'var(--color-primary)' }}
               >
                 Esqueci meu PIN
-              </a>{' '}— fale com o suporte pelo WhatsApp.
+              </Link>{' '}— recupere por e-mail em segundos.
             </p>
           </div>
 
