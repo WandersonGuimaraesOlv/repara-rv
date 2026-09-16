@@ -80,35 +80,35 @@ export default function ChamadoProviderPage() {
   // PIN de chegada (service_calls.arrival_pin, gerado no aceite — ver
   // app/painel/page.tsx e app/api/calls/claim-queued/route.ts): confere que o
   // técnico que está prestes a iniciar o atendimento é o mesmo que aceitou o
-  // chamado. Comparação no cliente é suficiente — o prestador já enxerga o
-  // valor de arrival_pin na própria linha via RLS, não é um segredo escondido
-  // dele; o PIN existe pra o CLIENTE confirmar a identidade, não o contrário.
-  // Chamados aceitos antes desta feature não têm arrival_pin (null) — nesse
-  // caso não bloqueia, pra não travar atendimento em andamento no deploy.
+  // chamado. Achado de auditoria (16/09/2026): a comparação rodava inteira
+  // no navegador contra um valor que o próprio prestador já tinha em mãos, e
+  // sem limite de tentativas — movida pra POST /api/calls/verify-arrival-pin
+  // (exige sessão do prestador vinculado ao chamado, limita tentativas por
+  // IP em proxy.ts). A transição pra in_progress só acontece se a rota
+  // confirmar o PIN.
   const handleStartService = async () => {
-    if (call?.arrival_pin && pinInput !== call.arrival_pin) {
-      toast.error('PIN incorreto. Confirme o código de 4 dígitos com o cliente.')
-      return
-    }
-
     setStarting(true)
-    const { error } = await supabase
-      .from('service_calls')
-      .update({
-        status: 'in_progress',
-        started_at: new Date().toISOString(),
+    try {
+      const res = await fetch('/api/calls/verify-arrival-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ call_id: callId, pin: pinInput }),
       })
-      .eq('id', callId)
-    setStarting(false)
+      const data = await res.json().catch(() => ({}))
+      setStarting(false)
 
-    if (error) {
-      toast.error('Erro ao iniciar atendimento. Tente novamente.')
-      return
+      if (!res.ok) {
+        toast.error(data.error || 'Erro ao iniciar atendimento. Tente novamente.')
+        return
+      }
+
+      toast.success('Atendimento iniciado!')
+      setShowStartPin(false)
+      setPinInput('')
+    } catch {
+      setStarting(false)
+      toast.error('Falha de conexão. Tente novamente.')
     }
-
-    toast.success('Atendimento iniciado!')
-    setShowStartPin(false)
-    setPinInput('')
   }
 
   const handleComplete = async () => {

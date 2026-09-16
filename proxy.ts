@@ -65,6 +65,19 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     }
   }
 
+  // ── Rate Limit: Confirmação de PIN de chegada (5 req / min por IP) ────────
+  // Achado de auditoria (16/09/2026): sem isso, a verificação server-side do
+  // PIN de 4 dígitos (10.000 combinações) podia ser testada às cegas sem
+  // limite nenhum.
+  if (path.startsWith('/api/calls/verify-arrival-pin')) {
+    if (!checkRateLimit(`arrival-pin:${ip}`, 5, 60)) {
+      return NextResponse.json(
+        { error: 'Muitas tentativas. Aguarde 1 minuto.' },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
+  }
+
   // ── Rate Limit: Autenticação / OTP (3 req / min por IP) ───────────────────
   if (path.startsWith('/api/auth') || path.includes('/auth/v1/otp')) {
     if (!checkRateLimit(`auth:${ip}`, 3, 60)) {

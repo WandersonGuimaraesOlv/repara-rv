@@ -22,16 +22,26 @@ export async function POST(req: NextRequest) {
 
     const body = parsed.data;
     const callId = body.callId || body.call_id;
-    let providerId = body.providerId || body.provider_id;
+    const bodyProviderId = body.providerId || body.provider_id;
 
-    // Se providerId não for enviado no body, obtém do usuário autenticado na sessão
-    if (!providerId) {
-      const supabaseUser = await createClient();
-      const { data: { user } } = await supabaseUser.auth.getUser().catch(() => ({ data: { user: null } }));
-      if (user) {
-        providerId = user.id;
-      }
+    // Achado de segurança (16/09/2026): quando o body trazia providerId, a
+    // rota nunca checava sessão nenhuma — qualquer chamador (autenticado
+    // como outra pessoa, ou sem sessão nenhuma) podia forçar a atribuição de
+    // um chamado da fila a QUALQUER prestador só sabendo o UUID dele, sem o
+    // consentimento/sessão do prestador de verdade. providerId agora vem
+    // exclusivamente da sessão autenticada; se o body mandar um valor
+    // diferente, rejeita — o único chamador legítimo (app/painel/page.tsx,
+    // handleClaimQueued) sempre manda o próprio profile.id, então isso nunca
+    // deveria divergir numa requisição de verdade.
+    const supabaseUser = await createClient();
+    const { data: { user } } = await supabaseUser.auth.getUser().catch(() => ({ data: { user: null } }));
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
+    if (bodyProviderId && bodyProviderId !== user.id) {
+      return NextResponse.json({ error: 'providerId não corresponde à sessão autenticada' }, { status: 403 });
+    }
+    const providerId = user.id;
 
     if (!callId || !providerId) {
       return NextResponse.json({ error: 'Dados incompletos (callId e providerId são obrigatórios)' }, { status: 400 });
