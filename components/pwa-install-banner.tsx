@@ -1,74 +1,49 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Download, X, Share, PlusSquare, Smartphone } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Download, X, Smartphone } from 'lucide-react';
+import { usePwaInstall } from '@/components/pwa-install-provider';
 
+// Achado (16/09/2026): a captura do beforeinstallprompt e o guia de iOS
+// foram movidos pra components/pwa-install-provider.tsx (fonte única de
+// verdade, compartilhada com components/pwa-install-button.tsx — um botão
+// persistente que não depende do timing deste banner nem do cooldown de
+// dispensa abaixo). Este componente cuida só da parte que é dele mesmo: a
+// aparição automática e o "não me mostre de novo por uns dias".
 export function PwaInstallBanner() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isIos, setIsIos] = useState(false);
-  const [showIosGuide, setShowIosGuide] = useState(false);
+  const { canInstall, isIos, isStandalone, promptInstall } = usePwaInstall();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // 1. Verifica se já está rodando como PWA instalado (standalone)
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || isStandalone) return;
 
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
-
-    if (isStandalone) return;
-
-    // 2. Verifica se o usuário já dispensou nos últimos 5 dias
     const dismissedUntil = localStorage.getItem('repara_pwa_dismissed_until');
-    if (dismissedUntil && Number(dismissedUntil) > Date.now()) {
+    if (dismissedUntil && Number(dismissedUntil) > Date.now()) return;
+
+    if (canInstall) {
+      setIsVisible(true);
       return;
     }
 
-    // 3. Detecta iOS
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIosDevice = /iphone|ipad|ipod/.test(userAgent) && !(window as any).MSStream;
-    setIsIos(isIosDevice);
-
-    // 4. Captura evento nativo em Android / Chrome / Edge
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setIsVisible(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // Se for iOS no Safari, exibe após 2 segundos de navegação
-    if (isIosDevice) {
+    if (isIos) {
+      const userAgent = window.navigator.userAgent.toLowerCase();
       const isSafari = /safari/.test(userAgent) && !/chrome|crios|fxios/.test(userAgent);
       if (isSafari) {
         const timer = setTimeout(() => setIsVisible(true), 2500);
         return () => clearTimeout(timer);
       }
     }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
+  }, [canInstall, isIos, isStandalone]);
 
   const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setIsVisible(false);
-      }
-      setDeferredPrompt(null);
-    } else if (isIos) {
-      setShowIosGuide(true);
+    const outcome = await promptInstall();
+    if (outcome === 'accepted' || outcome === 'ios-guide') {
+      setIsVisible(false);
     }
   };
 
   const handleDismiss = () => {
     setIsVisible(false);
-    setShowIosGuide(false);
     // Guarda recusa por 5 dias
     localStorage.setItem('repara_pwa_dismissed_until', String(Date.now() + 5 * 24 * 60 * 60 * 1000));
   };
@@ -127,85 +102,6 @@ export function PwaInstallBanner() {
           </button>
         </div>
       </div>
-
-      {/* Modal Guia para iPhone (iOS Safari) */}
-      {showIosGuide && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in text-left" style={{ background: 'rgba(7, 16, 15, 0.85)', backdropFilter: 'blur(8px)' }}>
-          <div
-            className="rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-slide-up"
-            style={{
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              color: 'var(--color-text)',
-            }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-black flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
-                <Smartphone size={18} style={{ color: 'var(--color-primary)' }} />
-                Como instalar no iPhone
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowIosGuide(false)}
-                className="p-1 rounded-full transition hover:opacity-80"
-                style={{ color: 'var(--color-text-subtle)' }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <p className="text-xs mb-4 leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
-              O Safari do iPhone adiciona o app direto à sua tela de início em apenas 2 toques:
-            </p>
-
-            <ol className="space-y-3 text-xs mb-6">
-              <li
-                className="flex items-start gap-2.5 p-2.5 rounded-xl"
-                style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}
-              >
-                <div
-                  className="p-1.5 rounded-lg shrink-0"
-                  style={{ background: 'var(--color-primary-soft)', color: 'var(--color-accent)' }}
-                >
-                  <Share size={15} />
-                </div>
-                <div>
-                  <strong style={{ color: 'var(--color-text)' }}>1. Toque em Compartilhar</strong>
-                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
-                    Localizado na barra inferior do Safari (ícone do quadrado com seta para cima).
-                  </p>
-                </div>
-              </li>
-
-              <li
-                className="flex items-start gap-2.5 p-2.5 rounded-xl"
-                style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}
-              >
-                <div
-                  className="p-1.5 rounded-lg shrink-0"
-                  style={{ background: 'var(--color-primary-soft)', color: 'var(--color-success)' }}
-                >
-                  <PlusSquare size={15} />
-                </div>
-                <div>
-                  <strong style={{ color: 'var(--color-text)' }}>2. Selecione &ldquo;Adicionar à Tela de Início&rdquo;</strong>
-                  <p className="text-[11px] mt-0.5" style={{ color: 'var(--color-text-subtle)' }}>
-                    Role um pouco para baixo na lista e confirme no topo direito.
-                  </p>
-                </div>
-              </li>
-            </ol>
-
-            <button
-              type="button"
-              onClick={() => setShowIosGuide(false)}
-              className="btn-primary w-full py-3 text-xs"
-            >
-              Entendi, vou adicionar
-            </button>
-          </div>
-        </div>
-      )}
     </aside>
   );
 }

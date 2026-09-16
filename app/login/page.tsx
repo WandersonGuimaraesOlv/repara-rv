@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Phone, Lock, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { Logo } from '@/components/logo'
+import { PwaInstallButton } from '@/components/pwa-install-button'
 import { normalizeBrazilianPhone } from '@/lib/utils'
 
 export default function LoginPage() {
@@ -272,6 +273,11 @@ export default function LoginPage() {
               Criar conta grátis →
             </Link>
           </p>
+        </div>
+
+        {/* Instalar aplicativo — sempre disponível, independente do banner automático */}
+        <div className="mt-4">
+          <PwaInstallButton fullWidth />
         </div>
 
         {/* Rodapé Legal */}

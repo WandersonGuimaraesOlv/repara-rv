@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/theme-provider'
+import { PwaInstallProvider } from '@/components/pwa-install-provider'
 
 export const viewport: Viewport = {
   themeColor: '#0d1716',
@@ -89,7 +90,9 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange={false}
         >
-          {children}
+          <PwaInstallProvider>
+            {children}
+          </PwaInstallProvider>
           <Toaster
             position="top-center"
             richColors

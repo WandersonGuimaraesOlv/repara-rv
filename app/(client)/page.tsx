@@ -48,6 +48,7 @@ import { formatCurrency } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { Logo } from '@/components/logo'
 import { PwaInstallBanner } from '@/components/pwa-install-banner'
+import { PwaInstallButton } from '@/components/pwa-install-button'
 import { SiteFooter } from '@/components/site-footer'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { performLogout } from '@/lib/auth-logout'
@@ -508,6 +509,7 @@ export default function TriiderClientHomePage() {
                           <ClipboardList size={15} style={{ color: 'var(--color-text-subtle)' }} />
                           <span>Meus Chamados & Histórico</span>
                         </button>
+                        <PwaInstallButton variant="menuitem" onClose={() => setIsProfileMenuOpen(false)} />
                       </div>
 
                       <div style={{ borderTop: '1px solid var(--color-border)' }} className="pt-1">
@@ -1275,6 +1277,8 @@ export default function TriiderClientHomePage() {
                 <ClipboardList size={18} style={{ color: 'var(--color-text-subtle)' }} />
                 <span>Meus Chamados & Histórico</span>
               </button>
+
+              <PwaInstallButton fullWidth onClose={() => setIsProfileMenuOpen(false)} />
 
               <div
                 className="flex items-center justify-center gap-3 py-2 text-[11px] flex-wrap"
