@@ -30,6 +30,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Chamado não encontrado' }, { status: 404 });
     }
 
+    // Achado de segurança (16/09/2026): rota sem nenhum check antes — qualquer
+    // call_id disparava uma mensagem real de WhatsApp pro telefone do cliente
+    // e devolvia o nome do prestador + link de acompanhamento no corpo da
+    // resposta. Só dispara se o chamado estiver mesmo no estado que essa
+    // notificação existe pra cobrir (chamada internamente logo após o aceite,
+    // por app/painel/page.tsx e app/api/calls/claim-queued/route.ts).
+    if (call.status !== 'accepted' && call.status !== 'on_the_way') {
+      return NextResponse.json({ error: 'Chamado não está em estado de aceite recente' }, { status: 400 });
+    }
+
     const clientPhone = (call.client as { phone?: string })?.phone;
     let providerName = (call.provider as { full_name?: string })?.full_name;
 
@@ -74,7 +84,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, message: clientMessage });
+    // Chamadores (app/painel/page.tsx, app/api/calls/claim-queued/route.ts)
+    // disparam isso fire-and-forget e nunca leem o corpo da resposta.
+    return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error('[API /api/calls/notify-accepted] Erro interno:', err);
     return NextResponse.json({ error: 'Erro ao notificar morador' }, { status: 500 });

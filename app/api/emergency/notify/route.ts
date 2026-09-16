@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { formatEmergencyMessage } from '@/lib/utils'
 
+// user_role e triggered_by que o cliente mandava aqui nunca foram usados pra
+// autorização de verdade (achado de segurança, ver comentário abaixo) — o
+// papel de quem aciona e o call_id ao qual está vinculado agora vêm sempre
+// da sessão autenticada + do próprio chamado, nunca de entrada do usuário.
 const emergencyNotifySchema = z.object({
-  call_id:      z.string().uuid('call_id inválido'),
-  user_role:    z.enum(['client', 'provider', 'admin']).optional(),
-  latitude:     z.number().min(-90).max(90).nullable().optional(),
-  longitude:    z.number().min(-180).max(180).nullable().optional(),
-  triggered_by: z.string().uuid().optional(),
+  call_id:   z.string().uuid('call_id inválido'),
+  latitude:  z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -25,13 +27,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Dados inválidos', issues: parsed.error.format() }, { status: 422 })
     }
 
-    const { call_id, user_role, latitude, longitude, triggered_by } = parsed.data
+    const { call_id, latitude, longitude } = parsed.data
 
-    // Produção / Supabase
+    // Achado de segurança (16/09/2026): esta rota não tinha NENHUM check de
+    // autorização — qualquer call_id devolvia nome/telefone/endereço/GPS das
+    // duas partes no corpo da resposta. Autenticação real via cookie
+    // (createClient, não createServiceClient — que não tem cookie nenhum e
+    // sempre devolveria user=null aqui) + confirmação de que quem está
+    // chamando é de fato cliente ou prestador DESTE chamado, antes de
+    // qualquer leitura sensível.
+    const supabaseUser = await createClient()
+    const { data: { user } } = await supabaseUser.auth.getUser().catch(() => ({ data: { user: null } }))
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    }
+
     const supabase = await createServiceClient()
-
-    const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }))
-    const resolvedUserId = user?.id || triggered_by
 
     // Busca detalhes do chamado
     const { data: call, error: callError } = await supabase
@@ -45,7 +56,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Chamado não encontrado' }, { status: 404 })
     }
 
-    const callerId = resolvedUserId || (user_role === 'provider' ? call.provider_id : call.client_id)
+    if (call.client_id !== user.id && call.provider_id !== user.id) {
+      return NextResponse.json({ error: 'Você não tem permissão para acionar SOS neste chamado' }, { status: 403 })
+    }
+
+    const user_role: 'client' | 'provider' = call.provider_id === user.id ? 'provider' : 'client'
+    const callerId = user.id
     const clientCoords = call.client_location?.coordinates
     const lat = latitude ?? (Array.isArray(clientCoords) ? clientCoords[1] : undefined)
     const lng = longitude ?? (Array.isArray(clientCoords) ? clientCoords[0] : undefined)
@@ -111,10 +127,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // components/emergency-sos-button.tsx dispara essa chamada fire-and-forget
+    // (keepalive, .catch() só) e nunca lê o corpo da resposta — não devolve
+    // mais `message` (nome/telefone/endereço/GPS das duas partes) pra quem
+    // chamou, mesmo já autorizado, por não ter utilidade nenhuma pro cliente.
     return NextResponse.json({
       success: true,
       alert_id: alertRecord?.id ?? 'recorded',
-      message,
     })
   } catch (err) {
     console.error('[Emergency API Internal Error]', err)

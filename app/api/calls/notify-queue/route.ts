@@ -29,6 +29,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Chamado não encontrado' }, { status: 404 })
     }
 
+    // Achado de segurança (16/09/2026): rota sem nenhum check antes —
+    // qualquer call_id disparava um alerta real de WhatsApp pra TODOS os
+    // prestadores cadastrados. Só dispara se o chamado estiver mesmo
+    // 'queued' (chamada internamente logo depois dessa transição, por
+    // app/api/calls/create e app/api/calls/skip-provider).
+    if (call.status !== 'queued') {
+      return NextResponse.json({ error: 'Chamado não está na fila' }, { status: 400 })
+    }
+
     // 2. Busca prestadores cadastrados (especialmente os que possuem subconta vinculada)
     const { data: providers } = await supabase
       .from('profiles')

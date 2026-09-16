@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 // `amount` propositalmente NÃO faz parte do schema: o valor cobrado é SEMPRE
 // call.total_price, lido do banco (achado real de 14/09/2026 — antes disso o
@@ -18,6 +18,18 @@ const NO_SHOW_FEE_AMOUNT = 25.0
 
 export async function POST(request: NextRequest) {
   try {
+    // Achado de segurança (16/09/2026): esta rota nunca teve nenhum check de
+    // autorização — qualquer call_id, de qualquer chamador, gerava e via o
+    // QR Code/link de pagamento (e o valor exato) de um chamado alheio. Só o
+    // cliente (paga o serviço ou a taxa de no-show, via PixPaymentModal) ou o
+    // prestador (dispara a cobrança ao concluir, app/chamado/[callId]) podem
+    // gerar/ver a cobrança deste chamado.
+    const supabaseUser = await createClient()
+    const { data: { user } } = await supabaseUser.auth.getUser().catch(() => ({ data: { user: null } }))
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    }
+
     const supabase = await createServiceClient()
 
     let rawBody: unknown
@@ -43,6 +55,10 @@ export async function POST(request: NextRequest) {
 
     if (callErr || !call) {
       return NextResponse.json({ error: 'Chamado não encontrado' }, { status: 404 })
+    }
+
+    if (call.client_id !== user.id && call.provider_id !== user.id) {
+      return NextResponse.json({ error: 'Você não tem permissão para gerar cobrança deste chamado' }, { status: 403 })
     }
 
     // Cobrança da taxa de no-show (R$25, campos e fluxo próprios — ver

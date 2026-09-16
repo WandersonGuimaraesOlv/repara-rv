@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 
 const skipProviderSchema = z.object({
   call_id:             z.string().uuid('call_id inválido'),
@@ -29,6 +29,17 @@ const MAX_ATTEMPTS = 3
 
 export async function POST(request: NextRequest) {
   try {
+    // Achado de segurança (16/09/2026): esta rota nunca teve nenhum check de
+    // autorização — qualquer call_id, de qualquer chamador (autenticado ou
+    // não), conseguia reatribuir ou reencaminhar um chamado alheio. Só o
+    // cliente ou o prestador atual do próprio chamado podem reencaminhá-lo
+    // (ver comentário logo após a leitura de `call` abaixo).
+    const supabaseUser = await createClient()
+    const { data: { user } } = await supabaseUser.auth.getUser().catch(() => ({ data: { user: null } }))
+    if (!user) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    }
+
     const supabase = await createServiceClient()
 
     let rawBody: unknown
@@ -59,6 +70,13 @@ export async function POST(request: NextRequest) {
 
       if (call.status !== 'accepted' && call.status !== 'searching') {
         return NextResponse.json({ error: 'Chamado não pode ser reencaminhado neste status' }, { status: 400 })
+      }
+
+      // Só o cliente (watchdog de 30s em app/acompanhar) ou o prestador
+      // atualmente atribuído (handleRejectCall/handleTimeoutCall em
+      // app/painel) podem reencaminhar — nunca um terceiro.
+      if (call.client_id !== user.id && call.provider_id !== user.id) {
+        return NextResponse.json({ error: 'Você não tem permissão para reencaminhar este chamado' }, { status: 403 })
       }
 
       // Histórico cumulativo de prestadores já tentados para evitar loop infinito.
