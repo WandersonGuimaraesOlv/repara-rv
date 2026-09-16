@@ -37,6 +37,9 @@ export interface Profile {
   pix_key_type?: PixKeyType
   is_active?: boolean
   background_check_status?: 'pending' | 'approved' | 'rejected'
+  verified_at?: string | null
+  verified_by?: string | null
+  rejection_reason?: string | null
   is_blocked?: boolean
   completed_orders_count?: number
   rating_avg?: number
@@ -108,6 +111,10 @@ export interface ServiceCall {
   no_show_fee_payment_id?: string | null
   no_show_fee_pix_qr_code?: string | null
   no_show_fee_pix_copy_paste?: string | null
+  // Verificação de identidade do prestador — ver migration
+  // 20260918_provider_identity_verification.sql
+  arrival_pin?: string | null
+  started_at?: string | null
   // Joins opcionais
   service?: QuickService
   client?: Profile

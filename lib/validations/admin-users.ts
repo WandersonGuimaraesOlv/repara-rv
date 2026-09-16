@@ -11,6 +11,7 @@ export type UpdateUserRoleInput = z.infer<typeof updateUserRoleSchema>
 export const updateBackgroundCheckSchema = z.object({
   userId: z.string().uuid('ID de usuário inválido'),
   status: z.enum(['pending', 'approved', 'rejected']),
+  rejectionReason: z.string().trim().max(500).optional(),
 })
 
 export type UpdateBackgroundCheckInput = z.infer<typeof updateBackgroundCheckSchema>

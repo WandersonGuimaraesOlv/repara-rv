@@ -75,7 +75,7 @@ export default function LoginPage() {
       // 3. Verifica se o usuário já possui perfil cadastrado
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, role, full_name, phone')
+        .select('id, role, full_name, phone, email')
         .eq('id', data.user!.id)
         .maybeSingle()
 
@@ -95,6 +95,11 @@ export default function LoginPage() {
       if (json.isNew || !profile) {
         toast.success('Acesso liberado! Vamos completar seu cadastro 🎉')
         router.replace('/onboarding')
+      } else if (!profile.email) {
+        // Achado (16/09/2026): contas criadas antes do e-mail virar
+        // obrigatório no cadastro ficaram sem esse campo — força o
+        // preenchimento agora, antes de liberar o destino normal.
+        router.replace(`/completar-email?role=${profile.role}`)
       } else if (profile.role === 'provider') {
         toast.success(`Bem-vindo de volta, ${profile.full_name || 'Profissional'}! ⚡`)
         router.replace('/painel')

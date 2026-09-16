@@ -22,7 +22,8 @@ import {
   ShieldAlert,
   ShieldCheck,
   ChevronDown,
-  KeyRound
+  KeyRound,
+  UserX
 } from 'lucide-react'
 import {
   getAdminUsersListAction,
@@ -52,6 +53,11 @@ export default function AdminUsersPage() {
   // Estado para Confirmação de Bloqueio/Desbloqueio
   const [blockingUserId, setBlockingUserId] = useState<string | null>(null)
   const [blockTargetUser, setBlockTargetUser] = useState<AdminUserListItem | null>(null)
+
+  // Estado para reprovação da verificação de identidade (com motivo)
+  const [rejectTargetUser, setRejectTargetUser] = useState<AdminUserListItem | null>(null)
+  const [rejectReasonInput, setRejectReasonInput] = useState('')
+  const [rejectingUserId, setRejectingUserId] = useState<string | null>(null)
 
   // Estado para Reset de PIN de Acesso
   const [pinTargetUser, setPinTargetUser] = useState<AdminUserListItem | null>(null)
@@ -99,6 +105,7 @@ export default function AdminUsersPage() {
     const mpConnectedProviders = providers.filter((p) => Boolean(p.provider_status?.pix_key && p.provider_status.pix_key.trim().length > 0))
     const mpPendingProviders = providers.filter((p) => !p.provider_status?.pix_key || !p.provider_status.pix_key.trim())
     const approvedCompliance = providers.filter((p) => p.background_check_status === 'approved')
+    const pendingCompliance = providers.filter((p) => p.background_check_status === 'pending')
     const blockedCount = users.filter((u) => u.is_blocked).length
 
     return {
@@ -109,6 +116,7 @@ export default function AdminUsersPage() {
       mpConnectedCount: mpConnectedProviders.length,
       mpPendingCount: mpPendingProviders.length,
       approvedComplianceCount: approvedCompliance.length,
+      pendingComplianceCount: pendingCompliance.length,
       adminsCount: admins.length,
       blockedCount,
     }
@@ -132,6 +140,7 @@ export default function AdminUsersPage() {
       if (complianceFilter === 'blocked' && !u.is_blocked && u.background_check_status !== 'rejected') return false
       if (complianceFilter === 'approved' && (u.background_check_status === 'rejected' || u.is_blocked)) return false
       if (complianceFilter === 'rejected' && u.background_check_status !== 'rejected') return false
+      if (complianceFilter === 'pending' && u.background_check_status !== 'pending') return false
 
       if (!query) return true
 
@@ -190,23 +199,28 @@ export default function AdminUsersPage() {
   // Alteração de status de liberação operacional do prestador
   const handleChangeCompliance = async (
     userId: string,
-    newStatus: 'approved' | 'pending' | 'rejected'
+    newStatus: 'approved' | 'pending' | 'rejected',
+    rejectionReason?: string
   ) => {
     // Atualização otimista
     const oldUsers = [...users]
     setUsers((prev) =>
       prev.map((u) =>
-        u.id === userId ? { ...u, background_check_status: newStatus } : u
+        u.id === userId
+          ? { ...u, background_check_status: newStatus, rejection_reason: rejectionReason ?? null }
+          : u
       )
     )
 
     try {
-      const res = await updateBackgroundCheckStatusAction({ userId, status: newStatus })
+      const res = await updateBackgroundCheckStatusAction({ userId, status: newStatus, rejectionReason })
       if (res.success) {
         const label =
           newStatus === 'approved'
             ? 'Aprovado (Liberado)'
-            : 'Reprovado / Bloqueado'
+            : newStatus === 'rejected'
+            ? 'Reprovado / Bloqueado'
+            : 'Pendente de análise'
         toast.success(`Status atualizado: ${label}`)
       } else {
         // Reverte se falhou
@@ -217,6 +231,16 @@ export default function AdminUsersPage() {
       setUsers(oldUsers)
       toast.error('Erro de comunicação ao atualizar compliance.')
     }
+  }
+
+  // Confirmação da reprovação da verificação de identidade (com motivo opcional)
+  const handleConfirmReject = async () => {
+    if (!rejectTargetUser) return
+    setRejectingUserId(rejectTargetUser.id)
+    await handleChangeCompliance(rejectTargetUser.id, 'rejected', rejectReasonInput.trim() || undefined)
+    setRejectingUserId(null)
+    setRejectTargetUser(null)
+    setRejectReasonInput('')
   }
 
   // Abertura do Modal de Bloqueio Emergencial
@@ -497,6 +521,14 @@ export default function AdminUsersPage() {
                 Liberados ({metrics.approvedComplianceCount})
               </button>
               <button
+                onClick={() => setComplianceFilter('pending')}
+                className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-colors text-amber-400 ${
+                  complianceFilter === 'pending' ? 'bg-amber-500/20 text-amber-300' : 'text-[var(--color-text-muted)] hover:text-amber-300'
+                }`}
+              >
+                Em Análise ({metrics.pendingComplianceCount})
+              </button>
+              <button
                 onClick={() => setComplianceFilter('blocked')}
                 className={`px-2.5 py-1 rounded-md font-semibold text-[11px] transition-colors text-red-400 ${
                   complianceFilter === 'blocked' ? 'bg-red-500/20 text-red-300' : 'text-[var(--color-text-muted)] hover:text-red-300'
@@ -708,34 +740,61 @@ export default function AdminUsersPage() {
                       <td className="py-4 px-4">
                         {isProvider ? (
                           <div className="space-y-1.5">
-                            <div className="relative inline-block text-left">
-                              <select
-                                value={user.background_check_status === 'rejected' ? 'rejected' : 'approved'}
-                                onChange={(e) =>
-                                  handleChangeCompliance(
-                                    user.id,
-                                    e.target.value as 'approved' | 'rejected'
-                                  )
-                                }
-                                className={`text-xs font-bold rounded-xl px-2.5 py-1.5 border appearance-none pr-7 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 transition-colors ${
-                                  user.background_check_status === 'rejected'
-                                    ? 'bg-red-500/15 text-red-300 border-red-500/30 hover:bg-red-500/25'
-                                    : 'bg-blue-500/15 text-blue-300 border-blue-500/30 hover:bg-blue-500/25'
-                                }`}
-                              >
-                                <option value="approved" className="bg-[var(--color-surface)] text-blue-400">
-                                  🟢 Aprovado (Liberado)
-                                </option>
-                                <option value="rejected" className="bg-[var(--color-surface)] text-red-400">
-                                  🔴 Reprovado (Bloqueado)
-                                </option>
-                              </select>
-                              <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--color-text-muted)]" />
+                            {/* Selfie de verificação (pode não existir ainda) */}
+                            <div className="flex items-center gap-2">
+                              {user.avatar_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={user.avatar_url}
+                                  alt={`Selfie de ${user.full_name}`}
+                                  className="w-9 h-9 rounded-lg object-cover border border-[var(--color-border)] shrink-0"
+                                />
+                              ) : (
+                                <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-[var(--color-surface-alt)] border border-[var(--color-border)] text-[var(--color-text-subtle)]">
+                                  <UserX size={15} />
+                                </div>
+                              )}
+                              <div className="relative inline-block text-left">
+                                <select
+                                  value={user.background_check_status}
+                                  onChange={(e) => {
+                                    const newStatus = e.target.value as 'approved' | 'pending' | 'rejected'
+                                    if (newStatus === 'rejected') {
+                                      setRejectReasonInput('')
+                                      setRejectTargetUser(user)
+                                      return
+                                    }
+                                    handleChangeCompliance(user.id, newStatus)
+                                  }}
+                                  className={`text-xs font-bold rounded-xl px-2.5 py-1.5 border appearance-none pr-7 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/40 transition-colors ${
+                                    user.background_check_status === 'rejected'
+                                      ? 'bg-red-500/15 text-red-300 border-red-500/30 hover:bg-red-500/25'
+                                      : user.background_check_status === 'pending'
+                                      ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
+                                      : 'bg-blue-500/15 text-blue-300 border-blue-500/30 hover:bg-blue-500/25'
+                                  }`}
+                                >
+                                  <option value="pending" className="bg-[var(--color-surface)] text-amber-400">
+                                    🟡 Em Análise
+                                  </option>
+                                  <option value="approved" className="bg-[var(--color-surface)] text-blue-400">
+                                    🟢 Aprovado (Liberado)
+                                  </option>
+                                  <option value="rejected" className="bg-[var(--color-surface)] text-red-400">
+                                    🔴 Reprovado (Bloqueado)
+                                  </option>
+                                </select>
+                                <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--color-text-muted)]" />
+                              </div>
                             </div>
 
                             {user.background_check_status === 'rejected' ? (
-                              <div className="text-[10px] text-red-400 flex items-center gap-1 font-semibold">
+                              <div className="text-[10px] text-red-400 flex items-center gap-1 font-semibold" title={user.rejection_reason ?? undefined}>
                                 <ShieldAlert size={11} /> Bloqueado no radar
+                              </div>
+                            ) : user.background_check_status === 'pending' ? (
+                              <div className="text-[10px] text-amber-400 flex items-center gap-1 font-semibold">
+                                <ShieldAlert size={11} /> Aguardando aprovação
                               </div>
                             ) : (
                               <div className="text-[10px] text-blue-400 flex items-center gap-1 font-semibold">
@@ -941,6 +1000,62 @@ export default function AdminUsersPage() {
                 }`}
               >
                 {blockingUserId ? 'Processando...' : blockTargetUser.is_blocked ? 'Sim, Reativar Conta' : 'Sim, Suspender Conta'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Reprovação da Verificação de Identidade (com motivo) */}
+      {rejectTargetUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl space-y-5">
+            <div className="flex items-start gap-3.5">
+              <div className="p-3 rounded-2xl shrink-0 bg-red-500/10 text-red-400 border border-red-500/30">
+                <ShieldAlert size={24} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Reprovar Verificação de Identidade?</h3>
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                  Prestador: <strong className="text-white">{rejectTargetUser.full_name}</strong> ({rejectTargetUser.phone})
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-[var(--color-bg)]/80 rounded-2xl p-4 border border-[var(--color-border)]/80 text-xs text-[var(--color-text-muted)] space-y-3">
+              <p>
+                ⚠️ O prestador será impedido de ficar online e aceitar chamados até que o cadastro seja reaprovado.
+              </p>
+              <div>
+                <label htmlFor="reject-reason" className="block text-[11px] font-semibold text-[var(--color-text-muted)] mb-1">
+                  Motivo (opcional, visível para o prestador)
+                </label>
+                <textarea
+                  id="reject-reason"
+                  value={rejectReasonInput}
+                  onChange={(e) => setRejectReasonInput(e.target.value)}
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Ex: selfie ilegível, tente novamente com boa iluminação."
+                  className="w-full rounded-xl px-3 py-2 text-xs bg-[var(--color-surface-alt)] border border-[var(--color-border)] text-white placeholder:text-[var(--color-text-subtle)] focus:outline-none focus:ring-2 focus:ring-red-500/40"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => { setRejectTargetUser(null); setRejectReasonInput('') }}
+                disabled={Boolean(rejectingUserId)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--color-surface-alt)] hover:bg-[var(--color-border-strong)] text-[var(--color-text-muted)] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmReject}
+                disabled={Boolean(rejectingUserId)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-lg disabled:opacity-50 bg-red-600 hover:bg-red-500 shadow-red-600/20"
+              >
+                {rejectingUserId ? 'Processando...' : 'Sim, Reprovar'}
               </button>
             </div>
           </div>

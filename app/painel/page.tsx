@@ -46,6 +46,8 @@ export default function PainelPage() {
   const [savingPix, setSavingPix] = useState(false)
 
   const hasPixKey = Boolean(providerPixKey && providerPixKey.trim().length > 0)
+  const isApproved = profile?.background_check_status === 'approved'
+  const isRejected = profile?.background_check_status === 'rejected'
 
   const { lat, lng, error: geoError, getPosition } = useGeolocation(true)
 
@@ -93,6 +95,15 @@ export default function PainelPage() {
               .update({ role: 'provider' })
               .eq('id', authUser.id)
             prof.role = 'provider'
+          }
+
+          // Achado (16/09/2026): sessões que já estavam logadas antes do
+          // e-mail virar obrigatório nunca voltam a passar por /login —
+          // gate aqui também, pra pegar quem acessa /painel direto com
+          // sessão persistida.
+          if (prof && !prof.email) {
+            router.replace('/completar-email?role=provider')
+            return
           }
 
           if (prof && (prof.role === 'provider' || prof.role === 'admin')) {
@@ -216,6 +227,15 @@ export default function PainelPage() {
   const handleToggleOnline = async () => {
     audioAlert.unlockAudio()
     if (!profile) return
+
+    if (!isApproved) {
+      toast.error(
+        isRejected
+          ? 'Seu cadastro foi reprovado na análise de segurança. Entre em contato com o suporte.'
+          : 'Seu cadastro ainda está em análise de segurança. Você poderá ficar online assim que for aprovado.'
+      )
+      return
+    }
 
     const activePix = providerPixKey || profile.phone || ''
     if (!activePix || !activePix.trim()) {
@@ -351,6 +371,12 @@ export default function PainelPage() {
 
   const handleAcceptCall = useCallback(async () => {
     if (!pendingCall) return
+    if (!isApproved) {
+      setPendingCall(null)
+      audioAlert.stopAlarm()
+      toast.error('Seu cadastro ainda está em análise de segurança — não é possível aceitar chamados agora.')
+      return
+    }
     const callId = pendingCall.id
     setPendingCall(null)
     audioAlert.stopAlarm()
@@ -371,7 +397,7 @@ export default function PainelPage() {
     }).catch(() => {})
 
     router.push(`/chamado/${callId}`)
-  }, [pendingCall, profile, router, supabase])
+  }, [pendingCall, profile, isApproved, router, supabase])
 
   const handleRejectCall = useCallback(async () => {
     if (!pendingCall) return
@@ -446,6 +472,10 @@ export default function PainelPage() {
   const handleClaimQueued = useCallback(async (callId: string) => {
     if (!profile) return
     audioAlert.stopAlarm()
+    if (!isApproved) {
+      toast.error('Seu cadastro ainda está em análise de segurança — não é possível assumir chamados agora.')
+      return
+    }
     if (!hasPixKey) {
       toast.error('Para atender chamados e receber seus repasses, cadastre sua Chave Pix acima.')
       return
@@ -478,11 +508,11 @@ export default function PainelPage() {
     } finally {
       setClaimingCallId(null)
     }
-  }, [profile, hasPixKey, router])
+  }, [profile, hasPixKey, isApproved, router])
 
   // Ativa automaticamente o aceite se o prestador acessou via deep link do WhatsApp (?claim=ID)
   useEffect(() => {
-    if (typeof window === 'undefined' || !profile || !hasPixKey) return
+    if (typeof window === 'undefined' || !profile || !hasPixKey || !isApproved) return
     const params = new URLSearchParams(window.location.search)
     const claimId = params.get('claim')
     if (claimId && !claimingCallId) {
@@ -495,7 +525,7 @@ export default function PainelPage() {
       window.history.replaceState({}, '', url.toString())
       handleClaimQueued(claimId)
     }
-  }, [profile, hasPixKey, claimingCallId, handleClaimQueued])
+  }, [profile, hasPixKey, isApproved, claimingCallId, handleClaimQueued])
 
   if (!profile) {
     return (
@@ -751,8 +781,31 @@ export default function PainelPage() {
         </section>
       )}
 
+      {/* Alerta de cadastro em análise / reprovado na verificação de identidade */}
+      {!isApproved && (
+        <div
+          className="w-full max-w-md mx-auto mb-6 p-4 rounded-2xl flex items-start gap-3 animate-slide-up"
+          style={{
+            background: isRejected ? 'rgba(239, 68, 68, 0.08)' : 'rgba(237, 198, 107, 0.08)',
+            border: `1px solid ${isRejected ? 'rgba(239, 68, 68, 0.25)' : 'rgba(237, 198, 107, 0.25)'}`,
+          }}
+        >
+          <Lock size={20} className="shrink-0 mt-0.5" style={{ color: isRejected ? '#EF4444' : 'var(--color-warning)' }} />
+          <div className="text-xs leading-relaxed">
+            <strong className="block font-bold text-sm mb-1" style={{ color: isRejected ? '#EF4444' : 'var(--color-warning)' }}>
+              {isRejected ? 'Cadastro Reprovado' : 'Cadastro em Análise de Segurança'}
+            </strong>
+            {isRejected ? (
+              profile?.rejection_reason || 'Seu cadastro foi reprovado na verificação de identidade. Entre em contato com o suporte para mais informações.'
+            ) : (
+              'Seu cadastro está sendo analisado pela nossa equipe antes de você poder ficar disponível para receber chamados. Isso costuma ser rápido.'
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Alerta de Obrigatoriedade da Chave Pix */}
-      {!hasPixKey && (
+      {isApproved && !hasPixKey && (
         <div
           className="w-full max-w-md mx-auto mb-6 p-4 rounded-2xl flex items-start gap-3 animate-slide-up"
           style={{ background: 'rgba(237, 198, 107, 0.08)', border: '1px solid rgba(237, 198, 107, 0.25)', color: 'var(--color-warning)' }}
@@ -776,27 +829,27 @@ export default function PainelPage() {
           <button
             id="btn-toggle-online"
             onClick={handleToggleOnline}
-            disabled={togglingOnline || !hasPixKey}
-            aria-disabled={!hasPixKey}
+            disabled={togglingOnline || !hasPixKey || !isApproved}
+            aria-disabled={!hasPixKey || !isApproved}
             className={`relative z-10 w-32 h-32 rounded-full flex flex-col items-center justify-center gap-2 transition-all ${
-              !hasPixKey
+              !hasPixKey || !isApproved
                 ? 'opacity-60 cursor-not-allowed'
                 : 'active:scale-95 cursor-pointer hover:scale-105'
             }`}
             style={{
-              background: !hasPixKey
+              background: !hasPixKey || !isApproved
                 ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))'
                 : isOnline
                 ? 'linear-gradient(135deg, #10B981, #059669)'
                 : 'linear-gradient(135deg, var(--color-surface-alt), var(--color-surface))',
               border: `3px solid ${
-                !hasPixKey
+                !hasPixKey || !isApproved
                   ? '#F59E0B'
                   : isOnline
                   ? '#10B981'
                   : 'var(--color-border)'
               }`,
-              boxShadow: !hasPixKey
+              boxShadow: !hasPixKey || !isApproved
                 ? '0 0 16px rgba(245, 158, 11, 0.2)'
                 : isOnline
                 ? '0 0 32px rgba(16,185,129,0.4)'
@@ -805,7 +858,7 @@ export default function PainelPage() {
           >
             {togglingOnline ? (
               <Loader2 size={32} className="animate-spin" color="white" />
-            ) : !hasPixKey ? (
+            ) : !hasPixKey || !isApproved ? (
               <Lock size={34} className="text-amber-400" />
             ) : (
               <Power size={36} color={isOnline ? 'white' : 'var(--color-text-subtle)'} />
@@ -813,20 +866,24 @@ export default function PainelPage() {
             <span
               className="text-xs font-bold"
               style={{
-                color: !hasPixKey
+                color: !hasPixKey || !isApproved
                   ? '#FCD34D'
                   : isOnline
                   ? 'white'
                   : 'var(--color-text-subtle)',
               }}
             >
-              {!hasPixKey ? 'BLOQUEADO' : isOnline ? 'ONLINE' : 'OFFLINE'}
+              {!hasPixKey || !isApproved ? 'BLOQUEADO' : isOnline ? 'ONLINE' : 'OFFLINE'}
             </span>
           </button>
         </div>
 
         <p className="text-center text-sm max-w-xs" style={{ color: 'var(--color-text-muted)' }}>
-          {!hasPixKey ? (
+          {!isApproved ? (
+            <span className="text-amber-400 text-xs font-semibold block">
+              🔒 {isRejected ? 'Cadastro reprovado na verificação.' : 'Cadastro em análise de segurança.'}
+            </span>
+          ) : !hasPixKey ? (
             <span className="text-amber-400 text-xs font-semibold block">
               🔒 Cadastre sua Chave Pix acima para desbloquear sua disponibilidade.
             </span>

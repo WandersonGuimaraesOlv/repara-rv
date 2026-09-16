@@ -43,6 +43,9 @@ export interface AdminUserListItem {
   terms_accepted_at?: string | null
   self_declaration_signed?: boolean | null
   background_check_status: 'pending' | 'approved' | 'rejected'
+  avatar_url: string | null
+  rejection_reason: string | null
+  verified_at: string | null
   is_blocked: boolean
   completed_orders_count: number
   rating_avg: number
@@ -154,9 +157,13 @@ export async function getAdminUsersListAction(): Promise<{
     const usersList: AdminUserListItem[] = profiles.map((p) => {
       const ps = providerMap.get(p.id)
       const rawStatus = (p as Record<string, unknown>).background_check_status
-      // No MVP de Rio Verde, prestadores entram liberados via autodeclaração (sem pendência de docs)
+      // Achado (16/09/2026): colapsava qualquer status que não fosse 'rejected'
+      // em 'approved' pra exibição — escondia 'pending' da UI do admin desde
+      // sempre. Agora que o cadastro de prestador entra 'pending' de verdade
+      // (app/onboarding/page.tsx) até a aprovação manual, os 3 estados reais
+      // precisam chegar até a tela.
       const backgroundCheckStatus: 'pending' | 'approved' | 'rejected' =
-        rawStatus === 'rejected' ? 'rejected' : 'approved'
+        rawStatus === 'approved' || rawStatus === 'rejected' ? rawStatus : 'pending'
 
       const isBlocked = Boolean((p as Record<string, unknown>).is_blocked)
       const ratingAvg = typeof (p as Record<string, unknown>).rating_avg === 'number'
@@ -183,6 +190,9 @@ export async function getAdminUsersListAction(): Promise<{
         terms_accepted_at: p.terms_accepted_at,
         self_declaration_signed: p.self_declaration_signed,
         background_check_status: backgroundCheckStatus,
+        avatar_url: (p as Record<string, unknown>).avatar_url as string | null ?? null,
+        rejection_reason: (p as Record<string, unknown>).rejection_reason as string | null ?? null,
+        verified_at: (p as Record<string, unknown>).verified_at as string | null ?? null,
         is_blocked: isBlocked,
         completed_orders_count: completedCalls,
         rating_avg: ratingAvg,
@@ -282,8 +292,8 @@ export async function updateUserRoleAction(input: unknown) {
  */
 export async function updateBackgroundCheckStatusAction(input: unknown) {
   const authCheck = await requireAdmin()
-  if (!authCheck.authorized) {
-    return { success: false, error: authCheck.error }
+  if (!authCheck.authorized || !authCheck.user) {
+    return { success: false, error: authCheck.error || 'Acesso negado.' }
   }
 
   const parsed = updateBackgroundCheckSchema.safeParse(input)
@@ -291,15 +301,23 @@ export async function updateBackgroundCheckStatusAction(input: unknown) {
     return { success: false, error: 'Dados inválidos para alteração de compliance.' }
   }
 
-  const { userId, status } = parsed.data
+  const { userId, status, rejectionReason } = parsed.data
   const adminDb = await createServiceClient()
 
   try {
     const { data, error } = await adminDb
       .from('profiles')
-      .update({ background_check_status: status })
+      .update({
+        background_check_status: status,
+        // Auditoria da aprovação/reprovação (migration
+        // 20260918_provider_identity_verification.sql). 'pending' nunca é
+        // setado por aqui — só o admin aprovando/reprovando dispara isto.
+        verified_at: status === 'approved' ? new Date().toISOString() : null,
+        verified_by: status === 'approved' ? authCheck.user.id : null,
+        rejection_reason: status === 'rejected' ? (rejectionReason ?? null) : null,
+      })
       .eq('id', userId)
-      .select('id, full_name, background_check_status')
+      .select('id, full_name, background_check_status, rejection_reason')
       .single()
 
     if (error) {

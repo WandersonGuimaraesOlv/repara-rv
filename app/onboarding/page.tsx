@@ -79,7 +79,13 @@ export default function OnboardingPage() {
       cpf_or_cnpj: cpfOrCnpj.trim(),
       terms_accepted_at: new Date().toISOString(),
       self_declaration_signed: role === 'provider' ? selfDeclaration : true,
-      background_check_status: 'approved',
+      // Achado (16/09/2026): gravava 'approved' pra qualquer papel, sem
+      // nenhum gate — um prestador se auto-aprovava no próprio cadastro.
+      // Cliente não precisa de aprovação nenhuma; prestador entra 'pending'
+      // e só fica online depois de aprovado em /admin/usuarios (ver
+      // handleToggleOnline em app/painel/page.tsx e o trigger
+      // check_provider_online_verification no banco).
+      background_check_status: role === 'provider' ? 'pending' : 'approved',
     }
 
     let { error: profileError } = await supabase

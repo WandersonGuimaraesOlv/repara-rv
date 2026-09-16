@@ -193,6 +193,58 @@ export type Database = {
           },
         ]
       }
+      identity_reports: {
+        Row: {
+          call_id: string
+          client_id: string
+          created_at: string
+          id: string
+          provider_id: string
+          reason: string | null
+          status: string
+        }
+        Insert: {
+          call_id: string
+          client_id: string
+          created_at?: string
+          id?: string
+          provider_id: string
+          reason?: string | null
+          status?: string
+        }
+        Update: {
+          call_id?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          provider_id?: string
+          reason?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "identity_reports_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "service_calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "identity_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "identity_reports_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legal_clauses: {
         Row: {
           body_markdown: string
@@ -290,9 +342,12 @@ export type Database = {
           neighborhood: string | null
           phone: string
           rating_avg: number | null
+          rejection_reason: string | null
           role: Database["public"]["Enums"]["user_role"]
           self_declaration_signed: boolean | null
           terms_accepted_at: string | null
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -311,9 +366,12 @@ export type Database = {
           neighborhood?: string | null
           phone: string
           rating_avg?: number | null
+          rejection_reason?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           self_declaration_signed?: boolean | null
           terms_accepted_at?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -332,11 +390,22 @@ export type Database = {
           neighborhood?: string | null
           phone?: string
           rating_avg?: number | null
+          rejection_reason?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           self_declaration_signed?: boolean | null
           terms_accepted_at?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       provider_gateway_accounts: {
         Row: {
@@ -563,6 +632,7 @@ export type Database = {
       service_calls: {
         Row: {
           accepted_at: string | null
+          arrival_pin: string | null
           arrived_at: string | null
           cancel_by: string | null
           cancel_metadata: Json | null
@@ -593,12 +663,14 @@ export type Database = {
           provider_cut: number
           provider_id: string | null
           service_id: string
+          started_at: string | null
           status: Database["public"]["Enums"]["ride_status"] | null
           total_price: number
           updated_at: string | null
         }
         Insert: {
           accepted_at?: string | null
+          arrival_pin?: string | null
           arrived_at?: string | null
           cancel_by?: string | null
           cancel_metadata?: Json | null
@@ -629,12 +701,14 @@ export type Database = {
           provider_cut: number
           provider_id?: string | null
           service_id: string
+          started_at?: string | null
           status?: Database["public"]["Enums"]["ride_status"] | null
           total_price: number
           updated_at?: string | null
         }
         Update: {
           accepted_at?: string | null
+          arrival_pin?: string | null
           arrived_at?: string | null
           cancel_by?: string | null
           cancel_metadata?: Json | null
@@ -665,6 +739,7 @@ export type Database = {
           provider_cut?: number
           provider_id?: string | null
           service_id?: string
+          started_at?: string | null
           status?: Database["public"]["Enums"]["ride_status"] | null
           total_price?: number
           updated_at?: string | null
@@ -933,6 +1008,7 @@ export type Database = {
         Args: { p_call_id: string; p_provider_id: string }
         Returns: {
           accepted_at: string | null
+          arrival_pin: string | null
           arrived_at: string | null
           cancel_by: string | null
           cancel_metadata: Json | null
@@ -963,6 +1039,7 @@ export type Database = {
           provider_cut: number
           provider_id: string | null
           service_id: string
+          started_at: string | null
           status: Database["public"]["Enums"]["ride_status"] | null
           total_price: number
           updated_at: string | null
