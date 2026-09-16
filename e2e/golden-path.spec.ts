@@ -31,10 +31,12 @@
 // (#btn-complete-service) até o fim: esse botão dispara /api/pix/create, que
 // chama a API de verdade do Mercado Pago. Rodar isso repetidamente criaria
 // cobranças reais no gateway de pagamento. O teste vai até on_the_way e
-// confirma que o botão de concluir existe e está habilitado — validando o
-// aceite + a corrida contra RLS/Realtime, que é a parte mais frágil do
-// ciclo. Pra validar o "conclui → Pix" manualmente, rode
-// TEST_INCLUDE_PIX=1 npx playwright test — aí ele clica de verdade.
+// confirma que o botão "Iniciar Atendimento" existe e está habilitado —
+// validando o aceite + a corrida contra RLS/Realtime, que é a parte mais
+// frágil do ciclo. Pra validar "iniciar (PIN) → concluir → Pix" de ponta a
+// ponta, rode TEST_INCLUDE_PIX=1 npx playwright test — aí ele confirma o PIN
+// de chegada (arrival_pin, gerado no aceite — ver
+// app/api/calls/claim-queued/route.ts) e clica em concluir de verdade.
 // =============================================================================
 
 import { test, expect, chromium, type Browser, type BrowserContext } from '@playwright/test'
@@ -140,12 +142,31 @@ test.describe('Ciclo completo do chamado — cliente pede, prestador aceita e at
       expect(data?.status).toBe('on_the_way')
     }).toPass({ timeout: 5_000 })
 
-    // ── 5. Confirma que o botão de concluir está pronto pro próximo passo ──
-    await expect(providerPage.locator('#btn-complete-service')).toBeEnabled()
+    // ── 5. Confirma que o botão de iniciar atendimento está pronto ─────────
+    await expect(providerPage.locator('#btn-open-start-service')).toBeEnabled()
 
     if (process.env.TEST_INCLUDE_PIX === '1') {
       // ⚠️ Isso chama a API de verdade do Mercado Pago (ver comentário no topo
       // do arquivo) — só roda quando explicitamente pedido.
+
+      // PIN de chegada gerado no aceite (app/api/calls/claim-queued/route.ts)
+      const { data: callWithPin } = await admin
+        .from('service_calls')
+        .select('arrival_pin')
+        .eq('id', callId!)
+        .single()
+      expect(callWithPin?.arrival_pin).toMatch(/^\d{4}$/)
+
+      await providerPage.click('#btn-open-start-service')
+      await providerPage.fill('#input-arrival-pin', callWithPin!.arrival_pin!)
+      await providerPage.click('#btn-confirm-start-service')
+
+      await expect(async () => {
+        const { data } = await admin.from('service_calls').select('status').eq('id', callId!).single()
+        expect(data?.status).toBe('in_progress')
+      }).toPass({ timeout: 5_000 })
+
+      await expect(providerPage.locator('#btn-complete-service')).toBeEnabled()
       await providerPage.click('#btn-complete-service')
       await providerPage.waitForURL('/painel', { timeout: 20_000 })
 

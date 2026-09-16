@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { generateArrivalPin } from '@/lib/utils';
 
 // Aceita os dois formatos de chave (camelCase e snake_case) que já circulam
 // entre os chamadores existentes desta rota.
@@ -118,6 +119,18 @@ export async function POST(req: NextRequest) {
     }
 
     const acceptedCall = updatedCall[0];
+
+    // 2.1 PIN de chegada — claim_queued_call() não seta esse campo (função no
+    // banco, não vale a pena mexer nela só por isso), então é uma escrita de
+    // acompanhamento aqui. Sem risco de corrida: o provider_id já foi travado
+    // atomicamente acima, então essa segunda escrita não compete com mais
+    // ninguém pela mesma linha.
+    const arrivalPin = generateArrivalPin();
+    await supabaseAdmin
+      .from('service_calls')
+      .update({ arrival_pin: arrivalPin })
+      .eq('id', callId);
+    acceptedCall.arrival_pin = arrivalPin;
 
     // 3. Disparo assíncrono (fire-and-forget) para notificar o cliente via WhatsApp
     void (async () => {

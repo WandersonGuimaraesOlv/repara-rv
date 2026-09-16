@@ -5,6 +5,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// PIN de chegada (service_calls.arrival_pin) — gerado no aceite do chamado,
+// pro cliente conferir que o técnico que chegou é o mesmo que aceitou. Web
+// Crypto (não Math.random) pelo mesmo padrão do resto do projeto — roda tanto
+// no navegador (app/painel/page.tsx) quanto em Route Handler (Cloudflare
+// Workers, app/api/calls/claim-queued/route.ts), os dois com crypto.subtle
+// nativo disponível.
+export function generateArrivalPin(): string {
+  const bytes = new Uint8Array(4)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, b => (b % 10).toString()).join('')
+}
+
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',

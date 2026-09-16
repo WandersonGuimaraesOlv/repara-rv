@@ -15,6 +15,7 @@ import { CallChat } from '@/components/chat/call-chat'
 import { ChamadoEmFila } from '@/components/chamado-em-fila'
 import { CancelCallModal } from '@/components/cancel-call-modal'
 import { ComprovanteManutencaoModal } from '@/components/comprovante-manutencao-modal'
+import { ProviderIdentityCard } from '@/components/provider-identity-card'
 
 export default function AcompanharPage() {
   const { callId } = useParams<{ callId: string }>()
@@ -246,6 +247,17 @@ export default function AcompanharPage() {
               providerName={(call.provider as { full_name?: string })?.full_name}
             />
           </div>
+
+          {/* Card de identificação do prestador + PIN de chegada */}
+          {call.provider && (call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress') && (
+            <ProviderIdentityCard
+              callId={callId}
+              providerName={(call.provider as { full_name?: string })?.full_name}
+              avatarUrl={(call.provider as { avatar_url?: string | null })?.avatar_url}
+              isVerified={(call.provider as { background_check_status?: string })?.background_check_status === 'approved'}
+              arrivalPin={call.arrival_pin}
+            />
+          )}
 
           {/* Info do serviço */}
           <div

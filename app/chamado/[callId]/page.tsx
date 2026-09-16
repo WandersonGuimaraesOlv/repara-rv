@@ -7,7 +7,7 @@ import { ServiceCall, CancelReason } from '@/lib/types'
 import { NavigationButtons } from '@/components/navigation-buttons'
 import { EmergencySosButton } from '@/components/emergency-sos-button'
 import { formatCurrency } from '@/lib/utils'
-import { CheckCircle, XCircle, Loader2, ArrowLeft, Wrench, MapPin, DollarSign } from 'lucide-react'
+import { CheckCircle, XCircle, Loader2, ArrowLeft, Wrench, MapPin, DollarSign, KeyRound } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { CallChat } from '@/components/chat/call-chat'
@@ -27,6 +27,9 @@ export default function ChamadoProviderPage() {
   const [call, setCall] = useState<ServiceCall | null>(null)
   const [loading, setLoading] = useState(true)
   const [completing, setCompleting] = useState(false)
+  const [showStartPin, setShowStartPin] = useState(false)
+  const [pinInput, setPinInput] = useState('')
+  const [starting, setStarting] = useState(false)
   const [showCancel, setShowCancel] = useState(false)
   const [cancelReason, setCancelReason] = useState<CancelReason>('provider_absent')
   const [cancelNote, setCancelNote] = useState('')
@@ -74,22 +77,42 @@ export default function ChamadoProviderPage() {
     }
   }, [callId, loadCall, supabase])
 
-  const handleComplete = async () => {
-    setCompleting(true)
+  // PIN de chegada (service_calls.arrival_pin, gerado no aceite — ver
+  // app/painel/page.tsx e app/api/calls/claim-queued/route.ts): confere que o
+  // técnico que está prestes a iniciar o atendimento é o mesmo que aceitou o
+  // chamado. Comparação no cliente é suficiente — o prestador já enxerga o
+  // valor de arrival_pin na própria linha via RLS, não é um segredo escondido
+  // dele; o PIN existe pra o CLIENTE confirmar a identidade, não o contrário.
+  // Chamados aceitos antes desta feature não têm arrival_pin (null) — nesse
+  // caso não bloqueia, pra não travar atendimento em andamento no deploy.
+  const handleStartService = async () => {
+    if (call?.arrival_pin && pinInput !== call.arrival_pin) {
+      toast.error('PIN incorreto. Confirme o código de 4 dígitos com o cliente.')
+      return
+    }
 
+    setStarting(true)
     const { error } = await supabase
       .from('service_calls')
       .update({
         status: 'in_progress',
-        completed_at: new Date().toISOString(),
+        started_at: new Date().toISOString(),
       })
       .eq('id', callId)
+    setStarting(false)
 
     if (error) {
-      setCompleting(false)
-      toast.error('Erro ao atualizar chamado. Tente novamente.')
+      toast.error('Erro ao iniciar atendimento. Tente novamente.')
       return
     }
+
+    toast.success('Atendimento iniciado!')
+    setShowStartPin(false)
+    setPinInput('')
+  }
+
+  const handleComplete = async () => {
+    setCompleting(true)
 
     // Cria cobrança Pix e Cartão no Mercado Pago
     try {
@@ -254,18 +277,69 @@ export default function ChamadoProviderPage() {
 
       {!showCancel && (
         <div className="space-y-3 mt-4 animate-slide-up" style={{ animationDelay: '160ms' }}>
-          <button
-            id="btn-complete-service"
-            onClick={handleComplete}
-            disabled={completing}
-            className="btn-primary"
-          >
-            {completing ? (
-              <><Loader2 size={18} className="animate-spin" /> Finalizando...</>
-            ) : (
-              <><CheckCircle size={18} /> Serviço concluído — gerar Pix</>
-            )}
-          </button>
+          {call.status === 'on_the_way' && !showStartPin && (
+            <button
+              id="btn-open-start-service"
+              onClick={() => setShowStartPin(true)}
+              className="btn-primary"
+            >
+              <KeyRound size={18} /> Iniciar Atendimento
+            </button>
+          )}
+
+          {call.status === 'on_the_way' && showStartPin && (
+            <div className="card p-4" style={{ borderColor: 'var(--color-border-strong)' }}>
+              <p className="text-sm font-semibold mb-1" style={{ color: 'var(--color-text)' }}>
+                Confirme o PIN de chegada
+              </p>
+              <p className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
+                Peça ao cliente o código de 4 dígitos exibido na tela de acompanhamento dele.
+              </p>
+              <input
+                id="input-arrival-pin"
+                type="text"
+                inputMode="numeric"
+                value={pinInput}
+                onChange={e => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                placeholder="0000"
+                maxLength={4}
+                autoFocus
+                className="input text-center tracking-[0.5em] font-mono text-xl mb-3"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  id="btn-cancel-start-pin"
+                  onClick={() => { setShowStartPin(false); setPinInput('') }}
+                  className="btn-secondary"
+                >
+                  Voltar
+                </button>
+                <button
+                  id="btn-confirm-start-service"
+                  onClick={handleStartService}
+                  disabled={starting || (Boolean(call.arrival_pin) && pinInput.length !== 4)}
+                  className="btn-primary"
+                >
+                  {starting ? <Loader2 size={16} className="animate-spin" /> : 'Confirmar e Iniciar'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {call.status === 'in_progress' && (
+            <button
+              id="btn-complete-service"
+              onClick={handleComplete}
+              disabled={completing}
+              className="btn-primary"
+            >
+              {completing ? (
+                <><Loader2 size={18} className="animate-spin" /> Finalizando...</>
+              ) : (
+                <><CheckCircle size={18} /> Serviço concluído — gerar Pix</>
+              )}
+            </button>
+          )}
 
           <button
             id="btn-show-cancel"

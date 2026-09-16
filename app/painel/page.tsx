@@ -22,11 +22,13 @@ interface QueuedCallPreview {
 }
 import { CallAlertModal } from '@/components/call-alert-modal'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { Power, Loader2, MapPin, CreditCard, Zap, Lock, AlertTriangle, Volume2, LogOut } from 'lucide-react'
+import { Power, Loader2, MapPin, CreditCard, Zap, Lock, AlertTriangle, Volume2, LogOut, Camera } from 'lucide-react'
 import { toast } from 'sonner'
 import { PanelHeader } from '@/components/provider/panel-header'
 import { audioAlert } from '@/lib/audio-alert'
 import { performLogout } from '@/lib/auth-logout'
+import { generateArrivalPin } from '@/lib/utils'
+import { SelfieCaptureModal } from '@/components/selfie-capture-modal'
 
 export default function PainelPage() {
   const router = useRouter()
@@ -48,6 +50,8 @@ export default function PainelPage() {
   const hasPixKey = Boolean(providerPixKey && providerPixKey.trim().length > 0)
   const isApproved = profile?.background_check_status === 'approved'
   const isRejected = profile?.background_check_status === 'rejected'
+  const hasSelfie = Boolean(profile?.avatar_url)
+  const [showSelfieCapture, setShowSelfieCapture] = useState(false)
 
   const { lat, lng, error: geoError, getPosition } = useGeolocation(true)
 
@@ -386,6 +390,7 @@ export default function PainelPage() {
       .update({
         status: 'accepted',
         accepted_at: new Date().toISOString(),
+        arrival_pin: generateArrivalPin(),
       })
       .eq('id', callId)
 
@@ -791,14 +796,26 @@ export default function PainelPage() {
           }}
         >
           <Lock size={20} className="shrink-0 mt-0.5" style={{ color: isRejected ? '#EF4444' : 'var(--color-warning)' }} />
-          <div className="text-xs leading-relaxed">
+          <div className="text-xs leading-relaxed flex-1">
             <strong className="block font-bold text-sm mb-1" style={{ color: isRejected ? '#EF4444' : 'var(--color-warning)' }}>
               {isRejected ? 'Cadastro Reprovado' : 'Cadastro em Análise de Segurança'}
             </strong>
             {isRejected ? (
-              profile?.rejection_reason || 'Seu cadastro foi reprovado na verificação de identidade. Entre em contato com o suporte para mais informações.'
+              profile?.rejection_reason || 'Seu cadastro foi reprovado na verificação de identidade. Reenvie sua selfie ou entre em contato com o suporte.'
+            ) : hasSelfie ? (
+              'Sua selfie foi recebida e está sendo analisada pela nossa equipe antes de você poder ficar disponível para receber chamados. Isso costuma ser rápido.'
             ) : (
-              'Seu cadastro está sendo analisado pela nossa equipe antes de você poder ficar disponível para receber chamados. Isso costuma ser rápido.'
+              'Envie uma selfie pra começarmos a análise de segurança do seu cadastro.'
+            )}
+            {(isRejected || !hasSelfie) && (
+              <button
+                type="button"
+                id="btn-open-selfie-capture"
+                onClick={() => setShowSelfieCapture(true)}
+                className="btn-primary mt-3 py-2 text-xs"
+              >
+                <Camera size={14} /> {isRejected ? 'Reenviar Selfie' : 'Enviar Selfie'}
+              </button>
             )}
           </div>
         </div>
@@ -964,6 +981,16 @@ export default function PainelPage() {
           onAccept={handleAcceptCall}
           onReject={handleRejectCall}
           onTimeout={handleTimeoutCall}
+        />
+      )}
+
+      {showSelfieCapture && (
+        <SelfieCaptureModal
+          onClose={() => setShowSelfieCapture(false)}
+          onSuccess={(avatarUrl) => {
+            setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl, background_check_status: prev.background_check_status === 'rejected' ? 'pending' : prev.background_check_status } : prev)
+            setShowSelfieCapture(false)
+          }}
         />
       )}
     </div>
