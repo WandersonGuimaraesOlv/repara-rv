@@ -85,3 +85,12 @@ export function resolveCancelReasonEnum(reason: string | undefined, isClient: bo
   }
   return isClient ? 'client_request' : 'other'
 }
+
+// Taxa de deslocamento (R$25, já prometida em /termos — "Do Cancelamento e
+// do No-Show") só se aplica quando é o PRESTADOR quem cancela, e o motivo
+// resolvido é 'provider_absent' ("Cliente ausente após 10 min",
+// app/chamado/[callId]/page.tsx). Nunca se aplica a cancelamento do cliente
+// (ele está do lado de dentro cancelando, não deixou ninguém esperando).
+export function shouldChargeNoShowFee(resolvedReason: CancelReasonEnum, isProvider: boolean): boolean {
+  return isProvider && resolvedReason === 'provider_absent'
+}

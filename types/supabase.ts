@@ -581,6 +581,10 @@ export type Database = {
           expires_at: string | null
           id: string
           neighborhood: string
+          no_show_fee_payment_id: string | null
+          no_show_fee_pix_copy_paste: string | null
+          no_show_fee_pix_qr_code: string | null
+          no_show_fee_status: string | null
           payment_status: Database["public"]["Enums"]["payment_status"] | null
           pix_copy_paste: string | null
           pix_payment_id: string | null
@@ -613,6 +617,10 @@ export type Database = {
           expires_at?: string | null
           id?: string
           neighborhood?: string
+          no_show_fee_payment_id?: string | null
+          no_show_fee_pix_copy_paste?: string | null
+          no_show_fee_pix_qr_code?: string | null
+          no_show_fee_status?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
           pix_copy_paste?: string | null
           pix_payment_id?: string | null
@@ -645,6 +653,10 @@ export type Database = {
           expires_at?: string | null
           id?: string
           neighborhood?: string
+          no_show_fee_payment_id?: string | null
+          no_show_fee_pix_copy_paste?: string | null
+          no_show_fee_pix_qr_code?: string | null
+          no_show_fee_status?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
           pix_copy_paste?: string | null
           pix_payment_id?: string | null
@@ -939,6 +951,10 @@ export type Database = {
           expires_at: string | null
           id: string
           neighborhood: string
+          no_show_fee_payment_id: string | null
+          no_show_fee_pix_copy_paste: string | null
+          no_show_fee_pix_qr_code: string | null
+          no_show_fee_status: string | null
           payment_status: Database["public"]["Enums"]["payment_status"] | null
           pix_copy_paste: string | null
           pix_payment_id: string | null

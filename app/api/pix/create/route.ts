@@ -12,6 +12,10 @@ const pixCreateSchema = z.object({
   payer_email:  z.string().email('E-mail do pagador inválido').optional(),
 })
 
+// Taxa de deslocamento (no-show) — já prometida em /termos ("Do Cancelamento
+// e do No-Show"). Valor fixo, sempre 100% para a plataforma.
+const NO_SHOW_FEE_AMOUNT = 25.0
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServiceClient()
@@ -39,6 +43,94 @@ export async function POST(request: NextRequest) {
 
     if (callErr || !call) {
       return NextResponse.json({ error: 'Chamado não encontrado' }, { status: 404 })
+    }
+
+    // Cobrança da taxa de no-show (R$25, campos e fluxo próprios — ver
+    // migration 20260917_no_show_fee.sql) — bloco inteiramente separado do
+    // fluxo normal de cobrança de serviço abaixo: valor fixo, sem split de
+    // prestador (vai 100% pra plataforma, nunca lê provider_gateway_accounts
+    // nem manda application_fee), sem checkout de cartão (só Pix).
+    if (call.no_show_fee_status === 'pending') {
+      if (call.no_show_fee_pix_copy_paste && call.no_show_fee_pix_qr_code) {
+        return NextResponse.json({
+          success: true,
+          amount: NO_SHOW_FEE_AMOUNT,
+          pix_qr_code: call.no_show_fee_pix_qr_code,
+          pix_copy_paste: call.no_show_fee_pix_copy_paste,
+          payment_id: call.no_show_fee_payment_id,
+          no_show_fee_status: call.no_show_fee_status,
+        })
+      }
+
+      const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+      if (!accessToken) {
+        console.error('[API /api/pix/create] MERCADOPAGO_ACCESS_TOKEN não encontrado no ambiente')
+        return NextResponse.json({ error: 'Gateway de pagamento em manutenção temporária.' }, { status: 500 })
+      }
+
+      const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com'
+      const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost'))
+        ? rawAppUrl
+        : 'https://repararv.com'
+
+      const clientName = (call.client as { full_name?: string })?.full_name || 'Cliente Repara RV'
+      const nameParts = clientName.trim().split(' ')
+
+      const mpRes = await fetch('https://api.mercadopago.com/v1/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          'X-Idempotency-Key': `repararv-noshow-${call_id}-${Date.now()}`,
+        },
+        body: JSON.stringify({
+          transaction_amount: NO_SHOW_FEE_AMOUNT,
+          description: 'Repara RV — Taxa de deslocamento (no-show)',
+          payment_method_id: 'pix',
+          payer: {
+            email: payer_email || 'financeiro@repararv.com',
+            first_name: nameParts[0] || 'Cliente',
+            last_name: nameParts.slice(1).join(' ') || 'ReparaRV',
+          },
+          notification_url: `${appUrl}/api/pix/webhook`,
+        }),
+      })
+
+      if (!mpRes.ok) {
+        const mpErr = await mpRes.json().catch(() => ({}))
+        console.error('[API /api/pix/create] Erro MP Pix (taxa no-show):', mpErr)
+        return NextResponse.json(
+          { error: 'Não foi possível gerar a cobrança da taxa. Tente novamente em instantes.' },
+          { status: 502 }
+        )
+      }
+
+      const pixData = await mpRes.json()
+      const qrCode = pixData?.point_of_interaction?.transaction_data?.qr_code || null
+      const qrCodeBase64 = pixData?.point_of_interaction?.transaction_data?.qr_code_base64 || null
+      const paymentId = pixData?.id ? String(pixData.id) : null
+
+      if (!qrCodeBase64 || !qrCode) {
+        return NextResponse.json({ error: 'Não foi possível gerar a cobrança da taxa. Tente novamente em instantes.' }, { status: 502 })
+      }
+
+      await supabase
+        .from('service_calls')
+        .update({
+          no_show_fee_payment_id: paymentId,
+          no_show_fee_pix_qr_code: qrCodeBase64,
+          no_show_fee_pix_copy_paste: qrCode,
+        })
+        .eq('id', call_id)
+
+      return NextResponse.json({
+        success: true,
+        amount: NO_SHOW_FEE_AMOUNT,
+        pix_qr_code: qrCodeBase64,
+        pix_copy_paste: qrCode,
+        payment_id: paymentId,
+        no_show_fee_status: 'pending',
+      })
     }
 
     const existingCheckout = (call.cancel_metadata as Record<string, unknown>)?.checkout_url as string | undefined || call.cancel_note || null

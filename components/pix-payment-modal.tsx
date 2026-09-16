@@ -14,6 +14,10 @@ interface PixPaymentModalProps {
   checkoutUrl?: string | null
   callId: string
   onClose?: () => void
+  // 'no_show_fee': taxa de deslocamento de R$25 (ver migration
+  // 20260917_no_show_fee.sql) — cobrança só em Pix (sem checkout de cartão)
+  // e monitora a coluna no_show_fee_status em vez de payment_status.
+  mode?: 'service' | 'no_show_fee'
 }
 
 export function PixPaymentModal({
@@ -23,7 +27,9 @@ export function PixPaymentModal({
   checkoutUrl: initialCheckoutUrl,
   callId,
   onClose,
+  mode = 'service',
 }: PixPaymentModalProps) {
+  const isNoShowFee = mode === 'no_show_fee'
   const [activeTab, setActiveTab] = useState<'pix' | 'card'>('pix')
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(!initialCopyPaste || !initialCheckoutUrl)
@@ -104,6 +110,20 @@ export function PixPaymentModal({
     if (isPaid) return
 
     const interval = setInterval(async () => {
+      if (isNoShowFee) {
+        const { data } = await supabase
+          .from('service_calls')
+          .select('no_show_fee_status')
+          .eq('id', callId)
+          .maybeSingle()
+
+        if (data?.no_show_fee_status === 'paid') {
+          setIsPaid(true)
+          toast.success('🎉 Pagamento confirmado com sucesso!')
+        }
+        return
+      }
+
       const { data } = await supabase
         .from('service_calls')
         .select('payment_status, cancel_note, cancel_metadata')
@@ -121,7 +141,7 @@ export function PixPaymentModal({
     }, 2500)
 
     return () => clearInterval(interval)
-  }, [callId, isPaid, cardUrl, supabase])
+  }, [callId, isPaid, cardUrl, supabase, isNoShowFee])
 
   const handleCopy = async () => {
     if (!copyPaste) return
@@ -160,7 +180,11 @@ export function PixPaymentModal({
               Pagamento Confirmado!
             </h3>
             <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
-              Seu pagamento de <strong style={{ color: 'var(--color-text)' }}>{formatCurrency(amount)}</strong> foi aprovado. O prestador foi notificado e o atendimento está concluído.
+              {isNoShowFee ? (
+                <>Sua taxa de deslocamento de <strong style={{ color: 'var(--color-text)' }}>{formatCurrency(amount)}</strong> foi paga com sucesso.</>
+              ) : (
+                <>Seu pagamento de <strong style={{ color: 'var(--color-text)' }}>{formatCurrency(amount)}</strong> foi aprovado. O prestador foi notificado e o atendimento está concluído.</>
+              )}
             </p>
             {onClose && (
               <button
@@ -188,45 +212,47 @@ export function PixPaymentModal({
                 <span>Pagamento Seguro Mercado Pago</span>
               </div>
               <h3 className="text-xl font-black" style={{ color: 'var(--color-text)' }}>
-                Pagar pelo Serviço
+                {isNoShowFee ? 'Taxa de Deslocamento' : 'Pagar pelo Serviço'}
               </h3>
               <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
-                Escolha pagar via Pix instantâneo ou Cartão de Crédito / Débito
+                {isNoShowFee ? 'Pague via Pix instantâneo' : 'Escolha pagar via Pix instantâneo ou Cartão de Crédito / Débito'}
               </p>
             </div>
 
-            {/* Abas de Seleção: Pix ou Cartão */}
-            <div
-              className="grid grid-cols-2 gap-2 p-1 rounded-2xl mb-4 text-xs font-bold"
-              style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}
-            >
-              <button
-                type="button"
-                onClick={() => setActiveTab('pix')}
-                className="py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                style={{
-                  background: activeTab === 'pix' ? 'var(--color-primary-soft)' : 'transparent',
-                  color: activeTab === 'pix' ? 'var(--color-accent)' : 'var(--color-text-muted)',
-                  boxShadow: activeTab === 'pix' ? '0 1px 4px rgba(0,0,0,0.3)' : 'none',
-                }}
+            {/* Abas de Seleção: Pix ou Cartão — taxa de no-show é só Pix */}
+            {!isNoShowFee && (
+              <div
+                className="grid grid-cols-2 gap-2 p-1 rounded-2xl mb-4 text-xs font-bold"
+                style={{ background: 'var(--color-surface-alt)', border: '1px solid var(--color-border)' }}
               >
-                <QrCode size={15} />
-                <span>Pix Instantâneo</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('card')}
-                className="py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                style={{
-                  background: activeTab === 'card' ? 'var(--color-primary-soft)' : 'transparent',
-                  color: activeTab === 'card' ? 'var(--color-accent)' : 'var(--color-text-muted)',
-                  boxShadow: activeTab === 'card' ? '0 1px 4px rgba(0,0,0,0.3)' : 'none',
-                }}
-              >
-                <CreditCard size={15} />
-                <span>Cartão (Crédito/Débito)</span>
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('pix')}
+                  className="py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  style={{
+                    background: activeTab === 'pix' ? 'var(--color-primary-soft)' : 'transparent',
+                    color: activeTab === 'pix' ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                    boxShadow: activeTab === 'pix' ? '0 1px 4px rgba(0,0,0,0.3)' : 'none',
+                  }}
+                >
+                  <QrCode size={15} />
+                  <span>Pix Instantâneo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('card')}
+                  className="py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  style={{
+                    background: activeTab === 'card' ? 'var(--color-primary-soft)' : 'transparent',
+                    color: activeTab === 'card' ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                    boxShadow: activeTab === 'card' ? '0 1px 4px rgba(0,0,0,0.3)' : 'none',
+                  }}
+                >
+                  <CreditCard size={15} />
+                  <span>Cartão (Crédito/Débito)</span>
+                </button>
+              </div>
+            )}
 
             {/* Resumo do Valor */}
             <div

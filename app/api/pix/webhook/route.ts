@@ -150,8 +150,9 @@ export async function POST(request: NextRequest) {
     const supabase = await createServiceClient()
 
     let callIdToUpdate: string | null = null
+    let matchType: 'service' | 'no_show_fee' | null = null
 
-    // 1. Tenta buscar por pix_payment_id
+    // 1. Tenta buscar por pix_payment_id (cobrança normal de serviço)
     const { data: callByPix } = await supabase
       .from('service_calls')
       .select('id')
@@ -160,6 +161,7 @@ export async function POST(request: NextRequest) {
 
     if (callByPix?.id) {
       callIdToUpdate = callByPix.id
+      matchType = 'service'
     } else if (payment.external_reference) {
       // 2. Tenta buscar por external_reference (Cartão de Crédito/Débito via Checkout Pro)
       const { data: callByRef } = await supabase
@@ -170,39 +172,59 @@ export async function POST(request: NextRequest) {
 
       if (callByRef?.id) {
         callIdToUpdate = callByRef.id
+        matchType = 'service'
       }
     }
 
+    // 3. Tenta buscar por no_show_fee_payment_id (taxa de deslocamento — campo
+    // próprio, ver migration 20260917_no_show_fee.sql, nunca se mistura com
+    // o pagamento do serviço em si)
     if (!callIdToUpdate) {
+      const { data: callByNoShowFee } = await supabase
+        .from('service_calls')
+        .select('id')
+        .eq('no_show_fee_payment_id', String(paymentId))
+        .maybeSingle()
+
+      if (callByNoShowFee?.id) {
+        callIdToUpdate = callByNoShowFee.id
+        matchType = 'no_show_fee'
+      }
+    }
+
+    if (!callIdToUpdate || !matchType) {
       console.warn('[Webhook] Chamado não encontrado para payment_id:', paymentId, 'external_reference:', payment.external_reference)
       return NextResponse.json({ received: true })
     }
 
     // Idempotência: o Mercado Pago pode (e vai, mais cedo ou mais tarde) reentregar a
-    // mesma notificação. A condição `payment_status = 'pending'` faz da escrita um
+    // mesma notificação. A condição de igualdade no status atual faz da escrita um
     // compare-and-swap — a 2ª entrega do mesmo payment_id não encontra nenhuma linha
     // pra atualizar e não faz nada, em vez de reprocessar a confirmação. Também não
     // grava mais `completed_at` aqui: esse campo já é responsabilidade exclusiva do
     // prestador ao concluir o serviço (app/chamado/[callId]/page.tsx) — ele alimenta a
     // data de início da garantia de 7 dias no Comprovante de Manutenção, e deixar o
     // webhook sobrescrevê-lo a cada nova entrega empurrava a garantia pra frente.
-    const { data: updatedCall } = await supabase
-      .from('service_calls')
-      .update({
-        payment_status: 'paid',
-        pix_payment_id: String(paymentId),
-      })
-      .eq('id', callIdToUpdate)
-      .eq('payment_status', 'pending')
-      .select('id')
-      .maybeSingle()
+    const updateQuery = matchType === 'no_show_fee'
+      ? supabase
+          .from('service_calls')
+          .update({ no_show_fee_status: 'paid', no_show_fee_payment_id: String(paymentId) })
+          .eq('id', callIdToUpdate)
+          .eq('no_show_fee_status', 'pending')
+      : supabase
+          .from('service_calls')
+          .update({ payment_status: 'paid', pix_payment_id: String(paymentId) })
+          .eq('id', callIdToUpdate)
+          .eq('payment_status', 'pending')
+
+    const { data: updatedCall } = await updateQuery.select('id').maybeSingle()
 
     if (!updatedCall) {
-      console.log(`[Webhook] Notificação duplicada ignorada — chamado ${callIdToUpdate} já estava com payment_status != 'pending'`)
+      console.log(`[Webhook] Notificação duplicada ignorada — chamado ${callIdToUpdate} (${matchType}) já não estava mais pendente`)
       return NextResponse.json({ received: true })
     }
 
-    console.log(`[Webhook] Pagamento confirmado com sucesso para chamado ${callIdToUpdate}`)
+    console.log(`[Webhook] Pagamento confirmado com sucesso para chamado ${callIdToUpdate} (${matchType})`)
     return NextResponse.json({ received: true })
   } catch (error) {
     console.error('[API] /api/pix/webhook:', error)

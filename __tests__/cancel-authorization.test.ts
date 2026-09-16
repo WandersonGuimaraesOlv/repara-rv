@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { evaluateCancelAuthorization, resolveCancelReasonEnum } from '../lib/cancel-authorization'
+import { evaluateCancelAuthorization, resolveCancelReasonEnum, shouldChargeNoShowFee } from '../lib/cancel-authorization'
 
 describe('evaluateCancelAuthorization — autorização de cancelamento (app/api/calls/cancel)', () => {
   const baseCall = { client_id: 'client-1', provider_id: 'provider-1', status: 'searching' }
@@ -81,5 +81,21 @@ describe('resolveCancelReasonEnum — deriva o valor da coluna ENUM cancel_reaso
       expect(resolveCancelReasonEnum(value, false)).toBe(value)
       expect(resolveCancelReasonEnum(value, true)).toBe(value)
     }
+  })
+})
+
+describe('shouldChargeNoShowFee — gatilho da taxa de deslocamento de R$25 (já prometida em /termos)', () => {
+  it('cobra quando o prestador cancela com motivo provider_absent', () => {
+    expect(shouldChargeNoShowFee('provider_absent', true)).toBe(true)
+  })
+
+  it('não cobra quando o prestador cancela por qualquer outro motivo', () => {
+    for (const reason of ['wrong_address', 'technical_issue', 'no_provider_found', 'other', 'client_request'] as const) {
+      expect(shouldChargeNoShowFee(reason, true)).toBe(false)
+    }
+  })
+
+  it('nunca cobra quando é o cliente quem cancela, mesmo que o motivo (por acaso) seja provider_absent', () => {
+    expect(shouldChargeNoShowFee('provider_absent', false)).toBe(false)
   })
 })

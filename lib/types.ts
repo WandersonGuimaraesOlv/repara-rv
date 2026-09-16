@@ -103,6 +103,11 @@ export interface ServiceCall {
   updated_at?: string | null
   cancel_metadata?: Record<string, any>
   neighborhood?: string | null
+  // Taxa de deslocamento (no-show, R$25) — ver migration 20260917_no_show_fee.sql
+  no_show_fee_status?: 'pending' | 'paid' | null
+  no_show_fee_payment_id?: string | null
+  no_show_fee_pix_qr_code?: string | null
+  no_show_fee_pix_copy_paste?: string | null
   // Joins opcionais
   service?: QuickService
   client?: Profile

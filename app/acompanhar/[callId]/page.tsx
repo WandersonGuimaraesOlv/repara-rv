@@ -24,6 +24,7 @@ export default function AcompanharPage() {
   const [call, setCall] = useState<ServiceCall | null>(null)
   const [loading, setLoading] = useState(true)
   const [showPix, setShowPix] = useState(false)
+  const [showNoShowFeePix, setShowNoShowFeePix] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
   const [showComprovante, setShowComprovante] = useState(false)
@@ -392,6 +393,39 @@ export default function AcompanharPage() {
         </div>
       )}
 
+      {/* Taxa de deslocamento pendente (no-show — prestador cancelou por cliente ausente) */}
+      {call.status === 'cancelled' && call.cancel_reason === 'provider_absent' && call.no_show_fee_status && (
+        <div
+          className="card p-4 mb-4"
+          style={{ background: 'rgba(237, 198, 107, 0.08)', borderColor: 'rgba(237, 198, 107, 0.25)' }}
+        >
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={22} className="shrink-0 mt-0.5" style={{ color: 'var(--color-warning)' }} />
+            <div className="flex-1">
+              <p className="text-sm font-bold" style={{ color: 'var(--color-warning)' }}>
+                {call.no_show_fee_status === 'paid' ? 'Taxa de Deslocamento Quitada' : 'Taxa de Deslocamento Pendente'}
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+                {call.no_show_fee_status === 'paid' ? (
+                  <>A taxa de <strong style={{ color: 'var(--color-text)' }}>{formatCurrency(25)}</strong> por ausência no local foi paga. Obrigado.</>
+                ) : (
+                  <>O técnico esperou no local e você não atendeu. Conforme os <Link href="/termos" target="_blank" className="underline">Termos de Uso</Link>, aplica-se uma taxa de deslocamento de <strong style={{ color: 'var(--color-text)' }}>{formatCurrency(25)}</strong>.</>
+                )}
+              </p>
+              {call.no_show_fee_status === 'pending' && (
+                <button
+                  id="btn-pay-no-show-fee"
+                  onClick={() => setShowNoShowFeePix(true)}
+                  className="btn-primary mt-3 py-2.5 text-xs"
+                >
+                  <CreditCard size={15} /> Pagar via Pix
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Voltar ao início (apenas após cancelamento explícito) */}
       {call.status === 'cancelled' && (
         <div className="pb-6">
@@ -438,6 +472,19 @@ export default function AcompanharPage() {
           checkoutUrl={call.cancel_note}
           callId={callId}
           onClose={() => setShowPix(false)}
+        />
+      )}
+
+      {/* Modal de pagamento da taxa de deslocamento (no-show, R$25 — só Pix) */}
+      {showNoShowFeePix && (
+        <PixPaymentModal
+          mode="no_show_fee"
+          amount={25}
+          providerCut={0}
+          pixQrCode={call.no_show_fee_pix_qr_code}
+          pixCopyPaste={call.no_show_fee_pix_copy_paste}
+          callId={callId}
+          onClose={() => setShowNoShowFeePix(false)}
         />
       )}
     </div>

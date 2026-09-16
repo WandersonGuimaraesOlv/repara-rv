@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { evaluateCancelAuthorization, resolveCancelReasonEnum } from '@/lib/cancel-authorization'
+import { evaluateCancelAuthorization, resolveCancelReasonEnum, shouldChargeNoShowFee } from '@/lib/cancel-authorization'
 
 // `reason` aceita qualquer string, não um enum fixo — ver o comentário em
 // lib/cancel-authorization.ts (resolveCancelReasonEnum) pro porquê: o cliente
@@ -73,20 +73,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: authResult.error }, { status: authResult.status })
     }
 
-    const { isClient } = authResult
+    const { isClient, isProvider } = authResult
+    const resolvedReason = resolveCancelReasonEnum(reason, isClient)
+
+    // Taxa de deslocamento (R$25, já prometida em /termos) — só quando o
+    // PRESTADOR cancela por cliente ausente no portão. Ver
+    // lib/cancel-authorization.ts::shouldChargeNoShowFee.
+    const chargeNoShowFee = shouldChargeNoShowFee(resolvedReason, isProvider)
 
     // 3. Atualiza o chamado com auditoria completa
     const { error: updateError } = await supabaseAdmin
       .from('service_calls')
       .update({
         status: 'cancelled',
-        cancel_reason: resolveCancelReasonEnum(reason, isClient),
+        cancel_reason: resolvedReason,
         cancellation_reason: effectiveReason,
         cancel_note: note ?? null,
         cancellation_stage: call.status,
         cancelled_by: user?.id ?? call.client_id,
         cancelled_by_role: isClient ? 'client' : 'provider',
         cancelled_at: new Date().toISOString(),
+        ...(chargeNoShowFee ? { no_show_fee_status: 'pending' } : {}),
       })
       .eq('id', call_id)
 
@@ -95,7 +102,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Erro ao cancelar chamado' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, cancellation_reason: effectiveReason })
+    return NextResponse.json({
+      success: true,
+      cancellation_reason: effectiveReason,
+      no_show_fee_pending: chargeNoShowFee,
+    })
   } catch (error) {
     console.error('[API] /api/calls/cancel:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
