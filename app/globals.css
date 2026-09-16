@@ -438,6 +438,50 @@ body {
   border-radius: var(--radius-md);
 }
 
+/* ──────────────────────────────────────────────────────────
+   CARROSSEL ANIMADO CONTÍNUO (MARQUEE) — Direita para Esquerda
+   ────────────────────────────────────────────────────────── */
+@keyframes marquee-scroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+.animate-marquee-rtl {
+  display: flex;
+  flex-shrink: 0;
+  animation: marquee-scroll 32s linear infinite;
+  will-change: transform;
+}
+
+.marquee-container:hover .animate-marquee-rtl,
+.marquee-container:focus-within .animate-marquee-rtl,
+.marquee-container:active .animate-marquee-rtl,
+.animate-marquee-rtl:hover {
+  animation-play-state: paused !important;
+}
+
+/* Máscara de fade nas extremidades para transição suave */
+.marquee-mask {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 4%,
+    black 96%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 4%,
+    black 96%,
+    transparent 100%
+  );
+}
+
 /* Reduz animações se o usuário preferir */
 @media (prefers-reduced-motion: reduce) {
   .animate-pulse-ring::before,
@@ -445,8 +489,13 @@ body {
   .animate-slide-up,
   .animate-fade-in,
   .animate-bounce-cta,
-  .skeleton {
+  .skeleton,
+  .animate-marquee-rtl {
     animation: none;
+  }
+  .marquee-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

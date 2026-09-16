@@ -86,6 +86,15 @@ const SERVICE_ICONS: Record<string, React.ComponentType<{ size?: number; classNa
   lock: Lock,
 }
 
+const TRUST_BADGES = [
+  { icon: ShieldCheck, title: 'Cadastro Verificado', color: 'var(--color-success)' },
+  { icon: Zap, title: 'Chegada em 30-45 min', color: 'var(--color-accent)' },
+  { icon: Lock, title: 'Pagamento Seguro', color: 'var(--color-info)' },
+  { icon: Sparkles, title: 'Garantia de 7 Dias', color: 'var(--color-primary)' },
+  { icon: CheckCircle2, title: 'Profissionais de Rio Verde', color: 'var(--color-success)' },
+  { icon: Shield, title: 'Preço Fixo Sem Surpresas', color: 'var(--color-accent)' },
+]
+
 // Map status to display config using CSS variable colors
 function getStatusConfig(status: string) {
   switch (status) {
@@ -702,22 +711,43 @@ export default function TriiderClientHomePage() {
           ))}
         </div>
 
-        {/* Selos de confiança — chips compactos em scroll horizontal */}
-        <div className="flex gap-2 overflow-x-auto mt-4 pb-1 -mx-4 px-4 sm:-mx-6 sm:px-6 [scrollbar-width:none]">
-          {[
-            { icon: ShieldCheck, title: 'Cadastro Verificado', color: 'var(--color-success)' },
-            { icon: Zap, title: 'Chegada em 30-45 min', color: 'var(--color-accent)' },
-            { icon: Lock, title: 'Pagamento Seguro', color: 'var(--color-info)' },
-            { icon: Sparkles, title: 'Garantia de 7 Dias', color: 'var(--color-primary)' },
-          ].map(({ icon: Icon, title, color }) => (
-            <div
-              key={title}
-              className="flex items-center gap-2 shrink-0 px-3.5 py-2 rounded-full glass-panel"
-            >
-              <Icon size={14} style={{ color }} className="shrink-0" />
-              <span className="text-xs font-bold whitespace-nowrap" style={{ color: 'var(--color-text)' }}>{title}</span>
+        {/* Selos de confiança — carrossel animado contínuo da direita para a esquerda */}
+        <div
+          className="marquee-container marquee-mask group relative w-full overflow-hidden mt-4 py-1 -mx-4 px-4 sm:-mx-6 sm:px-6 select-none"
+          role="region"
+          aria-label="Selos de confiança e garantias"
+        >
+          <div className="flex w-max">
+            {/* Faixa 1 */}
+            <div className="animate-marquee-rtl flex items-center gap-2.5 shrink-0 pr-2.5 group-hover:[animation-play-state:paused] group-active:[animation-play-state:paused] hover:[animation-play-state:paused]">
+              {[...TRUST_BADGES, ...TRUST_BADGES].map(({ icon: Icon, title, color }, idx) => (
+                <div
+                  key={`t1-${title}-${idx}`}
+                  className="flex items-center gap-2 shrink-0 px-3.5 py-2 rounded-full glass-panel transition-all duration-200 hover:scale-105 hover:border-[var(--color-primary)] cursor-default shadow-sm"
+                >
+                  <Icon size={14} style={{ color }} className="shrink-0" />
+                  <span className="text-xs font-bold whitespace-nowrap" style={{ color: 'var(--color-text)' }}>
+                    {title}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
+
+            {/* Faixa 2 — Cópia idêntica para transição contínua infinita sem saltos */}
+            <div className="animate-marquee-rtl flex items-center gap-2.5 shrink-0 pr-2.5 group-hover:[animation-play-state:paused] group-active:[animation-play-state:paused] hover:[animation-play-state:paused]" aria-hidden="true">
+              {[...TRUST_BADGES, ...TRUST_BADGES].map(({ icon: Icon, title, color }, idx) => (
+                <div
+                  key={`t2-${title}-${idx}`}
+                  className="flex items-center gap-2 shrink-0 px-3.5 py-2 rounded-full glass-panel transition-all duration-200 hover:scale-105 hover:border-[var(--color-primary)] cursor-default shadow-sm"
+                >
+                  <Icon size={14} style={{ color }} className="shrink-0" />
+                  <span className="text-xs font-bold whitespace-nowrap" style={{ color: 'var(--color-text)' }}>
+                    {title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
       </section>
