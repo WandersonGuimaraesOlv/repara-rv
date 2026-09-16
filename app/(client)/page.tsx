@@ -190,13 +190,18 @@ export default function TriiderClientHomePage() {
             localStorage.setItem('repara_user', JSON.stringify(profile))
           } catch {}
         } else {
-          const fallbackUser = {
-            id: user.id,
-            full_name: user.user_metadata?.full_name || 'Usuário',
-            phone: user.phone || '',
-            role: 'client',
-          }
-          setCurrentUser(fallbackUser)
+          // Achado (16/09/2026): sessão de auth válida mas sem linha
+          // correspondente em profiles (ex: usuário navegou pra fora do
+          // /onboarding antes de terminar de completar o cadastro) — isto
+          // fabricava um "usuário fantasma" genérico ("Usuário", sem
+          // telefone real) e mostrava como se estivesse logado de verdade.
+          // Motivo do relato "consegui logar sem criar conta": exatamente
+          // essa tela. Corrigido tratando como não logado — mesma regra
+          // já usada em components/site-header.tsx.
+          setCurrentUser(null)
+          try {
+            localStorage.removeItem('repara_user')
+          } catch {}
         }
       } else {
         setCurrentUser(null)

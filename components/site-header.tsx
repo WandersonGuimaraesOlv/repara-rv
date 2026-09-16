@@ -71,10 +71,21 @@ export function SiteHeader({
             if (data) {
               setCurrentUser(data)
               try { localStorage.setItem('repara_user', JSON.stringify(data)) } catch {}
+            } else {
+              // Achado (16/09/2026): sessão de auth válida mas sem linha
+              // correspondente em profiles (cadastro que nunca completou o
+              // upsert, por ex.) — antes disso o header simplesmente não
+              // fazia nada aqui, deixando o valor de localStorage (que pode
+              // estar visivelmente errado/genérico, "Usuário" sem nome) preso
+              // pra sempre, reaparecendo a cada carregamento novo da página.
+              // Trata como não logado de verdade e limpa o cache.
+              setCurrentUser(null)
+              try { localStorage.removeItem('repara_user') } catch {}
             }
           })
       } else {
         setCurrentUser(null)
+        try { localStorage.removeItem('repara_user') } catch {}
       }
     })
 
