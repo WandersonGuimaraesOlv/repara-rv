@@ -281,6 +281,7 @@ export type Database = {
           cpf_or_cnpj: string | null
           created_at: string | null
           document_number: string | null
+          email: string | null
           full_name: string
           id: string
           is_blocked: boolean | null
@@ -301,6 +302,7 @@ export type Database = {
           cpf_or_cnpj?: string | null
           created_at?: string | null
           document_number?: string | null
+          email?: string | null
           full_name: string
           id: string
           is_blocked?: boolean | null
@@ -321,6 +323,7 @@ export type Database = {
           cpf_or_cnpj?: string | null
           created_at?: string | null
           document_number?: string | null
+          email?: string | null
           full_name?: string
           id?: string
           is_blocked?: boolean | null

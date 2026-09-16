@@ -7,6 +7,9 @@ import { isValidCpfOrCnpj, isValidPixKey, isWeakPin } from '@/lib/validations/br
 const registerSchema = z
   .object({
     fullName: z.string().trim().min(3, 'Digite seu nome completo (mínimo 3 caracteres)'),
+    // E-mail de contato — não é usado pra login (isso continua sendo celular
+    // + PIN), só cadastrado como dado de contato/recuperação futura.
+    email: z.string().trim().min(1, 'E-mail é obrigatório').email('Digite um e-mail válido'),
     // Aceita qualquer formatação (com máscara, espaços, etc.) — os dígitos são
     // extraídos e validados a seguir, igual ao comportamento anterior.
     phone: z.string().min(1, 'Celular é obrigatório'),
@@ -70,7 +73,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const { fullName, cleanPhone, cleanPin, cleanCep, role, cpfOrCnpj, pixKey, pixKeyType, selfDeclaration, neighborhood } = parsed.data
+    const { fullName, email: contactEmail, cleanPhone, cleanPin, cleanCep, role, cpfOrCnpj, pixKey, pixKeyType, selfDeclaration, neighborhood } = parsed.data
 
     const cleanFullName = fullName
     const validRole = role
@@ -131,6 +134,7 @@ export async function POST(req: Request) {
       self_declaration_signed: validRole === 'provider' ? Boolean(selfDeclaration) : true,
       cep: cleanCep,
       neighborhood: neighborhood,
+      email: contactEmail,
     }
 
     let { error: profileError } = await supabaseAdmin
@@ -144,6 +148,7 @@ export async function POST(req: Request) {
       delete profilePayload.self_declaration_signed
       delete profilePayload.cep
       delete profilePayload.neighborhood
+      delete profilePayload.email
       const retry = await supabaseAdmin.from('profiles').upsert(profilePayload)
       profileError = retry.error
     }
