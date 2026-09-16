@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { User, Phone, Lock, Eye, EyeOff, ShieldCheck, Wrench, ArrowRight, CheckCircle2, MapPin, AlertCircle } from 'lucide-react'
+import { User, Phone, Lock, Eye, EyeOff, ShieldCheck, Wrench, ArrowRight, CheckCircle2, MapPin, AlertCircle, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import { Logo } from '@/components/logo'
 import { normalizeBrazilianPhone } from '@/lib/utils'
@@ -16,6 +16,7 @@ export default function CadastroPage() {
 
   const [role, setRole] = useState<'client' | 'provider'>('client')
   const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [pin, setPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
@@ -96,6 +97,12 @@ export default function CadastroPage() {
       return
     }
 
+    const cleanEmail = email.trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      toast.error('Digite um e-mail válido')
+      return
+    }
+
     if (phone.length < 10) {
       toast.error('Digite um telefone celular válido com DDD (10 ou 11 dígitos)')
       return
@@ -168,6 +175,7 @@ export default function CadastroPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fullName: cleanFullName,
+          email: cleanEmail,
           phone,
           pin,
           role,
@@ -340,6 +348,24 @@ export default function CadastroPage() {
                 required
                 autoFocus
                 autoComplete="name"
+              />
+            </div>
+          </div>
+
+          {/* E-mail */}
+          <div>
+            <label htmlFor="cadastro-email" className="label">E-mail</label>
+            <div className="relative flex items-center">
+              <Mail size={17} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
+              <input
+                id="cadastro-email"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                className="input pl-11"
+                required
+                autoComplete="email"
               />
             </div>
           </div>
@@ -563,7 +589,7 @@ export default function CadastroPage() {
           <button
             type="submit"
             id="btn-submit-cadastro"
-            disabled={loading || phone.length < 10 || pin.length < 4 || !fullName.trim() || !termsAccepted || cep.length !== 8 || loadingCep || !neighborhood}
+            disabled={loading || phone.length < 10 || pin.length < 4 || !fullName.trim() || !email.trim() || !termsAccepted || cep.length !== 8 || loadingCep || !neighborhood}
             className="btn-primary mt-2"
           >
             {loading ? (
