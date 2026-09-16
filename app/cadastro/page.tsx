@@ -138,15 +138,16 @@ export default function CadastroPage() {
       return
     }
 
+    if (!cpfOrCnpj.trim()) {
+      toast.error('Informe seu CPF para verificação cadastral')
+      return
+    }
+    if (!isValidCpfOrCnpj(cpfOrCnpj)) {
+      toast.error('CPF inválido — confira os dígitos informados')
+      return
+    }
+
     if (role === 'provider') {
-      if (!cpfOrCnpj.trim()) {
-        toast.error('Informe seu CPF ou CNPJ MEI para verificação cadastral')
-        return
-      }
-      if (!isValidCpfOrCnpj(cpfOrCnpj)) {
-        toast.error('CPF ou CNPJ inválido — confira os dígitos informados')
-        return
-      }
       if (!pixKey.trim()) {
         toast.error('Informe sua chave Pix para receber os repasses dos atendimentos')
         return
@@ -389,6 +390,30 @@ export default function CadastroPage() {
             </div>
           </div>
 
+          {/* CPF ou CNPJ — obrigatório pra todo mundo (achado 16/09/2026: só
+              era pedido/validado pra prestador, cliente nunca precisava
+              informar, nem no frontend nem na rota /api/auth/register) */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label htmlFor="cadastro-cpf" className="label mb-0">
+                CPF {role === 'provider' && 'ou CNPJ MEI'}
+              </label>
+              <span className="text-[10px] font-medium" style={{ color: 'var(--color-text-subtle)' }}>
+                Pessoa Física aceita
+              </span>
+            </div>
+            <input
+              id="cadastro-cpf"
+              type="text"
+              value={cpfOrCnpj}
+              onChange={e => setCpfOrCnpj(e.target.value.replace(/\D/g, '').slice(0, 14))}
+              placeholder="000.000.000-00"
+              className="input font-mono"
+              inputMode="numeric"
+              required
+            />
+          </div>
+
           {/* CEP e Bairro */}
           <div>
             <label htmlFor="cadastro-cep" className="label">
@@ -498,20 +523,6 @@ export default function CadastroPage() {
               <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider" style={{ color: 'var(--color-primary)' }}>
                 <ShieldCheck size={16} />
                 <span>Dados do Profissional & Repasses Pix</span>
-              </div>
-
-              {/* CPF ou CNPJ */}
-              <div>
-                <label htmlFor="cadastro-cpf" className="label">CPF ou CNPJ MEI</label>
-                <input
-                  id="cadastro-cpf"
-                  type="text"
-                  value={cpfOrCnpj}
-                  onChange={e => setCpfOrCnpj(e.target.value)}
-                  placeholder="000.000.000-00"
-                  className="input text-sm"
-                  required={role === 'provider'}
-                />
               </div>
 
               {/* Chave Pix */}

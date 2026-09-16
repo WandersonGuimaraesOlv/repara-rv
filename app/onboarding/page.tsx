@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { UserRole } from '@/lib/types'
 import { User, Wrench, ChevronRight, Lock } from 'lucide-react'
 import { toast } from 'sonner'
+import { isValidCpfOrCnpj } from '@/lib/validations/br-documents'
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -60,6 +61,7 @@ export default function OnboardingPage() {
     if (!fullName.trim()) { toast.error('Digite seu nome completo'); return }
     if (!phone.trim()) { toast.error('Digite seu telefone celular'); return }
     if (!cpfOrCnpj.trim()) { toast.error('Informe seu CPF ou CNPJ MEI'); return }
+    if (!isValidCpfOrCnpj(cpfOrCnpj)) { toast.error('CPF ou CNPJ inválido — confira os dígitos informados'); return }
     if (!termsAccepted) { toast.error('Você deve aceitar os Termos de Uso e Política de Privacidade.'); return }
     if (role === 'provider' && !pixKey.trim()) { toast.error('Informe sua chave Pix para receber seus pagamentos.'); return }
     if (role === 'provider' && !selfDeclaration) {

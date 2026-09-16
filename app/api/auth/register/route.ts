@@ -52,7 +52,11 @@ const registerSchema = z
     message: 'Profissionais precisam informar a chave Pix para receber os repasses de serviços',
     path: ['pixKey'],
   })
-  .refine((data) => data.role !== 'provider' || isValidCpfOrCnpj(data.cpfOrCnpj || ''), {
+  // Achado (16/09/2026): CPF só era exigido/validado pra prestador — cliente
+  // conseguia se cadastrar sem informar nenhum documento, tanto pelo
+  // frontend (app/cadastro/page.tsx) quanto direto por esta rota. Agora vale
+  // pros dois papéis.
+  .refine((data) => isValidCpfOrCnpj(data.cpfOrCnpj || ''), {
     message: 'CPF ou CNPJ inválido — confira os dígitos informados',
     path: ['cpfOrCnpj'],
   })
