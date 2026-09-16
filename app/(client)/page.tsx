@@ -317,7 +317,7 @@ export default function TriiderClientHomePage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col w-full max-w-full overflow-x-hidden"
+      className="min-h-screen flex flex-col w-full max-w-full overflow-x-hidden pb-20 md:pb-0"
       style={{ background: 'var(--color-bg)', color: 'var(--color-text)' }}
     >
 
@@ -1061,7 +1061,7 @@ export default function TriiderClientHomePage() {
           8. BARRA DE NAVEGAÇÃO INFERIOR — MOBILE
           ──────────────────────────────────────────────────────── */}
       <nav
-        className="md:hidden sticky bottom-0 z-40 w-full"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 w-full"
         style={{
           background: 'rgba(20, 38, 34, 0.97)',
           borderTop: '1px solid var(--color-border)',
