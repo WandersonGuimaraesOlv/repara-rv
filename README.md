@@ -75,6 +75,7 @@ cp .dev.vars.example .dev.vars     # segredos (Supabase service role, Mercado Pa
 Preencha com suas credenciais do Supabase e Mercado Pago. **Segredos nunca vão no
 `.env.local`**: no deploy, o OpenNext copia todo `.env*` pra dentro do código do Worker.
 Em produção os segredos ficam nos secrets do Cloudflare (`npx wrangler secret put NOME`).
+O `npm run dev` já carrega o `.dev.vars` sozinho (via `scripts/dev.mjs`).
 
 ### 3. Rodar a suíte de testes (Garantia de Qualidade - SQA)
 ```bash
