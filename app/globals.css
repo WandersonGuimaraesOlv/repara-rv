@@ -290,26 +290,31 @@ body {
 }
 
 /* Input */
-.input {
-  width: 100%;
-  padding: 14px 18px;
-  background: var(--color-surface-alt);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  color: var(--color-text);
-  font-size: 0.95rem;
-  font-family: inherit;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  outline: none;
-}
+/* Dentro de @layer components para que utilitários do Tailwind (pl-11, pr-11 nos
+   campos com ícone) ganhem do padding padrão. Fora de camada, esta regra vencia
+   os utilitários e o ícone ficava por cima do placeholder/texto digitado. */
+@layer components {
+  .input {
+    width: 100%;
+    padding: 14px 18px;
+    background: var(--color-surface-alt);
+    border: 1.5px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    color: var(--color-text);
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
 
-.input:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-glow);
-}
+  .input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-glow);
+  }
 
-.input::placeholder {
-  color: var(--color-text-subtle);
+  .input::placeholder {
+    color: var(--color-text-subtle);
+  }
 }
 
 /* Label */
