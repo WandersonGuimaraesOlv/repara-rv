@@ -7,10 +7,17 @@ const pinSchema = z
   .object({
     phone: z.string().min(1, 'Celular é obrigatório'),
     pin: z.string().min(1, 'PIN é obrigatório'),
+    // Achado de 21/09/2026 (teste do push, 3 vezes seguidas): errar um dígito
+    // do celular criava uma conta nova em branco sem nenhum aviso — a pessoa
+    // caía em "Complete seu Perfil" achando que era outro erro, e ainda ficava
+    // um usuário de Auth órfão no banco. Agora número desconhecido só vira
+    // conta se o cliente confirmar explicitamente (confirmNewAccount).
+    confirmNewAccount: z.boolean().optional(),
   })
   .transform((data) => ({
     cleanPhone: normalizeBrazilianPhone(data.phone),
     cleanPin: data.pin.trim(),
+    confirmNewAccount: data.confirmNewAccount === true,
   }))
   .refine((data) => data.cleanPhone.length >= 10 && data.cleanPhone.length <= 11, {
     message: 'Digite um celular válido com DDD (10 ou 11 dígitos)',
@@ -38,7 +45,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const { cleanPhone, cleanPin } = parsed.data
+    const { cleanPhone, cleanPin, confirmNewAccount } = parsed.data
 
     const email = `${cleanPhone}@repararv.com`
     const password = `pin_${cleanPin}`
@@ -63,6 +70,12 @@ export async function POST(req: Request) {
         email,
         password,
       })
+    }
+
+    // Número sem cadastro: não cria nada até o cliente confirmar (evita conta
+    // em branco por erro de digitação). Sem efeito colateral nesta resposta.
+    if (!confirmNewAccount) {
+      return NextResponse.json({ needsConfirmation: true, phone: cleanPhone })
     }
 
     // Cria novo usuário de forma imediata (sem cobrança de SMS)

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Phone, Lock, ArrowRight, Eye, EyeOff, ShieldCheck, Lightbulb } from 'lucide-react'
+import { Phone, Lock, ArrowRight, Eye, EyeOff, ShieldCheck, Lightbulb, AlertTriangle, UserPlus, PencilLine } from 'lucide-react'
 import { toast } from 'sonner'
 import { Logo } from '@/components/logo'
 import { PwaInstallButton } from '@/components/pwa-install-button'
@@ -18,8 +18,12 @@ export default function LoginPage() {
   const [pin, setPin] = useState('')
   const [showPin, setShowPin] = useState(false)
   const [loading, setLoading] = useState(false)
+  // Número que ainda não tem conta: guarda os dígitos até a pessoa confirmar
+  // que quer criar uma conta nova com eles (ou corrigir o número).
+  const [pendingNewPhone, setPendingNewPhone] = useState<string | null>(null)
 
   const handlePhoneChange = (value: string) => {
+    setPendingNewPhone(null)
     setPhone(normalizeBrazilianPhone(value))
   }
 
@@ -32,7 +36,10 @@ export default function LoginPage() {
 
   const handlePinLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    await submitLogin(false)
+  }
 
+  const submitLogin = async (confirmNewAccount: boolean) => {
     if (phone.length < 10) {
       toast.error('Digite um telefone celular válido com DDD (10 ou 11 dígitos)')
       return
@@ -50,10 +57,16 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/pin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, pin }),
+        body: JSON.stringify({ phone, pin, ...(confirmNewAccount ? { confirmNewAccount: true } : {}) }),
       })
 
       const json = await res.json()
+
+      if (json.needsConfirmation) {
+        setLoading(false)
+        setPendingNewPhone(json.phone || phone)
+        return
+      }
 
       if (!res.ok || json.error) {
         setLoading(false)
@@ -214,7 +227,7 @@ export default function LoginPage() {
                 id="input-pin"
                 type={showPin ? 'text' : 'password'}
                 value={pin}
-                onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onChange={e => { setPendingNewPhone(null); setPin(e.target.value.replace(/\D/g, '').slice(0, 6)) }}
                 placeholder="Ex: 1234"
                 className="input pl-11 tracking-widest font-mono"
                 inputMode="numeric"
@@ -240,22 +253,64 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Botão de Submissão */}
-          <button
-            type="submit"
-            id="btn-login-pin"
-            disabled={loading || phone.length < 10 || pin.length < 4}
-            className="btn-primary mt-2"
-          >
-            {loading ? (
-              <span>Autenticando...</span>
-            ) : (
-              <>
-                <span>Entrar no Repara RV</span>
-                <ArrowRight size={18} />
-              </>
-            )}
-          </button>
+          {pendingNewPhone ? (
+            <div
+              id="new-account-confirm"
+              role="alert"
+              className="rounded-2xl p-4 space-y-3"
+              style={{ background: 'rgba(237, 198, 107, 0.12)', border: '1px solid rgba(237, 198, 107, 0.3)' }}
+            >
+              <p className="flex items-start gap-2 text-sm font-bold" style={{ color: 'var(--color-warning)' }}>
+                <AlertTriangle size={16} strokeWidth={2} className="shrink-0 mt-0.5" aria-hidden="true" />
+                Esse número ainda não tem cadastro
+              </p>
+              <p className="text-xs leading-snug" style={{ color: 'var(--color-text-muted)' }}>
+                Você digitou <strong style={{ color: 'var(--color-text)' }}>{formatDisplayPhone(pendingNewPhone)}</strong>.
+                Se está certo, criamos uma conta nova com ele. Se você já tem conta, provavelmente errou um dígito.
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  id="btn-fix-phone"
+                  onClick={() => {
+                    setPendingNewPhone(null)
+                    document.getElementById('input-phone')?.focus()
+                  }}
+                  className="btn-secondary inline-flex items-center justify-center gap-2 flex-1"
+                >
+                  <PencilLine size={16} strokeWidth={2} aria-hidden="true" />
+                  Corrigir o número
+                </button>
+                <button
+                  type="button"
+                  id="btn-confirm-new-account"
+                  disabled={loading}
+                  onClick={() => submitLogin(true)}
+                  className="btn-primary inline-flex items-center justify-center gap-2 flex-1"
+                >
+                  <UserPlus size={16} strokeWidth={2} aria-hidden="true" />
+                  {loading ? 'Criando...' : 'Criar conta nova'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Botão de Submissão */
+            <button
+              type="submit"
+              id="btn-login-pin"
+              disabled={loading || phone.length < 10 || pin.length < 4}
+              className="btn-primary mt-2"
+            >
+              {loading ? (
+                <span>Autenticando...</span>
+              ) : (
+                <>
+                  <span>Entrar no Repara RV</span>
+                  <ArrowRight size={18} />
+                </>
+              )}
+            </button>
+          )}
         </form>
 
         {/* Link para cadastro */}
