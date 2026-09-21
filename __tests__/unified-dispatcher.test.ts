@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // unified-dispatcher.ts: pra qual dispatcher rotear por plataforma, como
 // agregar resultados em lote, e quando marcar um token pra remoção.
 vi.mock('@/lib/supabase/server', () => ({
+  createServiceClient: vi.fn(),
   createClient: vi.fn(),
 }))
 vi.mock('../modules/notifications/services/push-dispatcher', () => ({
@@ -15,7 +16,7 @@ vi.mock('../modules/notifications/services/fcm-dispatcher', () => ({
   sendFCM: vi.fn(),
 }))
 
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient, createClient } from '@/lib/supabase/server'
 import { sendWebPush } from '../modules/notifications/services/push-dispatcher'
 import { sendFCM } from '../modules/notifications/services/fcm-dispatcher'
 import { notifyProvider, notifyProviderBatch } from '../modules/notifications/services/unified-dispatcher'
@@ -71,12 +72,25 @@ describe('notifyProvider (modules/notifications/services/unified-dispatcher)', (
   beforeEach(() => {
     vi.mocked(sendWebPush).mockReset()
     vi.mocked(sendFCM).mockReset()
-    vi.mocked(createClient).mockReset()
+    vi.mocked(createServiceClient).mockReset()
+  })
+
+  it('lê os tokens com o cliente de SERVIÇO, nunca com o cliente da sessão (a RLS esconde tokens alheios)', async () => {
+    // Regressão: com createClient() o Worker de cron (sem sessão) rodava como `anon`
+    // e a RLS de device_tokens devolvia 0 linhas — nenhum push saía, sem erro.
+    const supa = makeSupabaseMock({ deviceTokens: [] })
+    vi.mocked(createServiceClient).mockResolvedValue(supa as any)
+    vi.mocked(createClient).mockClear()
+
+    await notifyProvider('user-1', payload, env)
+
+    expect(createServiceClient).toHaveBeenCalledTimes(1)
+    expect(createClient).not.toHaveBeenCalled()
   })
 
   it('sem nenhum token ativo, retorna zerado e não chama nenhum dispatcher', async () => {
     const supa = makeSupabaseMock({ deviceTokens: [] })
-    vi.mocked(createClient).mockResolvedValue(supa as any)
+    vi.mocked(createServiceClient).mockResolvedValue(supa as any)
 
     const result = await notifyProvider('user-1', payload, env)
 
@@ -91,7 +105,7 @@ describe('notifyProvider (modules/notifications/services/unified-dispatcher)', (
       deviceTokens: [{ id: 'tok-1', token: subscription.endpoint, platform: 'web' }],
       pushSubscription: subscription,
     })
-    vi.mocked(createClient).mockResolvedValue(supa as any)
+    vi.mocked(createServiceClient).mockResolvedValue(supa as any)
     vi.mocked(sendWebPush).mockResolvedValue({ success: true, shouldRemove: false })
 
     const result = await notifyProvider('user-1', payload, env)
@@ -106,7 +120,7 @@ describe('notifyProvider (modules/notifications/services/unified-dispatcher)', (
       deviceTokens: [{ id: 'tok-1', token: 'https://push.example/ep-orfao', platform: 'web' }],
       pushSubscription: null,
     })
-    vi.mocked(createClient).mockResolvedValue(supa as any)
+    vi.mocked(createServiceClient).mockResolvedValue(supa as any)
 
     const result = await notifyProvider('user-1', payload, env)
 
@@ -116,7 +130,7 @@ describe('notifyProvider (modules/notifications/services/unified-dispatcher)', (
 
   it.each(['android', 'ios'])('roteia token platform=%s direto pro sendFCM com o token bruto', async (platform) => {
     const supa = makeSupabaseMock({ deviceTokens: [{ id: 'tok-1', token: 'fcm-token-xyz', platform }] })
-    vi.mocked(createClient).mockResolvedValue(supa as any)
+    vi.mocked(createServiceClient).mockResolvedValue(supa as any)
     vi.mocked(sendFCM).mockResolvedValue({ success: true, shouldRemove: false })
 
     const result = await notifyProvider('user-1', payload, env)
@@ -128,7 +142,7 @@ describe('notifyProvider (modules/notifications/services/unified-dispatcher)', (
 
   it('marca pra remoção e chama update(...).in(ids) quando um dispatcher sinaliza shouldRemove', async () => {
     const supa = makeSupabaseMock({ deviceTokens: [{ id: 'tok-expirado', token: 'fcm-token-morto', platform: 'android' }] })
-    vi.mocked(createClient).mockResolvedValue(supa as any)
+    vi.mocked(createServiceClient).mockResolvedValue(supa as any)
     vi.mocked(sendFCM).mockResolvedValue({ success: false, shouldRemove: true })
 
     const result = await notifyProvider('user-1', payload, env)
@@ -139,7 +153,7 @@ describe('notifyProvider (modules/notifications/services/unified-dispatcher)', (
 
   it('trata plataforma desconhecida como falha, sem chamar nenhum dispatcher', async () => {
     const supa = makeSupabaseMock({ deviceTokens: [{ id: 'tok-1', token: 'x', platform: 'windows-phone' }] })
-    vi.mocked(createClient).mockResolvedValue(supa as any)
+    vi.mocked(createServiceClient).mockResolvedValue(supa as any)
 
     const result = await notifyProvider('user-1', payload, env)
 
@@ -156,7 +170,7 @@ describe('notifyProvider (modules/notifications/services/unified-dispatcher)', (
         { id: 'c', token: 'fcm-morto', platform: 'android' },
       ],
     })
-    vi.mocked(createClient).mockResolvedValue(supa as any)
+    vi.mocked(createServiceClient).mockResolvedValue(supa as any)
     vi.mocked(sendFCM).mockImplementation(async (token: string) => {
       if (token === 'fcm-ok') return { success: true, shouldRemove: false }
       if (token === 'fcm-fail') return { success: false, shouldRemove: false }
@@ -173,11 +187,11 @@ describe('notifyProvider (modules/notifications/services/unified-dispatcher)', (
 describe('notifyProviderBatch (modules/notifications/services/unified-dispatcher)', () => {
   beforeEach(() => {
     vi.mocked(sendFCM).mockReset()
-    vi.mocked(createClient).mockReset()
+    vi.mocked(createServiceClient).mockReset()
   })
 
   it('soma os resultados de notifyProvider de cada prestador do lote', async () => {
-    vi.mocked(createClient).mockImplementation(async () => {
+    vi.mocked(createServiceClient).mockImplementation(async () => {
       // Cada prestador do lote tem exatamente 1 token android que sempre "envia com sucesso".
       return makeSupabaseMock({ deviceTokens: [{ id: 'tok', token: 'fcm-tok', platform: 'android' }] }) as any
     })
@@ -192,12 +206,12 @@ describe('notifyProviderBatch (modules/notifications/services/unified-dispatcher
     const result = await notifyProviderBatch([], payload, env)
 
     expect(result).toEqual({ sent: 0, failed: 0, removed: 0 })
-    expect(createClient).not.toHaveBeenCalled()
+    expect(createServiceClient).not.toHaveBeenCalled()
   })
 
   it('um prestador cujo notifyProvider rejeita (exceção) não derruba o lote inteiro — Promise.allSettled', async () => {
     let call = 0
-    vi.mocked(createClient).mockImplementation(async () => {
+    vi.mocked(createServiceClient).mockImplementation(async () => {
       call++
       if (call === 2) throw new Error('falha de conexão pro prestador 2')
       return makeSupabaseMock({ deviceTokens: [{ id: 'tok', token: 'fcm-tok', platform: 'android' }] }) as any

@@ -9,7 +9,7 @@
 // público do módulo (@/modules/notifications).
 // =============================================================================
 
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { sendWebPush,  type VAPIDEnv }  from './push-dispatcher';
 import { sendFCM,      type FCMEnv }    from './fcm-dispatcher';
 import type { PushPayload } from './push-dispatcher';
@@ -29,10 +29,15 @@ export async function notifyProvider(
   payload: PushPayload,
   env:     NotificationEnv
 ): Promise<NotifyResult> {
-  const supabase = await createClient();
+  // Service role de verdade: quem chama isto é o Worker de fila/cron (só com o
+  // CRON_SECRET_TOKEN, sem sessão de usuário). Com createClient() a consulta
+  // rodava como `anon` e a RLS de device_tokens/push_subscriptions (só o dono
+  // ou service_role enxergam a linha) devolvia 0 tokens, sempre — nenhum push
+  // saía, sem erro nenhum.
+  const supabase = await createServiceClient();
   const result: NotifyResult = { sent: 0, failed: 0, removed: 0 };
 
-  // Usa service_role para ler tokens de qualquer usuário
+  // Lê os tokens de qualquer usuário
   const { data: tokens, error } = await supabase
     .from('device_tokens')
     .select('id, token, platform')
