@@ -79,7 +79,11 @@ test.describe('Ciclo completo do chamado — cliente pede, prestador aceita e at
       callId ? [callId] : []
     )
     if (auditBlocked) {
-      console.log(`[e2e] Dados de teste ficaram permanentes (service_audit_logs append-only): call=${callId}`)
+      // O chamado aceito fica permanente (service_audit_logs é append-only) e
+      // com ele o prestador de teste. Sem isto ele ficaria is_online=true pra
+      // sempre e entraria no casamento automático de clientes reais.
+      await admin.from('provider_status').update({ is_online: false }).eq('provider_id', providerUser.id)
+      console.log(`[e2e] Dados de teste ficaram permanentes (service_audit_logs append-only): call=${callId} — prestador de teste colocado offline`)
     }
   })
 

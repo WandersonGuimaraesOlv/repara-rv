@@ -50,6 +50,9 @@ export async function createTestClient(runId: string): Promise<TestUserHandle> {
     role: 'client',
     full_name: `[E2E ${runId}] Cliente Teste`,
     phone,
+    // E-mail é obrigatório desde 16/09/2026: sem ele o login manda pra
+    // /completar-email e o teste nunca chega na tela de destino.
+    email: `${phone}@repararv-test.local`,
     cpf_or_cnpj: '',
     terms_accepted_at: new Date().toISOString(),
   })
@@ -73,6 +76,11 @@ export async function createTestProvider(runId: string): Promise<TestUserHandle>
     role: 'provider',
     full_name: `[E2E ${runId}] Prestador Teste`,
     phone,
+    email: `${phone}@repararv-test.local`,
+    // Gate de aprovação (18/09/2026): find_nearest_provider e o trigger de
+    // provider_status só aceitam prestador 'approved'.
+    background_check_status: 'approved',
+    verified_at: new Date().toISOString(),
     cpf_or_cnpj: '',
     terms_accepted_at: new Date().toISOString(),
     self_declaration_signed: true,
