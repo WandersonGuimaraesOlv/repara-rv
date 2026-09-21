@@ -21,8 +21,8 @@ self.addEventListener('push', (event) => {
   const title = payload.title ?? '🚨 Novo Chamado em Rio Verde!';
   const options = {
     body:    payload.body    ?? 'Serviço disponível próximo ao seu local.',
-    icon:    '/icons/icon-192x192.png',
-    badge:   '/icons/badge-72x72.png',
+    icon:    '/icons/icon-192.png',
+    badge:   '/icons/icon-192.png',
     vibrate: [100, 50, 100, 50, 200],
     data: {
       url:    payload.url    ?? '/painel',

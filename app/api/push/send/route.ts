@@ -7,8 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { notifyProviderBatch } from '@/modules/notifications';
-import type { NotificationEnv } from '@/modules/notifications';
+import { notifyProviderBatch, buildNotificationEnv } from '@/modules/notifications';
 
 const sendPushSchema = z.object({
   providerIds: z.array(z.string().uuid()).min(1, 'Pelo menos um provider_id é necessário'),
@@ -44,17 +43,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const env: NotificationEnv = {
-    VAPID_PUBLIC_KEY:              process.env.VAPID_PUBLIC_KEY              ?? '',
-    VAPID_PRIVATE_KEY:             process.env.VAPID_PRIVATE_KEY             ?? '',
-    VAPID_SUBJECT:                 process.env.VAPID_SUBJECT                 ?? 'mailto:contato@repararv.com',
-    FIREBASE_SERVICE_ACCOUNT_JSON: process.env.FIREBASE_SERVICE_ACCOUNT_JSON ?? '',
-  };
-
   const result = await notifyProviderBatch(
     parsed.data.providerIds,
     parsed.data.payload,
-    env
+    buildNotificationEnv()
   );
 
   return NextResponse.json({ success: true, result }, { status: 200 });

@@ -29,6 +29,7 @@ import { audioAlert } from '@/lib/audio-alert'
 import { performLogout } from '@/lib/auth-logout'
 import { generateArrivalPin } from '@/lib/utils'
 import { SelfieCaptureModal } from '@/components/selfie-capture-modal'
+import { PushNotificationsCard } from '@/components/push-notifications-card'
 
 export default function PainelPage() {
   const router = useRouter()
@@ -836,6 +837,9 @@ export default function PainelPage() {
           </div>
         </div>
       )}
+
+      {/* Notificações push de novos chamados (só faz sentido pra quem já pode receber chamados) */}
+      {isApproved && <PushNotificationsCard />}
 
       {/* Toggle Online/Offline */}
       <div className="flex-1 flex flex-col items-center justify-center py-8">

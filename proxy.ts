@@ -78,6 +78,16 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     }
   }
 
+  // ── Rate Limit: notificação de teste do painel (5 req / min por IP) ───────
+  if (path.startsWith('/api/push/test')) {
+    if (!checkRateLimit(`push-test:${ip}`, 5, 60)) {
+      return NextResponse.json(
+        { error: 'Muitos testes seguidos. Aguarde 1 minuto.' },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
+  }
+
   // ── Rate Limit: Autenticação / OTP (3 req / min por IP) ───────────────────
   if (path.startsWith('/api/auth') || path.includes('/auth/v1/otp')) {
     if (!checkRateLimit(`auth:${ip}`, 3, 60)) {

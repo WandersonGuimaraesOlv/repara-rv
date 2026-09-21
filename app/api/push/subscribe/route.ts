@@ -60,13 +60,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Falha ao registrar subscrição' }, { status: 500 });
   }
 
-  // Também registra em device_tokens para o unified-dispatcher
-  await supabase
+  // Também registra em device_tokens para o unified-dispatcher. Sem essa linha
+  // o dispatcher nunca enxerga o aparelho — então uma falha aqui NÃO pode virar
+  // "ativado" na tela do usuário.
+  const { error: tokenError } = await supabase
     .from('device_tokens')
     .upsert(
       { user_id: user.id, token: endpoint, platform: 'web', is_active: true },
       { onConflict: 'user_id,token' }
     );
+
+  if (tokenError) {
+    console.error('[push/subscribe] device_tokens upsert error:', tokenError.message);
+    return NextResponse.json({ error: 'Falha ao registrar subscrição' }, { status: 500 });
+  }
 
   return NextResponse.json({ success: true }, { status: 200 });
 }

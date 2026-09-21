@@ -7,6 +7,8 @@
 export { notifyProvider, notifyProviderBatch } from './services/unified-dispatcher';
 export type { NotifyResult, NotificationEnv } from './services/unified-dispatcher';
 
+export { buildNotificationEnv } from './services/notification-env';
+
 // WhatsApp (despacho emergencial via /admin/dashboard)
 export {
   buildWhatsAppDispatchLink,

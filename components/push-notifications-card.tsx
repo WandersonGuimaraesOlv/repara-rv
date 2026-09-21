@@ -1,0 +1,233 @@
+'use client'
+
+import { useCallback, useEffect, useState } from 'react'
+import { Bell, BellRing, BellOff, Loader2, Send } from 'lucide-react'
+import { toast } from 'sonner'
+import { usePwaInstall } from '@/components/pwa-install-provider'
+import { PwaInstallButton } from '@/components/pwa-install-button'
+import { urlBase64ToUint8Array, arrayBufferToBase64Url, detectPushDeviceType } from '@/lib/push-client'
+
+// Inlinada no build (NEXT_PUBLIC_*) — é a mesma chave pública VAPID do servidor.
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ''
+
+type PushState = 'checking' | 'unsupported' | 'needs-install' | 'denied' | 'inactive' | 'active'
+
+// Cartão "Ativar notificações" do painel do prestador. Registra o service worker
+// (/sw.js), pede a permissão (só a partir de um clique — navegadores bloqueiam
+// pedido automático), inscreve o aparelho no push e grava a assinatura no
+// servidor. Enquanto não ativar, os avisos seguem por WhatsApp e pela fila.
+export function PushNotificationsCard() {
+  const { isIos, isStandalone } = usePwaInstall()
+  const [state, setState] = useState<PushState>('checking')
+  const [busy, setBusy] = useState(false)
+
+  const detect = useCallback(async () => {
+    // No iPhone o Web Push só existe com o app instalado na tela inicial (iOS 16.4+)
+    if (isIos && !isStandalone) {
+      setState('needs-install')
+      return
+    }
+    if (
+      !('serviceWorker' in navigator) ||
+      !('PushManager' in window) ||
+      !('Notification' in window) ||
+      !VAPID_PUBLIC_KEY
+    ) {
+      setState('unsupported')
+      return
+    }
+    if (Notification.permission === 'denied') {
+      setState('denied')
+      return
+    }
+    try {
+      const registration = await navigator.serviceWorker.getRegistration()
+      const subscription = await registration?.pushManager.getSubscription()
+      setState(subscription && Notification.permission === 'granted' ? 'active' : 'inactive')
+    } catch {
+      setState('inactive')
+    }
+  }, [isIos, isStandalone])
+
+  useEffect(() => {
+    void detect()
+  }, [detect])
+
+  const enable = async () => {
+    setBusy(true)
+    try {
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') {
+        setState(permission === 'denied' ? 'denied' : 'inactive')
+        toast.error('Sem a permissão do navegador não dá pra enviar avisos.')
+        return
+      }
+
+      const registration = await navigator.serviceWorker.register('/sw.js')
+      await navigator.serviceWorker.ready
+
+      let subscription = await registration.pushManager.getSubscription()
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+        })
+      }
+
+      const p256dh = subscription.getKey('p256dh')
+      const auth = subscription.getKey('auth')
+      if (!p256dh || !auth) throw new Error('assinatura sem chaves de criptografia')
+
+      const res = await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          endpoint: subscription.endpoint,
+          p256dh: arrayBufferToBase64Url(p256dh),
+          auth: arrayBufferToBase64Url(auth),
+          deviceType: detectPushDeviceType(navigator.userAgent),
+        }),
+      })
+      if (!res.ok) {
+        // Servidor não guardou: não deixa o aparelho "inscrito" só no navegador
+        await subscription.unsubscribe().catch(() => {})
+        throw new Error(`servidor recusou a assinatura (${res.status})`)
+      }
+
+      setState('active')
+      toast.success('Notificações ativadas neste aparelho!')
+    } catch (error) {
+      console.error('[push] falha ao ativar notificações:', error)
+      toast.error('Não foi possível ativar as notificações neste aparelho.')
+      void detect()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const disable = async () => {
+    setBusy(true)
+    try {
+      const registration = await navigator.serviceWorker.getRegistration()
+      const subscription = await registration?.pushManager.getSubscription()
+      if (subscription) {
+        await fetch('/api/push/subscribe', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: subscription.endpoint }),
+        }).catch(() => {})
+        await subscription.unsubscribe()
+      }
+      setState('inactive')
+      toast.success('Notificações desativadas neste aparelho.')
+    } catch (error) {
+      console.error('[push] falha ao desativar notificações:', error)
+      toast.error('Não foi possível desativar agora. Tente de novo.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const sendTest = async () => {
+    setBusy(true)
+    try {
+      const res = await fetch('/api/push/test', { method: 'POST' })
+      const json = await res.json().catch(() => ({}))
+      if (res.status === 429) {
+        toast.error('Muitos testes seguidos. Aguarde 1 minuto.')
+      } else if (res.ok && json.success) {
+        toast.success('Notificação de teste enviada — veja se apareceu no aparelho.')
+      } else {
+        toast.error('Não conseguimos entregar o teste. Desative e ative as notificações de novo.')
+      }
+    } catch {
+      toast.error('Falha de conexão ao enviar o teste.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (state === 'checking' || state === 'unsupported') return null
+
+  const cardStyle = {
+    background: 'rgba(94, 211, 164, 0.06)',
+    border: '1px solid rgba(94, 211, 164, 0.2)',
+  }
+  const cardClass = 'w-full max-w-md mx-auto mb-6 p-4 rounded-2xl flex items-start gap-3 animate-slide-up'
+
+  if (state === 'needs-install') {
+    return (
+      <div className={cardClass} style={cardStyle} id="push-card-needs-install">
+        <Bell size={20} className="shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} />
+        <div className="text-xs leading-relaxed flex-1">
+          <strong className="block font-bold text-sm mb-1" style={{ color: 'var(--color-text)' }}>
+            Receba avisos de chamados no celular
+          </strong>
+          <span style={{ color: 'var(--color-text-muted)' }}>
+            No iPhone, as notificações só funcionam com o app instalado na tela inicial. Instale, abra pelo ícone do Repara RV e ative aqui.
+          </span>
+          <div className="mt-3">
+            <PwaInstallButton />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (state === 'denied') {
+    return (
+      <div className={cardClass} style={cardStyle} id="push-card-denied">
+        <BellOff size={20} className="shrink-0 mt-0.5" style={{ color: 'var(--color-warning)' }} />
+        <div className="text-xs leading-relaxed flex-1" style={{ color: 'var(--color-text-muted)' }}>
+          <strong className="block font-bold text-sm mb-1" style={{ color: 'var(--color-text)' }}>
+            Notificações bloqueadas neste navegador
+          </strong>
+          Pra receber avisos de chamados, libere as notificações do Repara RV nas configurações do site (toque no cadeado ao lado do endereço) e volte aqui.
+        </div>
+      </div>
+    )
+  }
+
+  if (state === 'active') {
+    return (
+      <div className={cardClass} style={cardStyle} id="push-card-active">
+        <BellRing size={20} className="shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} />
+        <div className="text-xs leading-relaxed flex-1">
+          <strong className="block font-bold text-sm mb-1" style={{ color: 'var(--color-text)' }}>
+            Notificações ativas neste aparelho
+          </strong>
+          <span style={{ color: 'var(--color-text-muted)' }}>
+            Você recebe o aviso de novos chamados mesmo com o app fechado.
+          </span>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" id="btn-push-test" onClick={sendTest} disabled={busy} className="btn-secondary py-2 text-xs disabled:opacity-50">
+              {busy ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />} Testar
+            </button>
+            <button type="button" id="btn-push-disable" onClick={disable} disabled={busy} className="btn-secondary py-2 text-xs disabled:opacity-50">
+              <BellOff size={13} /> Desativar
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={cardClass} style={cardStyle} id="push-card-inactive">
+      <Bell size={20} className="shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} />
+      <div className="text-xs leading-relaxed flex-1">
+        <strong className="block font-bold text-sm mb-1" style={{ color: 'var(--color-text)' }}>
+          Receba avisos de novos chamados
+        </strong>
+        <span style={{ color: 'var(--color-text-muted)' }}>
+          Ative as notificações pra ser avisado na hora, mesmo com o app fechado, quando aparecer um chamado perto de você.
+        </span>
+        <div className="mt-3">
+          <button type="button" id="btn-push-enable" onClick={enable} disabled={busy} className="btn-primary py-2 text-xs disabled:opacity-50">
+            {busy ? <Loader2 size={14} className="animate-spin" /> : <Bell size={14} />} Ativar notificações
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
