@@ -2,7 +2,9 @@
 // app/api/push/send/route.ts
 // Rota interna para disparar notificações push para prestadores online.
 // Autenticada por CRON_SECRET_TOKEN — nunca exposta ao cliente.
-// Chamada pelo workers/cron-monitor.ts ou pelo queue-consumer.ts.
+// Hoje nenhum código chama esta rota (os Workers auxiliares antigos, nunca
+// implantados, foram removidos em 21/09/2026); os avisos de chamado novo saem
+// direto por pushCallAlert (modules/notifications/services/call-alerts.ts).
 // =============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';

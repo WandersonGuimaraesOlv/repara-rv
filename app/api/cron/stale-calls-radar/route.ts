@@ -1,19 +1,22 @@
 // =============================================================================
 // app/api/cron/stale-calls-radar/route.ts
 // Detecta chamados em fila sem aceite há mais de 5 minutos.
-// Chamada a cada 60s pelo workers/cron-monitor.ts via fetch interno.
-// Autenticada por CRON_SECRET_TOKEN.
+// Chamada a cada 60s pelo handler `scheduled` de custom-worker.ts (Cron Trigger
+// do Cloudflare). Autenticada por CRON_SECRET_TOKEN.
+// Alerta o time por e-mail (OPS_ALERT_EMAIL, via Resend) e, se configurado, por
+// webhook genérico (OPS_ALERT_WEBHOOK_URL / EMERGENCY_WEBHOOK_URL).
 // =============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import {
+  sendEmail,
+  selectJustCrossed,
+  buildStaleQueueEmail,
+  STALE_THRESHOLD_SECONDS,
+} from '@/modules/notifications';
 
-const STALE_THRESHOLD_MINUTES = 5;
-// Cron roda a cada 60s (ver workers/cron-monitor.ts) — usado só pra decidir
-// quais chamados "acabaram de cruzar" o limiar de estagnação nesta rodada,
-// evitando reenviar o alerta (webhook) a cada tick enquanto o mesmo
-// chamado continua parado.
-const CRON_TICK_SECONDS = 60;
+const STALE_THRESHOLD_MINUTES = STALE_THRESHOLD_SECONDS / 60;
 
 export interface StaleCall {
   id:              string;
@@ -68,24 +71,29 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ),
   }));
 
-  // Alerta ativo pro time (achado de 14/09/2026: até aqui só existia o log —
-  // "Transformar o log do cron-monitor em alerta ativo" era item pendente do
-  // plano de validação). Só dispara pros chamados que ACABARAM de cruzar os 5
-  // minutos nesta rodada (janela do tamanho de 1 tick do cron), pra não
+  // Alerta ativo pro time (achado de 14/09/2026: até aqui só existia o log).
+  // Só dispara pros chamados que ACABARAM de cruzar os 5 minutos nesta rodada
+  // (janela do tamanho de 1 tick do cron, ver stale-queue-alert.ts), pra não
   // reenviar a cada 60s enquanto o mesmo chamado continua parado.
-  const justCrossedThreshold = enriched.filter(
-    (call) => call.minutes_waiting >= STALE_THRESHOLD_MINUTES &&
-      call.minutes_waiting < STALE_THRESHOLD_MINUTES + Math.ceil(CRON_TICK_SECONDS / 60) + 1
-  );
+  const justCrossedThreshold = selectJustCrossed(enriched, Date.now());
 
   if (justCrossedThreshold.length > 0) {
+    const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com';
+    const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost'))
+      ? rawAppUrl
+      : 'https://repararv.com';
+
+    const opsEmail = process.env.OPS_ALERT_EMAIL?.trim();
+    if (opsEmail) {
+      const { subject, html } = buildStaleQueueEmail(justCrossedThreshold, appUrl);
+      const emailResult = await sendEmail({ to: opsEmail, subject, html }, process.env.RESEND_API_KEY);
+      if (!emailResult.success) {
+        console.error('[stale-calls-radar] Falha ao enviar e-mail de fila estagnada:', emailResult.error);
+      }
+    }
+
     const webhookUrl = process.env.OPS_ALERT_WEBHOOK_URL || process.env.EMERGENCY_WEBHOOK_URL;
     if (webhookUrl) {
-      const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com';
-      const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost'))
-        ? rawAppUrl
-        : 'https://repararv.com';
-
       const lines = justCrossedThreshold.map(
         (c) => `• ${c.neighborhood ?? 'Bairro não informado'} — R$ ${c.provider_cut.toFixed(2)} — ${c.minutes_waiting} min parado`
       );
@@ -111,8 +119,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       } catch (webhookErr) {
         console.error('[stale-calls-radar] Falha ao disparar alerta de fila estagnada:', webhookErr);
       }
-    } else {
-      console.warn('[stale-calls-radar] Fila estagnada detectada mas OPS_ALERT_WEBHOOK_URL/EMERGENCY_WEBHOOK_URL não configurado — alerta não disparado.');
+    }
+
+    if (!opsEmail && !webhookUrl) {
+      console.warn('[stale-calls-radar] Fila estagnada detectada mas nem OPS_ALERT_EMAIL nem OPS_ALERT_WEBHOOK_URL/EMERGENCY_WEBHOOK_URL estão configurados — alerta não disparado.');
     }
   }
 

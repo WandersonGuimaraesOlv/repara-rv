@@ -117,8 +117,8 @@ async function run() {
 
   if (pass) {
     console.log('\n✅ PASSOU — o radar detectou o chamado estagnado de verdade e sinalizou o disparo do alerta.');
-    if (!process.env.OPS_ALERT_WEBHOOK_URL && !process.env.EMERGENCY_WEBHOOK_URL) {
-      console.log('   ℹ️  OPS_ALERT_WEBHOOK_URL/EMERGENCY_WEBHOOK_URL não configurados neste ambiente — o alerta');
+    if (!process.env.OPS_ALERT_EMAIL && !process.env.OPS_ALERT_WEBHOOK_URL && !process.env.EMERGENCY_WEBHOOK_URL) {
+      console.log('   ℹ️  OPS_ALERT_EMAIL/OPS_ALERT_WEBHOOK_URL/EMERGENCY_WEBHOOK_URL não configurados neste ambiente — o alerta');
       console.log('      não foi de fato entregue a lugar nenhum, mas a rota reportou alert_sent corretamente');
       console.log('      (só não dispara o fetch quando não há webhook configurado — ver log do servidor).');
     }

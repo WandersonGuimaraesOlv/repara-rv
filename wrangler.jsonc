@@ -1,6 +1,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"main": ".open-next/worker.js",
+	// Entrada própria: reexporta .open-next/worker.js e acrescenta o Cron Trigger (ver custom-worker.ts)
+	"main": "custom-worker.ts",
 	"name": "repara-rv",
 	"account_id": "f9b77b85c77a156f6ec4f5f79fed3f0e",
 	"compatibility_date": "2026-09-08",
@@ -24,6 +25,10 @@
 		// Enable image optimization
 		// see https://opennext.js.org/cloudflare/howtos/image
 		"binding": "IMAGES"
+	},
+	// Radar de chamados parados na fila: 1x por minuto (o alerta usa janela de 1 tick, ver stale-queue-alert.ts)
+	"triggers": {
+		"crons": ["* * * * *"]
 	},
 	"vars": {
 		"NEXT_PUBLIC_SUPABASE_URL": "https://lvjahufllclmkqcbbrcu.supabase.co",

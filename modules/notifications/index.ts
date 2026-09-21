@@ -11,6 +11,15 @@ export { buildNotificationEnv } from './services/notification-env';
 export { pushCallAlert } from './services/call-alerts';
 export type { CallAlertOptions } from './services/call-alerts';
 
+// Alerta de fila estagnada (e-mail ao time via Resend)
+export { sendEmail } from './services/email-dispatcher';
+export {
+  selectJustCrossed,
+  buildStaleQueueEmail,
+  STALE_THRESHOLD_SECONDS,
+} from './services/stale-queue-alert';
+export type { StaleCallSummary } from './services/stale-queue-alert';
+
 // WhatsApp (despacho emergencial via /admin/dashboard)
 export {
   buildWhatsAppDispatchLink,

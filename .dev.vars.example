@@ -14,9 +14,6 @@ MERCADOPAGO_CLIENT_ID=
 MERCADOPAGO_CLIENT_SECRET=
 MERCADOPAGO_WEBHOOK_SECRET=sua-webhook-secret-aqui
 
-# URL interna usada pelos Workers auxiliares (cron / fila)
-INTERNAL_API_URL=https://repararv.com
-
 # Web Push VAPID (PWA — Chrome/Safari)
 # Gerar com: npx web-push generate-vapid-keys
 VAPID_PUBLIC_KEY=
@@ -26,6 +23,11 @@ VAPID_SUBJECT=mailto:contato@repararv.com
 # Token secreto para rotas internas (cron e push/send)
 # Gerar com: openssl rand -base64 32
 CRON_SECRET_TOKEN=
+
+# Alerta de fila parada (Cron Trigger de 1 min em custom-worker.ts): e-mail do time que
+# recebe o aviso quando um chamado passa de 5 min sem prestador. Usa o RESEND_API_KEY.
+# Em produção é secret do Worker (npx wrangler secret put OPS_ALERT_EMAIL).
+OPS_ALERT_EMAIL=
 
 # FCM — Firebase Cloud Messaging (Flutter Android/iOS)
 # SOMENTE necessário ao lançar os apps Flutter nativos.
