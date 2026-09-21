@@ -4,7 +4,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const envContent = fs.readFileSync(path.join(__dirname, '../.env.local'), 'utf-8')
+const envContent = ['../.env.local', '../.dev.vars'].map(f => fs.readFileSync(path.join(__dirname, f), 'utf-8')).join('\n')
 const env = {}
 for (const line of envContent.split('\n')) {
   const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/)

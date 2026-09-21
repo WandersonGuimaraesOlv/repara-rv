@@ -18,7 +18,7 @@
 //      consegue escrever normalmente — sem isso o admin não editaria nada.
 //
 // PRÉ-REQUISITO:
-//   node --env-file=.env.local scripts/test-legal-admin.mjs
+//   node --env-file=.env.local --env-file=.dev.vars scripts/test-legal-admin.mjs
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js';
@@ -30,7 +30,7 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!SUPABASE_URL || !ANON_KEY || !SERVICE_ROLE_KEY) {
   console.error('❌ Faltam NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY e/ou SUPABASE_SERVICE_ROLE_KEY.');
   console.error('   Rode assim (carrega o .env.local automaticamente):');
-  console.error('     node --env-file=.env.local scripts/test-legal-admin.mjs');
+  console.error('     node --env-file=.env.local --env-file=.dev.vars scripts/test-legal-admin.mjs');
   process.exit(1);
 }
 

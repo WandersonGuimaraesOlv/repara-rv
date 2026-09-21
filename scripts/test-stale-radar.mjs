@@ -17,7 +17,7 @@
 //
 // PRÉ-REQUISITO: `npm run dev` rodando em outro terminal (porta 3000) e
 // CRON_SECRET_TOKEN configurado no .env.local.
-//   node --env-file=.env.local scripts/test-stale-radar.mjs
+//   node --env-file=.env.local --env-file=.dev.vars scripts/test-stale-radar.mjs
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js';

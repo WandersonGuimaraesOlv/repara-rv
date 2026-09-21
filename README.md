@@ -67,11 +67,14 @@ npm install
 ```
 
 ### 2. Configurar as variáveis de ambiente
-Copie o arquivo de exemplo:
+Copie os arquivos de exemplo:
 ```bash
-cp .env.local.example .env.local
+cp .env.local.example .env.local   # só variáveis públicas (NEXT_PUBLIC_*)
+cp .dev.vars.example .dev.vars     # segredos (Supabase service role, Mercado Pago, Resend...)
 ```
-Preencha com suas credenciais do Supabase e Mercado Pago.
+Preencha com suas credenciais do Supabase e Mercado Pago. **Segredos nunca vão no
+`.env.local`**: no deploy, o OpenNext copia todo `.env*` pra dentro do código do Worker.
+Em produção os segredos ficam nos secrets do Cloudflare (`npx wrangler secret put NOME`).
 
 ### 3. Rodar a suíte de testes (Garantia de Qualidade - SQA)
 ```bash

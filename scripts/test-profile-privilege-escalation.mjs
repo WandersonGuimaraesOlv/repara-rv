@@ -33,7 +33,7 @@
 //      forma legítima de bloquear/aprovar um usuário ao mesmo tempo.
 //
 // PRÉ-REQUISITO:
-//   node --env-file=.env.local scripts/test-profile-privilege-escalation.mjs
+//   node --env-file=.env.local --env-file=.dev.vars scripts/test-profile-privilege-escalation.mjs
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js'

@@ -1,0 +1,41 @@
+# .dev.vars — SEGREDOS do ambiente local (não versionado, está no .gitignore).
+# É lido pelo `next dev` (via initOpenNextCloudflareForDev), pelo `wrangler` e
+# pelos scripts (`node --env-file=.env.local --env-file=.dev.vars ...`).
+#
+# Produção NÃO lê este arquivo: lá os mesmos nomes são secrets do Worker
+#   npx wrangler secret put NOME     (ou `npx wrangler secret bulk`)
+# Ao criar/girar um segredo, atualize os dois lugares.
+
+SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key-aqui
+
+# Mercado Pago (Pix)
+MERCADOPAGO_ACCESS_TOKEN=seu-access-token-aqui
+MERCADOPAGO_CLIENT_ID=
+MERCADOPAGO_CLIENT_SECRET=
+MERCADOPAGO_WEBHOOK_SECRET=sua-webhook-secret-aqui
+
+# URL interna usada pelos Workers auxiliares (cron / fila)
+INTERNAL_API_URL=https://repararv.com
+
+# Web Push VAPID (PWA — Chrome/Safari)
+# Gerar com: npx web-push generate-vapid-keys
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:contato@repararv.com
+
+# Token secreto para rotas internas (cron e push/send)
+# Gerar com: openssl rand -base64 32
+CRON_SECRET_TOKEN=
+
+# FCM — Firebase Cloud Messaging (Flutter Android/iOS)
+# SOMENTE necessário ao lançar os apps Flutter nativos.
+# Serializar o JSON como string: cat service-account.json | jq -c .
+FIREBASE_SERVICE_ACCOUNT_JSON=
+
+# Resend — envio de e-mail transacional (reset de PIN por e-mail)
+# Obter em: resend.com > API Keys. Remetente: noreply@repararv.com (domínio verificado)
+RESEND_API_KEY=
+
+# Só para rodar `npm run deploy` da sua máquina (o app NÃO usa em runtime):
+# CLOUDFLARE_ACCOUNT_ID=
+# CLOUDFLARE_API_TOKEN=

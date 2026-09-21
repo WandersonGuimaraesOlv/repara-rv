@@ -13,7 +13,7 @@
 // origem, antes de qualquer chamado ser criado.
 //
 // PRÉ-REQUISITO:
-//   node --env-file=.env.local scripts/check-catalog-rounding.mjs
+//   node --env-file=.env.local --env-file=.dev.vars scripts/check-catalog-rounding.mjs
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js';

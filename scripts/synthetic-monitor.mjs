@@ -24,7 +24,7 @@
 //
 // PRÉ-REQUISITO:
 //   npm run dev (em outro terminal)
-//   node --env-file=.env.local scripts/synthetic-monitor.mjs
+//   node --env-file=.env.local --env-file=.dev.vars scripts/synthetic-monitor.mjs
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js';

@@ -25,7 +25,7 @@
 //      scripts/test-webhook-idempotency.mjs.
 //
 // PRÉ-REQUISITO:
-//   node --env-file=.env.local scripts/test-no-show-fee.mjs
+//   node --env-file=.env.local --env-file=.dev.vars scripts/test-no-show-fee.mjs
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js';
@@ -36,7 +36,7 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error('❌ Faltam NEXT_PUBLIC_SUPABASE_URL e/ou SUPABASE_SERVICE_ROLE_KEY no ambiente.');
   console.error('   Rode assim (carrega o .env.local automaticamente):');
-  console.error('     node --env-file=.env.local scripts/test-no-show-fee.mjs');
+  console.error('     node --env-file=.env.local --env-file=.dev.vars scripts/test-no-show-fee.mjs');
   process.exit(1);
 }
 

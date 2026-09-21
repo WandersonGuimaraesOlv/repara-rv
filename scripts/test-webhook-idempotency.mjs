@@ -29,7 +29,7 @@
 //     é um no-op — cobre o caso de replay tardio (não só corrida)
 //
 // PRÉ-REQUISITO:
-//   node --env-file=.env.local scripts/test-webhook-idempotency.mjs
+//   node --env-file=.env.local --env-file=.dev.vars scripts/test-webhook-idempotency.mjs
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js';
@@ -40,7 +40,7 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error('❌ Faltam NEXT_PUBLIC_SUPABASE_URL e/ou SUPABASE_SERVICE_ROLE_KEY no ambiente.');
   console.error('   Rode assim (carrega o .env.local automaticamente):');
-  console.error('     node --env-file=.env.local scripts/test-webhook-idempotency.mjs');
+  console.error('     node --env-file=.env.local --env-file=.dev.vars scripts/test-webhook-idempotency.mjs');
   process.exit(1);
 }
 

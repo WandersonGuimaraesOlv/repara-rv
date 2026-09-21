@@ -1,12 +1,14 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// Carrega .env.local (Supabase, etc.) no processo do Playwright — os specs
-// falam direto com o Supabase via Service Role pra criar/limpar dados de
-// teste (ver e2e/helpers/test-users.ts), então precisam dessas variáveis.
-try {
-  process.loadEnvFile('.env.local')
-} catch {
-  // .env.local ausente — segue com o que já estiver no ambiente (ex: CI)
+// Carrega .env.local (variáveis públicas) e .dev.vars (segredos, como a
+// Service Role) no processo do Playwright — os specs falam direto com o
+// Supabase pra criar/limpar dados de teste (ver e2e/helpers/test-users.ts).
+for (const file of ['.env.local', '.dev.vars']) {
+  try {
+    process.loadEnvFile(file)
+  } catch {
+    // arquivo ausente — segue com o que já estiver no ambiente (ex: CI)
+  }
 }
 
 // Camada 6 do plano de validação: E2E ponta a ponta contra o app real

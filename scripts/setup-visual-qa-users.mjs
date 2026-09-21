@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Cria cliente + prestador de teste reais (marcados [QA VISUAL]) pra validar
 // visualmente o redesign verde-energia nas telas autenticadas via browser real.
-// node --env-file=.env.local scripts/setup-visual-qa-users.mjs
+// node --env-file=.env.local --env-file=.dev.vars scripts/setup-visual-qa-users.mjs
 
 import { createClient } from '@supabase/supabase-js'
 

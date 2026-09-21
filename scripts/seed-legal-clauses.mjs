@@ -14,7 +14,7 @@
 // - Cards de 2 colunas CONTRATANTE/CONTRATADO (contrato §1) -> tabela Markdown
 //
 // PRÉ-REQUISITO:
-//   node --env-file=.env.local scripts/seed-legal-clauses.mjs
+//   node --env-file=.env.local --env-file=.dev.vars scripts/seed-legal-clauses.mjs
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js';

@@ -8,7 +8,8 @@ import { PixWebhookPayload } from '@/lib/types'
  * Para configurar:
  * 1. No painel do Mercado Pago, adicione a URL de notificação:
  *    https://seu-dominio.com/api/pix/webhook
- * 2. Configure MERCADOPAGO_WEBHOOK_SECRET no .env.local E no painel
+ * 2. Configure MERCADOPAGO_WEBHOOK_SECRET no .dev.vars (local) e como secret
+ *    do Worker (`npx wrangler secret put`), E no painel do Mercado Pago
  *    (Suas integrações → aplicação → Webhooks → Configurar notificação)
  *    — os dois lados precisam ter o MESMO valor.
  *

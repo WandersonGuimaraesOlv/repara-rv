@@ -23,7 +23,7 @@
 //      aprovado e online.
 //
 // PRÉ-REQUISITO:
-//   node --env-file=.env.local scripts/test-provider-approval-gate.mjs
+//   node --env-file=.env.local --env-file=.dev.vars scripts/test-provider-approval-gate.mjs
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js';
@@ -34,7 +34,7 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !ANON_KEY || !SERVICE_ROLE_KEY) {
   console.error('❌ Faltam variáveis de ambiente. Rode assim:');
-  console.error('     node --env-file=.env.local scripts/test-provider-approval-gate.mjs');
+  console.error('     node --env-file=.env.local --env-file=.dev.vars scripts/test-provider-approval-gate.mjs');
   process.exit(1);
 }
 

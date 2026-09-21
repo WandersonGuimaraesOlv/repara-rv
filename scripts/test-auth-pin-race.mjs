@@ -21,7 +21,7 @@
 // e o rate limiter bloquearia antes de reproduzir a corrida real no banco.
 //
 // PRÉ-REQUISITO:
-//   node --env-file=.env.local scripts/test-auth-pin-race.mjs
+//   node --env-file=.env.local --env-file=.dev.vars scripts/test-auth-pin-race.mjs
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js';
@@ -31,7 +31,7 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error('❌ Faltam NEXT_PUBLIC_SUPABASE_URL e/ou SUPABASE_SERVICE_ROLE_KEY.');
-  console.error('   Rode assim: node --env-file=.env.local scripts/test-auth-pin-race.mjs');
+  console.error('   Rode assim: node --env-file=.env.local --env-file=.dev.vars scripts/test-auth-pin-race.mjs');
   process.exit(1);
 }
 

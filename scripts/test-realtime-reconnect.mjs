@@ -33,7 +33,7 @@
 //      "reconexão está quebrada".
 //
 // PRÉ-REQUISITO:
-//   node --env-file=.env.local scripts/test-realtime-reconnect.mjs
+//   node --env-file=.env.local --env-file=.dev.vars scripts/test-realtime-reconnect.mjs
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js';
@@ -45,7 +45,7 @@ const OUTAGE_MS = Number(process.env.TEST_OUTAGE_MS || 4000);
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error('❌ Faltam NEXT_PUBLIC_SUPABASE_URL e/ou SUPABASE_SERVICE_ROLE_KEY no ambiente.');
   console.error('   Rode assim (carrega o .env.local automaticamente):');
-  console.error('     node --env-file=.env.local scripts/test-realtime-reconnect.mjs');
+  console.error('     node --env-file=.env.local --env-file=.dev.vars scripts/test-realtime-reconnect.mjs');
   process.exit(1);
 }
 

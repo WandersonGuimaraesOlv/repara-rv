@@ -7,7 +7,7 @@
 // (imutabilidade do service_audit_logs), então dá pra inspecionar direto sem
 // recriar nada.
 //
-// Rodar: node --env-file=.env.local scripts/diagnose-skip-race.mjs
+// Rodar: node --env-file=.env.local --env-file=.dev.vars scripts/diagnose-skip-race.mjs
 // =============================================================================
 
 import { createClient } from '@supabase/supabase-js';

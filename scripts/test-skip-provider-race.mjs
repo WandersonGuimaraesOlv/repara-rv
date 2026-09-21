@@ -14,7 +14,7 @@
 //   Precisa do servidor local rodando ANTES, em outro terminal:
 //     npm run dev
 //   E então, neste terminal:
-//     node --env-file=.env.local scripts/test-skip-provider-race.mjs
+//     node --env-file=.env.local --env-file=.dev.vars scripts/test-skip-provider-race.mjs
 //   (skip-provider NÃO tem rate limit em proxy.ts — só /api/calls/create,
 //   /api/calls/claim-queued e /api/auth* têm — então, ao contrário do teste
 //   de claim_queued_call, aqui dá pra bater na rota HTTP local de verdade sem
@@ -63,7 +63,7 @@ const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000';
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error('❌ Faltam NEXT_PUBLIC_SUPABASE_URL e/ou SUPABASE_SERVICE_ROLE_KEY no ambiente.');
   console.error('   Rode assim (carrega o .env.local automaticamente):');
-  console.error('     node --env-file=.env.local scripts/test-skip-provider-race.mjs');
+  console.error('     node --env-file=.env.local --env-file=.dev.vars scripts/test-skip-provider-race.mjs');
   process.exit(1);
 }
 

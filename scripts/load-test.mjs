@@ -32,7 +32,7 @@
 // por proxy.ts em si).
 //
 // PRÉ-REQUISITO:
-//   node --env-file=.env.local scripts/load-test.mjs
+//   node --env-file=.env.local --env-file=.dev.vars scripts/load-test.mjs
 //   (LOAD_PROVIDERS, LOAD_CLIENTS, LOAD_DURATION_SECONDS configuráveis)
 // =============================================================================
 
