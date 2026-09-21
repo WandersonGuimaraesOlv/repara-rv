@@ -5,6 +5,7 @@
 // =============================================================================
 
 import { generateVAPIDHeaders } from './webcrypto-vapid';
+import { encryptWebPushPayload } from './webpush-encryption';
 
 export interface WebPushSubscription {
   endpoint: string;
@@ -43,15 +44,24 @@ export async function sendWebPush(
       subject:    env.VAPID_SUBJECT,
     });
 
+    // RFC 8291: o corpo TEM que ir criptografado com as chaves da assinatura
+    // (p256dh/auth), senão o navegador não decifra e o service worker nem
+    // chega a mostrar a notificação.
+    const body = await encryptWebPushPayload(
+      new TextEncoder().encode(JSON.stringify(payload)),
+      { p256dh: subscription.p256dh, auth: subscription.auth }
+    );
+
     const response = await fetch(subscription.endpoint, {
       method: 'POST',
       headers: {
         ...headers,
-        'TTL':          '120',         // Mensagem válida por 2 minutos
-        'Content-Type': 'application/json',
-        'Urgency':      'high',        // Entrega imediata mesmo com bateria baixa
+        'Content-Encoding': 'aes128gcm',
+        'Content-Type':     'application/octet-stream',
+        'TTL':              '120',     // Mensagem válida por 2 minutos
+        'Urgency':          'high',    // Entrega imediata mesmo com bateria baixa
       },
-      body: JSON.stringify(payload),
+      body: body as BodyInit,
     });
 
     // 410 Gone / 404 Not Found = endpoint desinstalado pelo cliente
