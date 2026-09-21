@@ -1,8 +1,8 @@
 // =============================================================================
 // modules/notifications/services/call-alerts.ts
-// Alerta push de "novo chamado" pros prestadores. Antes disto NADA avisava um
-// prestador com o app fechado: o único caminho (notify-queue) só mandava um
-// webhook de WhatsApp que não está configurado em lugar nenhum.
+// Alerta push de "novo chamado" pros prestadores — o único canal automático de
+// aviso. Decisão do dono (21/09/2026): sem gateway de WhatsApp (risco de
+// banimento dos números da plataforma); os alertas ficam dentro do app.
 //
 // LGPD: o texto do push mostra só serviço, bairro e ganho líquido — a mesma
 // informação do radar pré-aceite. Nunca endereço completo nem dados do cliente.

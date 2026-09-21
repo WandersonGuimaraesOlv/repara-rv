@@ -142,47 +142,6 @@ export async function POST(req: NextRequest) {
       .eq('id', callId);
     acceptedCall.arrival_pin = arrivalPin;
 
-    // 3. Disparo assíncrono (fire-and-forget) para notificar o cliente via WhatsApp
-    void (async () => {
-      try {
-        const { data: fullCall } = await supabaseAdmin
-          .from('service_calls')
-          .select('*, client:profiles!client_id(phone), service:quick_services(name)')
-          .eq('id', callId)
-          .single();
-
-        const clientPhone = (fullCall?.client as { phone?: string })?.phone;
-        const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com';
-        const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost'))
-          ? rawAppUrl
-          : 'https://repararv.com';
-
-        const providerName = provider.full_name || 'Técnico Credenciado';
-        const trackingUrl = `${appUrl}/acompanhar/${callId}`;
-        const clientMessage = `Tudo certo! O técnico ${providerName} acabou de assumir seu chamado e já está a caminho do seu endereço. Acompanhe a chegada por aqui: ${trackingUrl}`;
-
-        console.log(`📲 [WhatsApp Cliente] Notificação de aceite disparada para ${clientPhone}`);
-
-        const webhookUrl = process.env.CLIENT_ALERT_WEBHOOK_URL || process.env.WHATSAPP_WEBHOOK_URL;
-        if (webhookUrl && clientPhone) {
-          await fetch(webhookUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              event: 'order_accepted_from_queue',
-              call_id: callId,
-              recipient_phone: clientPhone,
-              message: clientMessage,
-              provider_name: providerName,
-              tracking_url: trackingUrl,
-            }),
-          });
-        }
-      } catch (whErr) {
-        console.warn('[WhatsApp Cliente] Falha ao enviar notificação assíncrona:', whErr);
-      }
-    })();
-
     return NextResponse.json({ success: true, call: acceptedCall }, { status: 200 });
   } catch (err: any) {
     console.error('[API /api/calls/claim-queued] Erro interno:', err);

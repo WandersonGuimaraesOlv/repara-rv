@@ -15,7 +15,8 @@ type PushState = 'checking' | 'unsupported' | 'needs-install' | 'denied' | 'inac
 // Cartão "Ativar notificações" do painel do prestador. Registra o service worker
 // (/sw.js), pede a permissão (só a partir de um clique — navegadores bloqueiam
 // pedido automático), inscreve o aparelho no push e grava a assinatura no
-// servidor. Enquanto não ativar, os avisos seguem por WhatsApp e pela fila.
+// servidor. Enquanto não ativar, o prestador só vê o chamado com o painel aberto
+// (radar e fila prioritária).
 export function PushNotificationsCard() {
   const { isIos, isStandalone } = usePwaInstall()
   const [state, setState] = useState<PushState>('checking')

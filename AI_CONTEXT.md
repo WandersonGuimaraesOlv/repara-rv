@@ -27,7 +27,7 @@ Para maximizar a captação de prestadores sem infligir a legislação brasileir
 - **Visibilidade:** Durante os status `accepted`, `on_the_way` e `in_progress`, exibir um ícone discreto de escudo/segurança no topo da tela do cliente e do prestador.
 - **Ação do Botão:**
   1. Registra o evento na tabela `emergency_alerts` com coordenadas atuais.
-  2. Dispara a rota `/api/emergency/notify` enviando dados completos do chamado para o WhatsApp/Telegram de suporte dos fundadores.
+  2. Dispara a rota `/api/emergency/notify` enviando dados completos do chamado para o webhook de alerta dos fundadores (`EMERGENCY_WEBHOOK_URL`, pensado pra Telegram ou similar — hoje não configurado; não há disparo automático de WhatsApp).
   3. Redireciona o usuário para `tel:190` via deep link nativo.
 - **Blindagem Jurídica & Confiança:** Cumpre o dever de vigilância e cuidado (CDC) e reduz a barreira de entrada para clientes (especialmente mulheres e idosos) e prestadores em domicílio desconhecido.
 

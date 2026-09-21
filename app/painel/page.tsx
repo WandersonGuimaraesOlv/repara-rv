@@ -395,15 +395,8 @@ export default function PainelPage() {
       })
       .eq('id', callId)
 
-    // Dispara WhatsApp confirmando que o técnico está a caminho
-    void fetch('/api/calls/notify-accepted', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ call_id: callId, provider_id: profile?.id }),
-    }).catch(() => {})
-
     router.push(`/chamado/${callId}`)
-  }, [pendingCall, profile, isApproved, router, supabase])
+  }, [pendingCall, isApproved, router, supabase])
 
   const handleRejectCall = useCallback(async () => {
     if (!pendingCall) return

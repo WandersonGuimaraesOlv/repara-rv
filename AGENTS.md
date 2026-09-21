@@ -43,6 +43,7 @@ Conflitos de versões anteriores foram superados e validados nas migrations e de
 | **Responsabilidade de Peças** | Morador fornece peças e insumos | Blocos de escopo obrigatórios na interface: 🟢 Incluso (Mão de obra e testes técnicos) vs. 🔴 Não Incluso (Chuveiro novo, torneira, fiação, sifão). |
 | **Piso de Remuneração** | Mínimo R$ 50,00 líquidos ao prestador | Nenhum serviço ativo no catálogo remunera o técnico com menos de R$ 50 líquidos. A taxa da plataforma varia de R$ 10 a R$ 20 por chamado. |
 | **Fila e Atribuição** | Fila Atômica (`queued`) com TTL de 2h | Chamados sem técnico imediato entram em `status = 'queued'` com `expires_at = NOW() + INTERVAL '2 hours'`. O aceite concorrente é travado no PostgreSQL via RPC `claim_queued_call`. |
+| **Canal de Alertas** | Notificação dentro do app (push); **sem gateway de WhatsApp** | Decisão do dono em 21/09/2026: o risco de banimento dos números de WhatsApp da plataforma é maior que o ganho. Prestadores são avisados de chamado novo por push (`/painel` → "Ativar notificações", `modules/notifications/services/call-alerts.ts`); o cliente acompanha o status em `/acompanhar` (Realtime). Não integrar Z-API/Evolution nem outro disparo automático de WhatsApp. Continuam valendo os links `wa.me` de clique manual (despacho pelo admin e suporte), que não são envio automático. |
 | **Radar de Ociosidade** | Alerta Vermelho > 5 minutos no Dashboard | Chamados na fila há mais de 5 minutos acionam o card de emergência em `/admin/dashboard` para acionamento manual via WhatsApp (`wa.me`). |
 | **LGPD e Privacidade** | Mascaramento pré-aceite | Antes do aceite, o radar exibe apenas Bairro, Distância aproximada, Serviço e Valor Líquido. Endereço completo só é liberado após `status accepted`. |
 | **Taxa de Deslocamento (No-Show)** | R$ 25,00 | Cobrada caso o morador não atenda o técnico no portão após 10 minutos de espera no local. |
@@ -163,7 +164,7 @@ NOTIFY pgrst, 'reload schema';
 A hospedagem é executada no Cloudflare Workers via OpenNext. As seguintes limitações de runtime são **inegociáveis**:
 
 - **Incompatibilidade com Módulos Nativos do Node:** É proibido usar `fs`, `child_process`, `net`, `tls` ou sockets TCP brutos em rotas e ações.
-- **Fetch Nativo:** Todas as requisições HTTP para APIs externas (Mercado Pago, provedores de WhatsApp Z-API/Evolution) devem usar o `fetch()` nativo global.
+- **Fetch Nativo:** Todas as requisições HTTP para APIs externas (Mercado Pago, Resend, push services) devem usar o `fetch()` nativo global.
 - **Persistência e Expiração de Sessão SSR (`lib/auth-logout.ts`):** O encerramento de sessão deve sempre executar o ciclo triplo:
   1. Expiração forçada de cookies no `document.cookie` (`max-age=0`);
   2. Purga de chaves locais no `localStorage` e `sessionStorage` (`sb-*`, dados do usuário);

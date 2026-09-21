@@ -11,7 +11,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 const STALE_THRESHOLD_MINUTES = 5;
 // Cron roda a cada 60s (ver workers/cron-monitor.ts) — usado só pra decidir
 // quais chamados "acabaram de cruzar" o limiar de estagnação nesta rodada,
-// evitando reenviar o alerta de WhatsApp a cada tick enquanto o mesmo
+// evitando reenviar o alerta (webhook) a cada tick enquanto o mesmo
 // chamado continua parado.
 const CRON_TICK_SECONDS = 60;
 

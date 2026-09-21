@@ -68,7 +68,7 @@ export function ChamadoEmFila({ call, onCancel }: ChamadoEmFilaProps) {
         Nossos técnicos de Rio Verde estão finalizando atendimentos ou em trânsito. O pedido já foi enviado diretamente ao radar deles.
       </p>
 
-      {/* Caixa de Confirmação WhatsApp */}
+      {/* Aviso dentro do app: o cliente é avisado nesta tela (Realtime), não por WhatsApp */}
       <div
         className="w-full p-4 mt-6 rounded-2xl text-left flex items-start gap-3 shadow-sm"
         style={{
@@ -84,11 +84,10 @@ export function ChamadoEmFila({ call, onCancel }: ChamadoEmFilaProps) {
         </div>
         <div>
           <p className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>
-            Aviso garantido no WhatsApp
+            Fique com esta tela aberta
           </p>
           <p className="text-xs mt-0.5 leading-snug" style={{ color: 'var(--color-text-muted)' }}>
-            Assim que um técnico aceitar, avisaremos no número{' '}
-            <strong className="underline" style={{ color: 'var(--color-accent)' }}>{call.client_phone || 'cadastrado'}</strong>. Pode fechar o app se preferir.
+            Assim que um técnico aceitar, o status muda aqui na hora e você já vê quem está a caminho. Se sair do app, volte em <strong className="underline" style={{ color: 'var(--color-accent)' }}>Meus Pedidos</strong> para acompanhar.
           </p>
         </div>
       </div>

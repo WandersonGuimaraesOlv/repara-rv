@@ -34,7 +34,7 @@ interface Env {
   FIREBASE_SERVICE_ACCOUNT_JSON: string;
 }
 
-type QueueMessageType = 'CALL_CREATED' | 'SEND_WHATSAPP_DISPATCH' | 'DEACTIVATE_EXPIRED_BANS';
+type QueueMessageType = 'CALL_CREATED' | 'DEACTIVATE_EXPIRED_BANS';
 
 interface QueueMessage {
   type:    QueueMessageType;
@@ -66,16 +66,6 @@ async function handleCallDispatch(
     const text = await response.text();
     throw new Error(`handleCallDispatch falhou: ${response.status} ${text}`);
   }
-}
-
-// ─── Handler SEND_WHATSAPP_DISPATCH: despacho emergencial ──────────────────
-async function handleWhatsAppDispatch(
-  payload: Record<string, unknown>
-): Promise<void> {
-  // WhatsApp dispatch é um link wa.me — sem chamada HTTP externa necessária.
-  // O link já foi montado pelo admin/dashboard e aberto no browser do admin.
-  // Este handler pode ser expandido para integração com Z-API/Evolution API.
-  console.log('[queue-consumer] WhatsApp dispatch payload logged:', payload);
 }
 
 // ─── Handler DEACTIVATE_EXPIRED_BANS ────────────────────────────────────────
@@ -134,10 +124,6 @@ const queueConsumerWorker = {
         switch (type) {
           case 'CALL_CREATED':
             await handleCallDispatch(String(payload.callId ?? ''), env);
-            break;
-
-          case 'SEND_WHATSAPP_DISPATCH':
-            await handleWhatsAppDispatch(payload);
             break;
 
           case 'DEACTIVATE_EXPIRED_BANS':

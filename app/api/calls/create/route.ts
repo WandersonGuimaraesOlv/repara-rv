@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
     // runInBackground usa o waitUntil do Workers: uma promessa solta ("void fetch")
     // pode ser cancelada quando a resposta termina.
     if (isQueued) {
-      // Fila prioritária: notify-queue avisa (push + webhook de WhatsApp, se configurado) os prestadores elegíveis
+      // Fila prioritária: notify-queue avisa por push os prestadores elegíveis
       runInBackground((async () => {
         try {
           const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com'

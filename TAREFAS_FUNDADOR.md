@@ -60,14 +60,13 @@ Tarefas administrativas, fiscais e legais sob responsabilidade dos fundadores pa
   - Inserido no PWA: Razão Social, CNAE 7490-1/04, sede em Rio Verde (GO), links de Termos de Uso e Privacidade.
 ---
 
-## 6. Infraestrutura de Mensageria (WhatsApp)
-- [ ] **Conexão da Instância de Disparo (Evolution API / Z-API):**
-  - Adquirir e ativar chip exclusivo para o Repara RV.
-  - Conectar instância da Evolution API ou Z-API para disparo das notificações da fila prioritária (`notify-queue`) e confirmações pós-aceite (`notify-accepted`).
-  - Configurar as variáveis no Cloudflare / `.dev.vars`:
-    - `WHATSAPP_API_URL`
-    - `WHATSAPP_API_KEY`
-  - Validar entrega real do deep link no celular do prestador: `https://repararv.com/painel?claim=ID`.
+## 6. Alertas e Notificações (sem gateway de WhatsApp)
+- [x] **Decisão (21/09/2026): não usar gateway de WhatsApp (Evolution API / Z-API).** O risco de banimento dos números da plataforma é maior que o ganho.
+  - Prestadores são avisados de chamado novo por **notificação push** dentro do app: cada prestador aprovado toca em "Ativar notificações" no `/painel`.
+  - O cliente acompanha o status em `/acompanhar` (atualiza na hora); a tela da fila pede pra manter o app aberto.
+  - Não é mais necessário: chip exclusivo pra disparo, instância da Evolution/Z-API, `WHATSAPP_API_URL`, `WHATSAPP_API_KEY`.
+  - Continuam existindo os links `wa.me` de clique manual (despacho pelo admin em `/admin/dashboard` e botão de suporte) — não são envio automático.
+- [ ] **Pendente:** ativar as notificações no celular de cada prestador e testar com o botão "Testar" do painel.
 
 ---
 

@@ -71,7 +71,7 @@ Qualquer agente de IA que atue neste projeto deve respeitar as seguintes restri�
 
 2. **Runtime Cloudflare Workers**:
    - O projeto compila via `@opennextjs/cloudflare`.
-   - NUNCA use bibliotecas baseadas em C++, sockets TCP brutos ou SDKs obsoletos. Toda comunicação externa (APIs de pagamento Pix, webhooks, WhatsApp) DEVE usar o `fetch()` nativo do JavaScript.
+   - NUNCA use bibliotecas baseadas em C++, sockets TCP brutos ou SDKs obsoletos. Toda comunicação externa (APIs de pagamento Pix, e-mail via Resend, push, webhooks) DEVE usar o `fetch()` nativo do JavaScript.
 
 3. **Regra Financeira Imutável**:
    - A taxa retida da plataforma é SEMPRE R$ 12,00 por chamado finalizado.

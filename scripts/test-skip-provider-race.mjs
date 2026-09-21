@@ -34,9 +34,9 @@
 //      final se o prestador atribuído é mesmo um dos nossos de teste e avisa
 //      em CAIXA ALTA se não for.)
 //   2. O branch "sem próximo prestador" de skip-provider chama (fire-and-
-//      forget) POST /api/calls/notify-queue — que busca TODOS os prestadores
-//      reais cadastrados e, se PROVIDER_ALERT_WEBHOOK_URL/WHATSAPP_WEBHOOK_URL
-//      estiver configurado, dispara uma notificação de verdade pra cada um.
+//      forget) POST /api/calls/notify-queue — que manda uma notificação PUSH
+//      de verdade pra todo prestador real aprovado que tenha ativado as
+//      notificações no painel (/painel → "Ativar notificações").
 //      Isso seria um incidente real (spam de "cliente aguardando" pra
 //      prestadores de verdade sobre um chamado falso). Por isso este script
 //      cria prestadores de teste ONLINE o suficiente (concorrência + margem)
@@ -292,9 +292,9 @@ async function run() {
   if (queuedResponses.length > 0) {
     log('\n🚨🚨🚨 ALERTA CRÍTICO: uma ou mais chamadas caíram no branch "sem prestador disponível" 🚨🚨🚨');
     log('   Isso significa que POST /api/calls/notify-queue foi disparado de verdade para');
-    log('   este chamado de teste — SE PROVIDER_ALERT_WEBHOOK_URL/WHATSAPP_WEBHOOK_URL');
-    log('   estiver configurado no seu .env.local, prestadores REAIS podem ter recebido');
-    log('   uma notificação falsa agora. Confira o log do servidor (`npm run dev`) e,');
+    log('   este chamado de teste — prestadores REAIS aprovados que tenham ativado as');
+    log('   notificações push podem ter recebido um aviso falso agora. Confira o log');
+    log('   do servidor (`npm run dev`) e,');
     log('   se necessário, avise a equipe.');
   }
 

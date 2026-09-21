@@ -80,7 +80,7 @@ export default function AcompanharPage() {
             toast.success('🎉 Um profissional aceitou seu chamado e já está a caminho! 🚗⚡')
           }
           if (payload.new.status === 'queued') {
-            toast.info('Seu chamado está na fila prioritária. Avisaremos no seu WhatsApp!')
+            toast.info('Seu chamado está na fila prioritária. Fique nesta tela: avisamos aqui assim que um técnico aceitar!')
           }
         }
       )
