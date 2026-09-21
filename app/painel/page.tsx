@@ -22,7 +22,7 @@ interface QueuedCallPreview {
 }
 import { CallAlertModal } from '@/components/call-alert-modal'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { Power, Loader2, MapPin, CreditCard, Zap, Lock, AlertTriangle, Volume2, LogOut, Camera } from 'lucide-react'
+import { Power, Loader2, MapPin, CreditCard, Zap, Lock, AlertTriangle, Volume2, LogOut, Camera, Bell, Clock, CheckCircle2, KeyRound, Pencil, RefreshCw, Wallet, Radio } from 'lucide-react'
 import { toast } from 'sonner'
 import { PanelHeader } from '@/components/provider/panel-header'
 import { audioAlert } from '@/lib/audio-alert'
@@ -567,7 +567,8 @@ export default function PainelPage() {
           className="text-[11px] font-bold hover:underline cursor-pointer flex items-center gap-1 transition-colors"
           style={{ color: 'var(--color-primary)' }}
         >
-          Testar som 🔔
+          Testar som
+          <Bell size={12} strokeWidth={2} className="shrink-0" aria-hidden="true" />
         </button>
       </div>
 
@@ -576,7 +577,7 @@ export default function PainelPage() {
       <section className="mb-6 animate-slide-up">
         <p className="text-xs" style={{ color: 'var(--color-text-subtle)' }}>Olá,</p>
         <h2 className="text-2xl font-black" style={{ color: 'var(--color-text)' }}>
-          {firstName} 👋
+          {firstName}
         </h2>
         {totalToday > 0 && (
           <div
@@ -592,7 +593,7 @@ export default function PainelPage() {
               </span>
             </div>
             <div className="text-[11px] mt-1.5 leading-snug" style={{ color: 'var(--color-text-muted)' }}>
-              ✨ Saldo acumulado na plataforma para repasse via Pix.
+              <Wallet size={12} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />Saldo acumulado na plataforma para repasse via Pix.
               {providerPixKey && (
                 <div className="mt-1.5 pt-1.5 flex items-center justify-between text-[11px]" style={{ borderTop: '1px solid rgba(94, 211, 164, 0.2)' }}>
                   <span style={{ color: 'var(--color-text-subtle)' }}>Chave Pix de repasse:</span>
@@ -604,7 +605,7 @@ export default function PainelPage() {
         )}
         {pendingToday > 0 && (
           <p className="text-xs mt-2 font-medium" style={{ color: 'var(--color-warning)' }}>
-            ⏳ {pendingToday} serviço(s) finalizado(s) — aguardando confirmação do pagamento do cliente via Pix/Cartão
+            <Clock size={13} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />{pendingToday} serviço(s) finalizado(s) — aguardando confirmação do pagamento do cliente via Pix/Cartão
           </p>
         )}
       </section>
@@ -623,17 +624,19 @@ export default function PainelPage() {
           </div>
           {providerPixKey ? (
             <span
-              className="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold"
               style={{ background: 'rgba(94, 211, 164, 0.12)', color: 'var(--color-success)', border: '1px solid rgba(94, 211, 164, 0.25)' }}
             >
-              Pix Ativo ✅
+              Pix Ativo
+              <CheckCircle2 size={12} strokeWidth={2} className="shrink-0" aria-hidden="true" />
             </span>
           ) : (
             <span
-              className="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold"
               style={{ background: 'rgba(237, 198, 107, 0.12)', color: 'var(--color-warning)', border: '1px solid rgba(237, 198, 107, 0.25)' }}
             >
-              Chave Pix Obrigatória ⚠️
+              Chave Pix Obrigatória
+              <AlertTriangle size={12} strokeWidth={2} className="shrink-0" aria-hidden="true" />
             </span>
           )}
         </div>
@@ -676,7 +679,7 @@ export default function PainelPage() {
               {providerPixKey ? (
                 <>
                   <p>
-                    💰 <strong>Chave Pix cadastrada:</strong>{' '}
+                    <KeyRound size={14} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1.5" aria-hidden="true" /><strong>Chave Pix cadastrada:</strong>{' '}
                     <span className="font-mono font-bold px-2 py-0.5 rounded ml-1" style={{ background: 'var(--color-surface-alt)', color: 'var(--color-success)', border: '1px solid var(--color-border)' }}>{providerPixKey}</span>
                   </p>
                   <p className="text-[11px] mt-1" style={{ color: 'var(--color-text-subtle)' }}>
@@ -695,9 +698,10 @@ export default function PainelPage() {
                 setNewPixKeyInput(providerPixKey)
                 setEditingPix(true)
               }}
-              className="btn-secondary py-1.5 text-[11px] shrink-0"
+              className="btn-secondary inline-flex items-center gap-1.5 py-1.5 text-[11px] shrink-0"
             >
-              ✏️ Alterar Chave
+              <Pencil size={12} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+              Alterar Chave
             </button>
           </div>
         )}
@@ -730,10 +734,11 @@ export default function PainelPage() {
               </h3>
             </div>
             <span
-              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
               style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)', border: '1px solid var(--color-border)' }}
             >
-              🔄 Atualização automática
+              <RefreshCw size={11} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+              Atualização automática
             </span>
           </div>
 
@@ -749,7 +754,7 @@ export default function PainelPage() {
                     {(qCall.service as { name?: string })?.name || 'Serviço residencial'}
                   </p>
                   <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--color-text-muted)' }}>
-                    📍 {qCall.neighborhood || 'Rio Verde (GO)'}
+                    <MapPin size={12} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />{qCall.neighborhood || 'Rio Verde (GO)'}
                   </p>
                   <p className="text-xs font-semibold mt-1" style={{ color: 'var(--color-success)' }}>
                     Ganhos: R$ {Number(qCall.provider_cut || 0).toFixed(2).replace('.', ',')} (Total: R$ {Number(qCall.total_price || 0).toFixed(2).replace('.', ',')})
@@ -895,14 +900,17 @@ export default function PainelPage() {
         <p className="text-center text-sm max-w-xs" style={{ color: 'var(--color-text-muted)' }}>
           {!isApproved ? (
             <span className="text-amber-400 text-xs font-semibold block">
-              🔒 {isRejected ? 'Cadastro reprovado na verificação.' : 'Cadastro em análise de segurança.'}
+              <Lock size={12} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />{isRejected ? 'Cadastro reprovado na verificação.' : 'Cadastro em análise de segurança.'}
             </span>
           ) : !hasPixKey ? (
             <span className="text-amber-400 text-xs font-semibold block">
-              🔒 Cadastre sua Chave Pix acima para desbloquear sua disponibilidade.
+              <Lock size={12} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />Cadastre sua Chave Pix acima para desbloquear sua disponibilidade.
             </span>
           ) : isOnline ? (
-            '🟢 Você está visível para clientes próximos.\nMantendo GPS ativo...'
+            <>
+              <Radio size={13} strokeWidth={2} className="inline-block -mt-0.5 mr-1 shrink-0" style={{ color: 'var(--color-success)' }} aria-hidden="true" />
+              Você está visível para clientes próximos. Mantendo GPS ativo...
+            </>
           ) : (
             'Toque para ficar disponível\ne receber chamados.'
           )}

@@ -21,6 +21,7 @@ import {
   Plus,
   Trash2,
   CheckCircle2,
+  XCircle,
   DollarSign,
   Clock,
   Sparkles
@@ -631,10 +632,12 @@ export default function AdminServicesPage() {
                         {/* Indicadores de Escopo */}
                         <div className="flex items-center gap-2 mt-1.5 text-[10px]">
                           <span className="inline-flex items-center gap-1 text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-semibold">
-                            🟢 {includedCount} incluso{includedCount === 1 ? '' : 's'}
+                            <CheckCircle2 size={11} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+                            {includedCount} incluso{includedCount === 1 ? '' : 's'}
                           </span>
                           <span className="inline-flex items-center gap-1 text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 font-semibold">
-                            🔴 {notIncludedCount} não incluso{notIncludedCount === 1 ? '' : 's'}
+                            <XCircle size={11} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+                            {notIncludedCount} não incluso{notIncludedCount === 1 ? '' : 's'}
                           </span>
                           {service.duration_est && (
                             <span className="inline-flex items-center gap-1 text-[var(--color-text-muted)] bg-[var(--color-surface-alt)] px-1.5 py-0.5 rounded">
@@ -873,8 +876,9 @@ export default function AdminServicesPage() {
 
               {/* EDITOR DE TAGS DE ESCOPO: O QUE ESTÁ INCLUSO */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-emerald-400 uppercase tracking-wider">
-                  🟢 O que ESTÁ Incluso (Mão de Obra e Testes)
+                <label className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                  <CheckCircle2 size={14} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+                  O que ESTÁ Incluso (Mão de Obra e Testes)
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -925,8 +929,9 @@ export default function AdminServicesPage() {
 
               {/* EDITOR DE TAGS DE ESCOPO: O QUE NÃO ESTÁ INCLUSO */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-red-400 uppercase tracking-wider">
-                  🔴 O que NÃO Está Incluso (Peças e Produtos Novos)
+                <label className="flex items-center gap-1.5 text-xs font-bold text-red-400 uppercase tracking-wider">
+                  <XCircle size={14} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+                  O que NÃO Está Incluso (Peças e Produtos Novos)
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -1190,8 +1195,9 @@ export default function AdminServicesPage() {
 
               {/* TAGS INCLUSAS */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-emerald-400 uppercase tracking-wider">
-                  🟢 O que ESTÁ Incluso
+                <label className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                  <CheckCircle2 size={14} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+                  O que ESTÁ Incluso
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -1236,8 +1242,9 @@ export default function AdminServicesPage() {
 
               {/* TAGS NÃO INCLUSAS */}
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-red-400 uppercase tracking-wider">
-                  🔴 O que NÃO Está Incluso
+                <label className="flex items-center gap-1.5 text-xs font-bold text-red-400 uppercase tracking-wider">
+                  <XCircle size={14} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+                  O que NÃO Está Incluso
                 </label>
                 <div className="flex gap-2">
                   <input

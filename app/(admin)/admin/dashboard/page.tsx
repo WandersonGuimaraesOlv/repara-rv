@@ -621,11 +621,11 @@ export default function AdminDashboardPage() {
           </div>
           <div className="text-xs text-[var(--color-text-muted)] space-y-0.5">
             <div className="text-emerald-400 font-semibold">
-              ✔ {formatCurrency(metrics.gmvPaid)} liquidado (pago)
+              <Check size={12} strokeWidth={2.5} className="inline-block -mt-0.5 mr-1 shrink-0" aria-hidden="true" />{formatCurrency(metrics.gmvPaid)} liquidado (pago)
             </div>
             {metrics.gmvPending > 0 && (
               <div className="text-amber-400 font-medium">
-                ⏳ + {formatCurrency(metrics.gmvPending)} aguardando Pix
+                <Clock size={12} strokeWidth={2} className="inline-block -mt-0.5 mr-1 shrink-0" aria-hidden="true" />+ {formatCurrency(metrics.gmvPending)} aguardando Pix
               </div>
             )}
           </div>
@@ -644,11 +644,11 @@ export default function AdminDashboardPage() {
           </div>
           <div className="text-xs text-[var(--color-text-muted)] space-y-0.5">
             <div className="text-emerald-400 font-semibold">
-              ✔ {formatCurrency(metrics.platformRevenueRealized)} realizada
+              <Check size={12} strokeWidth={2.5} className="inline-block -mt-0.5 mr-1 shrink-0" aria-hidden="true" />{formatCurrency(metrics.platformRevenueRealized)} realizada
             </div>
             {metrics.platformRevenuePending > 0 && (
               <div className="text-amber-400 font-medium">
-                ⏳ + {formatCurrency(metrics.platformRevenuePending)} a receber
+                <Clock size={12} strokeWidth={2} className="inline-block -mt-0.5 mr-1 shrink-0" aria-hidden="true" />+ {formatCurrency(metrics.platformRevenuePending)} a receber
               </div>
             )}
           </div>
@@ -667,11 +667,11 @@ export default function AdminDashboardPage() {
           </div>
           <div className="text-xs text-[var(--color-text-muted)] space-y-0.5">
             <div className="text-emerald-400 font-semibold">
-              ✔ {formatCurrency(metrics.providerPayoutRealized)} transferido
+              <Check size={12} strokeWidth={2.5} className="inline-block -mt-0.5 mr-1 shrink-0" aria-hidden="true" />{formatCurrency(metrics.providerPayoutRealized)} transferido
             </div>
             {metrics.providerPayoutPending > 0 && (
               <div className="text-amber-400 font-medium">
-                ⏳ + {formatCurrency(metrics.providerPayoutPending)} pendente Pix
+                <Clock size={12} strokeWidth={2} className="inline-block -mt-0.5 mr-1 shrink-0" aria-hidden="true" />+ {formatCurrency(metrics.providerPayoutPending)} pendente Pix
               </div>
             )}
           </div>
@@ -694,8 +694,9 @@ export default function AdminDashboardPage() {
               {metrics.queuedCount} na fila agora
             </span>
             {metrics.stuckQueuedCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-red-500 text-white animate-pulse">
-                {metrics.stuckQueuedCount} estagnado{metrics.stuckQueuedCount > 1 ? 's' : ''} ⚠️
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-black bg-red-500 text-white motion-safe:animate-pulse">
+                <AlertTriangle size={10} strokeWidth={2.25} className="shrink-0" aria-hidden="true" />
+                {metrics.stuckQueuedCount} estagnado{metrics.stuckQueuedCount > 1 ? 's' : ''}
               </span>
             )}
           </div>
@@ -793,7 +794,7 @@ export default function AdminDashboardPage() {
                 <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 flex items-start gap-2.5">
                   <AlertTriangle size={16} className="text-red-400 shrink-0 mt-0.5" />
                   <div>
-                    <strong className="text-red-400 font-bold block">⚠️ Alerta de Capacidade Operacional em Rio Verde:</strong>
+                    <strong className="text-red-400 font-bold block">Alerta de Capacidade Operacional em Rio Verde:</strong>
                     Mais de {cancellationReasonAnalysis.demoraPct.toFixed(0)}% dos cancelamentos são causados por tempo de espera excessivo. Priorize o credenciamento de prestadores nessas categorias.
                   </div>
                 </div>
@@ -947,7 +948,7 @@ export default function AdminDashboardPage() {
                       : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:text-white border border-[var(--color-border)]'
                   }`}
                 >
-                  ✔ Pagos ({metrics.paidCount})
+                  <Check size={12} strokeWidth={2.5} className="inline-block -mt-0.5 mr-1 shrink-0" aria-hidden="true" />Pagos ({metrics.paidCount})
                 </button>
                 <button
                   onClick={() => setPaymentFilter('pending')}
@@ -959,7 +960,7 @@ export default function AdminDashboardPage() {
                       : 'bg-[var(--color-bg)] text-[var(--color-text-muted)] hover:text-white border border-[var(--color-border)]'
                   }`}
                 >
-                  ⏳ Aguardando Pix ({metrics.pendingPaymentCount})
+                  <Clock size={12} strokeWidth={2} className="inline-block -mt-0.5 mr-1 shrink-0" aria-hidden="true" />Aguardando Pix ({metrics.pendingPaymentCount})
                 </button>
               </div>
 
@@ -1035,7 +1036,7 @@ export default function AdminDashboardPage() {
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 mt-1">
-                                <AlertTriangle size={10} className="text-amber-400" /> Aguardando Pix ⚠️
+                                <AlertTriangle size={10} className="text-amber-400" aria-hidden="true" /> Aguardando Pix
                               </span>
                             )}
                             <div className="text-[11px] text-[var(--color-text-muted)] flex items-center gap-1 mt-1">
@@ -1300,7 +1301,8 @@ export default function AdminDashboardPage() {
                           <td className="py-3 px-4">
                             {isArrived ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-red-500/10 text-red-400 border border-red-500/20">
-                                Técnico no Local ⚠️
+                                <AlertTriangle size={11} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+                                Técnico no Local
                               </span>
                             ) : call.provider ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
@@ -1567,12 +1569,14 @@ export default function AdminDashboardPage() {
                               <span className="text-[10px] text-[var(--color-text-subtle)] font-normal">Offline</span>
                             )}
                             {hasMp ? (
-                              <span className="text-[10px] text-emerald-400 font-bold" title="Mercado Pago Conectado">
-                                🟢 MP
+                              <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-bold" title="Mercado Pago Conectado">
+                                <CheckCircle2 size={11} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+                                MP
                               </span>
                             ) : (
-                              <span className="text-[10px] text-red-400 font-bold" title="Mercado Pago Pendente">
-                                🔴 MP Pendente
+                              <span className="inline-flex items-center gap-1 text-[10px] text-red-400 font-bold" title="Mercado Pago Pendente">
+                                <XCircle size={11} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+                                MP Pendente
                               </span>
                             )}
                           </div>

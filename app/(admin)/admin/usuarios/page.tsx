@@ -775,13 +775,13 @@ export default function AdminUsersPage() {
                                   }`}
                                 >
                                   <option value="pending" className="bg-[var(--color-surface)] text-amber-400">
-                                    🟡 Em Análise
+                                    Em Análise
                                   </option>
                                   <option value="approved" className="bg-[var(--color-surface)] text-blue-400">
-                                    🟢 Aprovado (Liberado)
+                                    Aprovado (Liberado)
                                   </option>
                                   <option value="rejected" className="bg-[var(--color-surface)] text-red-400">
-                                    🔴 Reprovado (Bloqueado)
+                                    Reprovado (Bloqueado)
                                   </option>
                                 </select>
                                 <ChevronDown size={13} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--color-text-muted)]" />
@@ -977,7 +977,7 @@ export default function AdminUsersPage() {
                 </p>
               ) : (
                 <p>
-                  ⚠️ <strong>Ação de Segurança Imediata:</strong> O usuário será desconectado e impedido de aceitar ordens de serviço ou ficar online no radar de Rio Verde até que a administração libere seu cadastro.
+                  <AlertTriangle size={13} strokeWidth={2} className="inline-block -mt-0.5 mr-1 shrink-0 text-amber-400" aria-hidden="true" /><strong>Ação de Segurança Imediata:</strong> O usuário será desconectado e impedido de aceitar ordens de serviço ou ficar online no radar de Rio Verde até que a administração libere seu cadastro.
                 </p>
               )}
             </div>
@@ -1024,7 +1024,7 @@ export default function AdminUsersPage() {
 
             <div className="bg-[var(--color-bg)]/80 rounded-2xl p-4 border border-[var(--color-border)]/80 text-xs text-[var(--color-text-muted)] space-y-3">
               <p>
-                ⚠️ O prestador será impedido de ficar online e aceitar chamados até que o cadastro seja reaprovado.
+                <AlertTriangle size={13} strokeWidth={2} className="inline-block -mt-0.5 mr-1 shrink-0 text-amber-400" aria-hidden="true" />O prestador será impedido de ficar online e aceitar chamados até que o cadastro seja reaprovado.
               </p>
               <div>
                 <label htmlFor="reject-reason" className="block text-[11px] font-semibold text-[var(--color-text-muted)] mb-1">
