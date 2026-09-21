@@ -16,10 +16,11 @@ export interface EmailResult {
   error?:  string;
 }
 
-// Remetente padrão do Resend, funciona sem verificar domínio próprio — trocar
-// por um endereço em repararv.com depois de verificar o domínio no Resend
-// para melhor entregabilidade/marca.
-const FROM_ADDRESS = 'Repara RV <onboarding@resend.dev>';
+// O remetente de teste do Resend (onboarding@resend.dev) só entrega pro e-mail
+// do dono da conta — por isso o código de redefinição de PIN nunca chegava a
+// usuários reais. O domínio repararv.com foi verificado no Resend em
+// 21/09/2026 (DKIM + SPF, região sa-east-1).
+export const FROM_ADDRESS = 'Repara RV <noreply@repararv.com>';
 
 export async function sendEmail(payload: EmailPayload, apiKey: string | undefined): Promise<EmailResult> {
   if (!apiKey) {

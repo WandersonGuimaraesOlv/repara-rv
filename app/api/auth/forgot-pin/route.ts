@@ -59,7 +59,7 @@ export async function POST(req: Request) {
 
     const firstName = (profile.full_name || '').trim().split(' ')[0] || 'olá'
     const env = process.env as unknown as { RESEND_API_KEY?: string }
-    await sendEmail(
+    const emailResult = await sendEmail(
       {
         to: profile.email,
         subject: `${code} — Código para redefinir seu PIN Repara RV`,
@@ -75,6 +75,16 @@ export async function POST(req: Request) {
       },
       env.RESEND_API_KEY
     )
+
+    // A resposta ao cliente continua genérica de propósito (anti-enumeração),
+    // mas uma falha de envio não pode passar em branco: sem esse log, o usuário
+    // vê "código enviado" e a equipe não fica sabendo que nada saiu.
+    if (!emailResult.success) {
+      console.error('[API] /api/auth/forgot-pin: e-mail de redefinição NÃO enviado', {
+        profileId: profile.id,
+        error: emailResult.error,
+      })
+    }
 
     return NextResponse.json(GENERIC_RESPONSE)
   } catch (err) {
