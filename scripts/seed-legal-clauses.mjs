@@ -204,7 +204,7 @@ O **Encarregado de Proteção de Dados (DPO)** pode ser contatado pelo e-mail: *
 
 **Para Clientes / Moradores:**
 - Nome completo
-- Número de celular com DDD (utilizado como identificador principal e para notificações WhatsApp)
+- Número de celular com DDD (utilizado como identificador principal de acesso à conta)
 - Endereço residencial completo e coordenadas geográficas (somente durante a abertura de chamado)
 - Histórico de chamados e ordens de serviço na Plataforma
 - Dados de aceite de termos: data, hora e versão do documento aceito

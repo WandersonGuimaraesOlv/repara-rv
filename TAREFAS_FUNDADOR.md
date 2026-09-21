@@ -66,6 +66,7 @@ Tarefas administrativas, fiscais e legais sob responsabilidade dos fundadores pa
   - O cliente acompanha o status em `/acompanhar` (atualiza na hora); a tela da fila pede pra manter o app aberto.
   - Não é mais necessário: chip exclusivo pra disparo, instância da Evolution/Z-API, `WHATSAPP_API_URL`, `WHATSAPP_API_KEY`.
   - Continuam existindo os links `wa.me` de clique manual (despacho pelo admin em `/admin/dashboard` e botão de suporte) — não são envio automático.
+  - Chamado parado na fila há mais de 5 minutos: além do card vermelho em `/admin/dashboard`, um agendador (Cron Trigger de 1 minuto, `custom-worker.ts`) manda e-mail pro endereço do secret `OPS_ALERT_EMAIL` (via Resend).
 - [ ] **Pendente:** ativar as notificações no celular de cada prestador e testar com o botão "Testar" do painel.
 
 ---
