@@ -93,7 +93,7 @@ Qualquer agente de IA que atue neste projeto deve respeitar as seguintes restri�
 ## 4. Padrões de Ouro (Golden Templates)
 Siga rigorosamente estes modelos canônicos para manter consistência absoluta no código:
 
-### Padrão para Validação com Zod (`lib/validations/service-call.ts`)
+### Padrão para Validação com Zod (modelo ilustrativo — o arquivo `lib/validations/service-call.ts` foi removido por ser código morto; os schemas reais ficam em `lib/validations/`)
 ```typescript
 import { z } from 'zod';
 
@@ -109,7 +109,7 @@ export const createServiceCallSchema = z.object({
 export type CreateServiceCallInput = z.infer<typeof createServiceCallSchema>;
 ```
 
-### Padrão para Server Actions (`app/actions/service-calls.ts`)
+### Padrão para Server Actions (modelo ilustrativo — o arquivo `app/actions/service-calls.ts` foi removido por ser código morto; as actions reais ficam em `app/actions/`)
 ```typescript
 'use server';
 
