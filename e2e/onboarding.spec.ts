@@ -16,6 +16,26 @@ import { admin, cleanupTestData } from './helpers/test-users'
 
 const RUN_ID = Date.now().toString(36)
 
+// CPF com dígitos verificadores válidos, gerado na hora (9 dígitos aleatórios +
+// 2 dígitos calculados). O formulário valida o CPF antes de olhar o checkbox
+// dos termos (app/onboarding/page.tsx), então com um CPF inválido tipo
+// '00000000000' o submit era recusado pelo CPF e o teste nunca provava que o
+// bloqueio vem dos termos — e o cadastro completo nunca chegava ao fim.
+function generateValidCpf(): string {
+  const base = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10))
+  // evita sequências repetidas (ex: 111111111), que o validador rejeita
+  if (base.every((d) => d === base[0])) base[8] = (base[8] + 1) % 10
+  const digit = (nums: number[]) => {
+    const factor = nums.length + 1
+    const sum = nums.reduce((acc, n, i) => acc + n * (factor - i), 0)
+    const rest = (sum * 10) % 11
+    return rest === 10 ? 0 : rest
+  }
+  const d1 = digit(base)
+  const d2 = digit([...base, d1])
+  return [...base, d1, d2].join('')
+}
+
 test.describe('Onboarding — primeiro acesso completa o perfil', () => {
   let browser: Browser
   let userId: string
@@ -59,12 +79,16 @@ test.describe('Onboarding — primeiro acesso completa o perfil', () => {
     await page.click('#role-client')
     await page.fill('#input-full-name', '[E2E] Usuário Onboarding')
     await page.fill('#input-onboarding-phone', phone)
-    await page.fill('#input-cpf-cnpj', '00000000000')
+    await page.fill('#input-cpf-cnpj', generateValidCpf())
 
     // Tenta enviar SEM marcar o checkbox — o form deve recusar (toast de erro)
     // e continuar na mesma tela, sem criar o profile.
     await page.click('#btn-complete-onboarding', { force: true })
-    await page.waitForTimeout(1000)
+    // O motivo da recusa tem que ser os termos (o CPF já é válido nesta altura):
+    // o checkbox é `required`, então o próprio navegador barra o envio antes de
+    // o handler rodar (por isso não há toast) e o campo fica inválido.
+    const termsMissing = await page.$eval('#checkbox-onboarding-terms', (el) => (el as HTMLInputElement).validity.valueMissing)
+    expect(termsMissing, 'o checkbox de termos deveria estar bloqueando o envio').toBe(true)
     await expect(page).toHaveURL(/\/onboarding/)
     const { data: profileBeforeCheck } = await admin.from('profiles').select('id').eq('id', userId).maybeSingle()
     expect(profileBeforeCheck, 'profile não deveria existir antes de aceitar os termos').toBeNull()

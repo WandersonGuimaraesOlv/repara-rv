@@ -21,6 +21,7 @@
     "test:load": "node --env-file=.env.local --env-file=.dev.vars scripts/load-test.mjs",
     "test:profile-privilege": "node --env-file=.env.local --env-file=.dev.vars scripts/test-profile-privilege-escalation.mjs",
     "test:legal-admin": "node --env-file=.env.local --env-file=.dev.vars scripts/test-legal-admin.mjs",
+    "test:rpc-permissions": "node --env-file=.env.local --env-file=.dev.vars scripts/test-rpc-permissions.mjs",
     "test:auth-pin-race": "node --env-file=.env.local --env-file=.dev.vars scripts/test-auth-pin-race.mjs",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",

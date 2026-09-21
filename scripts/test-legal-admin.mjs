@@ -158,12 +158,50 @@ async function main() {
   testClauseId = adminInsert?.id ?? null;
   record('Service Role consegue inserir cláusula normalmente', !adminInsertError && Boolean(testClauseId), adminInsertError?.message);
 
-  if (testClauseId) {
-    const { error: rpcError } = await admin.rpc('reorder_legal_clauses', {
-      p_document_slug: 'termos',
-      p_ordered_ids: [testClauseId],
-    });
-    record('RPC reorder_legal_clauses executa sem erro', !rpcError, rpcError?.message);
+  // 4. Reordenação atômica. Achado de 21/09/2026: a versão anterior deste teste
+  // mandava só a cláusula de teste (índice 0), o que só passava com a tabela
+  // vazia — com os documentos carregados a função quebrava em "duplicate key"
+  // e o arrastar-e-soltar de /admin/juridico não funcionava. Agora troca as 2
+  // primeiras cláusulas de 'contrato' (o documento menos sensível) e SEMPRE
+  // restaura a ordem original no final.
+  const { data: contratoClauses } = await admin
+    .from('legal_clauses')
+    .select('id')
+    .eq('document_slug', 'contrato')
+    .order('order_index', { ascending: true });
+  const originalOrder = (contratoClauses ?? []).map((c) => c.id);
+
+  if (originalOrder.length >= 2) {
+    const swappedOrder = [originalOrder[1], originalOrder[0], ...originalOrder.slice(2)];
+    try {
+      const { error: rpcError } = await admin.rpc('reorder_legal_clauses', {
+        p_document_slug: 'contrato',
+        p_ordered_ids: swappedOrder,
+      });
+      record('RPC reorder_legal_clauses troca as 2 primeiras cláusulas sem erro', !rpcError, rpcError?.message);
+
+      const { data: afterSwap } = await admin
+        .from('legal_clauses')
+        .select('id')
+        .eq('document_slug', 'contrato')
+        .order('order_index', { ascending: true });
+      const swappedOk = afterSwap?.[0]?.id === originalOrder[1] && afterSwap?.[1]?.id === originalOrder[0];
+      record('Ordem no banco reflete a troca', Boolean(swappedOk), swappedOk ? undefined : 'a ordem lida do banco não mudou');
+    } finally {
+      const { error: restoreError } = await admin.rpc('reorder_legal_clauses', {
+        p_document_slug: 'contrato',
+        p_ordered_ids: originalOrder,
+      });
+      const { data: afterRestore } = await admin
+        .from('legal_clauses')
+        .select('id')
+        .eq('document_slug', 'contrato')
+        .order('order_index', { ascending: true });
+      const restored = (afterRestore ?? []).every((c, i) => c.id === originalOrder[i]);
+      record('Ordem original de "contrato" restaurada', !restoreError && restored, restoreError?.message);
+    }
+  } else {
+    record('RPC reorder_legal_clauses (pulado: "contrato" tem menos de 2 cláusulas)', true);
   }
 
   await cleanup();
