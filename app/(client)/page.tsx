@@ -340,7 +340,7 @@ export default function TriiderClientHomePage() {
           1. HEADER RESPONSIVO
           ──────────────────────────────────────────────────────── */}
       <header
-        className="sticky top-0 z-30 w-full"
+        className="surface-dark sticky top-0 z-30 w-full"
         style={{
           background: 'rgba(20, 38, 34, 0.96)',
           borderBottom: '1px solid var(--color-border)',

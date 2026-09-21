@@ -134,7 +134,8 @@ export function EmergencySosButton({
             </div>
 
             <p className="text-xs md:text-sm text-[var(--color-text-muted)] leading-relaxed text-left bg-[var(--color-surface)]/60 p-3.5 rounded-xl border border-[var(--color-border)]">
-              ⚠️ <strong>Ao confirmar:</strong>
+              <AlertTriangle size={14} strokeWidth={2} className="inline-block -mt-0.5 mr-1.5 shrink-0" style={{ color: 'var(--color-warning)' }} aria-hidden="true" />
+              <strong>Ao confirmar:</strong>
               <br />
               <span className="block mt-1">
                 1. Seu telefone discará imediatamente para o <strong>190 (Polícia Militar)</strong>.

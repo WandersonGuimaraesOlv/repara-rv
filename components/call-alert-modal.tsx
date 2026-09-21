@@ -4,7 +4,7 @@ import { useCallAlert } from '@/hooks/useCallAlert'
 import { useAcceptTimer } from '@/hooks/useAcceptTimer'
 import { ServiceCall } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
-import { CheckCircle, X, Clock, MapPin } from 'lucide-react'
+import { Bell, CheckCircle, X, Clock, MapPin } from 'lucide-react'
 import { useEffect } from 'react'
 
 interface CallAlertModalProps {
@@ -72,8 +72,9 @@ export function CallAlertModal({
         {/* Cabeçalho com timer circular */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: 'var(--color-accent)' }}>
-              🔔 Novo Chamado!
+            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: 'var(--color-accent)' }}>
+              <Bell size={14} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+              Novo Chamado!
             </p>
             <h3 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>
               {serviceName}

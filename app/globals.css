@@ -83,6 +83,37 @@
 }
 
 /* ──────────────────────────────────────────────────────────
+   SUPERFÍCIE ESCURA FIXA — cabeçalhos
+   O fundo dos cabeçalhos é verde-escuro nos dois temas (rgba(20, 38, 34, .96)
+   inline em components/site-header.tsx e app/(client)/page.tsx). Os controles
+   dentro dele leem as variáveis do tema, então no modo claro (.light) o botão
+   de tema virava um quadrado claro no topo escuro e links/ícones ficavam com o
+   verde-escuro do texto claro sobre o fundo escuro. Esta classe trava a paleta
+   ESCURA só dentro do elemento, nos dois temas. Mantenha em sincronia com :root.
+   ────────────────────────────────────────────────────────── */
+.surface-dark {
+  --color-surface:         #142622;
+  --color-surface-alt:     #101f1d;
+  --color-surface-deep:    #07100f;
+  --color-border:          #29483f;
+  --color-border-strong:   #3b6255;
+  --color-primary:         #0a9b70;
+  --color-primary-hover:   #0db982;
+  --color-primary-soft:    #173c32;
+  --color-primary-glow:    rgba(10, 155, 112, 0.22);
+  --color-accent:          #b8ef75;
+  --color-accent-soft:     #dff7ed;
+  --color-text:            #edf8f3;
+  --color-text-muted:      #a9bcb5;
+  --color-text-subtle:     #829a91;
+  --color-success:         #5ed3a4;
+  --color-danger:          #f47c7c;
+  --color-warning:         #edc66b;
+  --color-info:            #60c8e8;
+  color: var(--color-text);
+}
+
+/* ──────────────────────────────────────────────────────────
    BASE
    ────────────────────────────────────────────────────────── */
 *, *::before, *::after {

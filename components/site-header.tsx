@@ -139,7 +139,7 @@ export function SiteHeader({
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
         }}
-        className="sticky top-0 z-40 w-full"
+        className="surface-dark sticky top-0 z-40 w-full"
       >
         <div className="content-container">
           <div className="flex items-center justify-between h-14 sm:h-16 gap-2">

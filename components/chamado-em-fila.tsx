@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import { MapPin, Smartphone } from 'lucide-react';
 
 interface ChamadoEmFilaProps {
   call: {
@@ -77,10 +78,10 @@ export function ChamadoEmFila({ call, onCancel }: ChamadoEmFilaProps) {
         }}
       >
         <div
-          className="p-2 rounded-xl text-lg shrink-0"
+          className="p-2 rounded-xl shrink-0"
           style={{ background: 'var(--color-primary-soft)', color: 'var(--color-accent)' }}
         >
-          📲
+          <Smartphone size={20} strokeWidth={2} aria-hidden="true" />
         </div>
         <div>
           <p className="text-sm font-bold" style={{ color: 'var(--color-text)' }}>
@@ -109,7 +110,7 @@ export function ChamadoEmFila({ call, onCancel }: ChamadoEmFilaProps) {
               {call.service_name}
             </p>
             <p className="text-xs mt-1 flex items-center gap-1 line-clamp-2" style={{ color: 'var(--color-text-muted)' }}>
-              <span>📍</span> {call.address}
+              <MapPin size={12} strokeWidth={2} className="shrink-0" aria-hidden="true" /> {call.address}
             </p>
           </div>
           <span className="text-lg font-black shrink-0" style={{ color: 'var(--color-accent)' }}>
