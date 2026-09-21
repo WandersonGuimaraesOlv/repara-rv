@@ -229,7 +229,7 @@ export default function CadastroPage() {
       } catch {}
 
       setLoading(false)
-      toast.success(`Cadastro realizado com sucesso! Bem-vindo ao Repara RV 🎉`)
+      toast.success(`Cadastro realizado com sucesso! Bem-vindo ao Repara RV`)
 
       if (role === 'provider') {
         router.replace('/painel')

@@ -173,7 +173,7 @@ export default function PainelPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       if (params.get('mp_connected') === 'true') {
-        toast.success('Conta Mercado Pago conectada com sucesso! Split automático ativado ⚡')
+        toast.success('Conta Mercado Pago conectada com sucesso! Split automático ativado')
         const url = new URL(window.location.href)
         url.searchParams.delete('mp_connected')
         window.history.replaceState({}, '', url.toString())
@@ -292,7 +292,7 @@ export default function PainelPage() {
 
     setIsOnline(newOnline)
     setTogglingOnline(false)
-    toast.success(newOnline ? '✅ Você está online! Aguardando chamados.' : '🔴 Você está offline.')
+    toast.success(newOnline ? 'Você está online! Aguardando chamados.' : 'Você está offline.')
   }
 
   // Supabase Realtime + Polling — escuta novos chamados searching para este prestador
@@ -489,11 +489,11 @@ export default function PainelPage() {
       })
       const data = await res.json()
       if (res.ok) {
-        toast.success('Chamado assumido com sucesso! Abrindo atendimento... 🚗⚡')
+        toast.success('Chamado assumido com sucesso! Abrindo atendimento...')
         router.push(`/chamado/${callId}`)
       } else if (res.status === 409 || data.code === 'CALL_ALREADY_CLAIMED') {
         // Alerta amigável e acolhedor para o Prestador B (que perdeu no milissegundo)
-        toast.info('⚡ Chamado já assumido!', {
+        toast.info('Chamado já assumido!', {
           description: 'Outro prestador foi mais rápido e pegou este serviço. Continue online no painel para receber os próximos chamados.',
           duration: 6000,
         })
@@ -556,7 +556,7 @@ export default function PainelPage() {
             try {
               await audioAlert.unlockAudio()
               await audioAlert.playCallChime()
-              toast.success('🔊 Som de alerta reproduzido!', {
+              toast.success('Som de alerta reproduzido!', {
                 description: 'Dica: aumente o volume de mídia do celular e certifique-se de que o modo silencioso (no iPhone) está desativado.',
                 duration: 5000,
               })

@@ -1,7 +1,7 @@
 'use client'
 
 import { buildGoogleMapsUrl, buildWazeUrl } from '@/lib/utils'
-import { Map, Navigation } from 'lucide-react'
+import { Map, MapPin, Navigation } from 'lucide-react'
 
 interface NavigationButtonsProps {
   lat: number
@@ -17,7 +17,7 @@ export function NavigationButtons({ lat, lng, address }: NavigationButtonsProps)
     <div className="space-y-2">
       {address && (
         <p className="text-xs text-center mb-3" style={{ color: 'var(--color-text-muted)' }}>
-          📍 {address}
+          <MapPin size={13} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />{address}
         </p>
       )}
       <div className="grid grid-cols-2 gap-3">

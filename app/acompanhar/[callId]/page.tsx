@@ -8,7 +8,7 @@ import { CallStatusTracker } from '@/components/call-status-tracker'
 import { PixPaymentModal } from '@/components/pix-payment-modal'
 import { EmergencySosButton } from '@/components/emergency-sos-button'
 import { formatCurrency } from '@/lib/utils'
-import { XCircle, Loader2, Star, ArrowLeft, CheckCircle2, AlertTriangle, CreditCard, FileText } from 'lucide-react'
+import { XCircle, Loader2, Star, ArrowLeft, CheckCircle2, AlertTriangle, CreditCard, FileText, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { CallChat } from '@/components/chat/call-chat'
@@ -72,12 +72,12 @@ export default function AcompanharPage() {
               toast.info('Serviço concluído pelo técnico! Realize o pagamento via Pix.')
               setShowPix(true)
             } else {
-              toast.success('🎉 Pagamento confirmado com sucesso!')
+              toast.success('Pagamento confirmado com sucesso!')
               setShowPix(false)
             }
           }
           if (payload.new.status === 'accepted' || payload.new.status === 'on_the_way') {
-            toast.success('🎉 Um profissional aceitou seu chamado e já está a caminho! 🚗⚡')
+            toast.success('Um profissional aceitou seu chamado e já está a caminho!')
           }
           if (payload.new.status === 'queued') {
             toast.info('Seu chamado está na fila prioritária. Fique nesta tela: avisamos aqui assim que um técnico aceitar!')
@@ -177,7 +177,7 @@ export default function AcompanharPage() {
     setRating(stars)
     await supabase.from('service_ratings').insert({ call_id: callId, rating: stars })
     setRated(true)
-    toast.success('Obrigado pela avaliação! ⭐')
+    toast.success('Obrigado pela avaliação!')
   }
 
   if (loading) {
@@ -271,7 +271,7 @@ export default function AcompanharPage() {
                   {(call.service as { name?: string })?.name ?? 'Serviço'}
                 </p>
                 <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
-                  📍 {call.client_address}
+                  <MapPin size={13} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />{call.client_address}
                 </p>
               </div>
               <div className="text-right">
@@ -353,7 +353,7 @@ export default function AcompanharPage() {
                 </button>
               ))}
             </div>
-            {rated && <p className="text-xs mt-2" style={{ color: 'var(--color-success)' }}>Avaliação enviada! Obrigado ⭐</p>}
+            {rated && <p className="text-xs mt-2" style={{ color: 'var(--color-success)' }}>Avaliação enviada! Obrigado!</p>}
           </div>
 
           {/* Comprovante Oficial para Imobiliária / Inquilino */}

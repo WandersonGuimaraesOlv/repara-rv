@@ -597,7 +597,7 @@ export default function TriiderClientHomePage() {
           </div>
           <div className="min-w-0">
             <p className="text-lg sm:text-xl font-black tracking-tight truncate" style={{ color: 'var(--color-text)' }}>
-              {firstName ? `Olá, ${firstName}!` : 'Olá! 👋'}
+              {firstName ? `Olá, ${firstName}!` : 'Olá!'}
             </p>
             <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
               <span className="live-dot" />

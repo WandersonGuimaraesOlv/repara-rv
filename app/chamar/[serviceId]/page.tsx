@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { QuickService } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { MapPin, Loader2, AlertTriangle, CheckCircle, ArrowLeft, CheckCircle2, XCircle } from 'lucide-react'
+import { MapPin, Loader2, AlertTriangle, CheckCircle, ArrowLeft, CheckCircle2, XCircle, Wrench } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { DEFAULT_SERVICES, getServiceScope } from '@/lib/catalog'
@@ -145,7 +145,7 @@ export default function ChamarServicePage() {
         return
       }
 
-      toast.success('Chamado criado! Conectando com prestador em Rio Verde 🚗')
+      toast.success('Chamado criado! Conectando com prestador em Rio Verde')
       router.replace(`/acompanhar/${result.call_id}`)
     } catch (err) {
       setLoading(false)
@@ -214,7 +214,7 @@ export default function ChamarServicePage() {
           {/* Localização GPS */}
           <div>
             <label className="block text-xs font-semibold mb-2" style={{ color: 'var(--color-text-muted)' }}>
-              📍 Sua localização
+              <MapPin size={13} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />Sua localização
             </label>
             {geoLoading ? (
               <div className="input flex items-center gap-2" style={{ color: 'var(--color-text-muted)' }}>
@@ -306,7 +306,7 @@ export default function ChamarServicePage() {
             <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" style={{ color: '#F59E0B' }} />
             <div>
               <p className="text-xs font-semibold mb-1" style={{ color: '#F59E0B' }}>
-                ⚠️ Leia antes de confirmar
+                Leia antes de confirmar
               </p>
               <p className="text-xs" style={{ color: '#FCD34D' }}>
                 Os valores cobrem <strong>exclusivamente a mão de obra</strong>. Peças, conectores, fitas, vedantes ou aparelhos novos devem ser fornecidos pelo cliente ou combinados à parte com o prestador.
@@ -344,7 +344,10 @@ export default function ChamarServicePage() {
                   Buscando prestador...
                 </>
               ) : (
-                '🔧 Chamar Prestador Agora'
+                <>
+                  <Wrench size={18} strokeWidth={2} aria-hidden="true" />
+                  Chamar Prestador Agora
+                </>
               )}
             </button>
           </div>

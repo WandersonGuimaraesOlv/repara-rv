@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Send, AlertCircle, Loader2 } from 'lucide-react'
+import { Send, AlertCircle, Loader2, Package, Zap, Car } from 'lucide-react'
 import { CallMessage } from '@/lib/types'
 
 interface CallChatProps {
@@ -148,26 +148,29 @@ export function CallChat({ callId, currentUserId, userRole }: CallChatProps) {
           <button
             type="button"
             onClick={() => handleSend('Você já está com a peça nova em mãos?')}
-            className="px-2.5 py-1 hover:brightness-125 active:scale-95 rounded-full text-[11px] font-medium transition-all"
+            className="inline-flex items-center gap-1 px-2.5 py-1 hover:brightness-125 active:scale-95 rounded-full text-[11px] font-medium transition-all"
             style={{ background: 'var(--color-surface-alt)', color: 'var(--color-text-muted)' }}
           >
-            📦 Já comprou a peça?
+            <Package size={12} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+            Já comprou a peça?
           </button>
           <button
             type="button"
             onClick={() => handleSend('A voltagem no local é 110V ou 220V?')}
-            className="px-2.5 py-1 hover:brightness-125 active:scale-95 rounded-full text-[11px] font-medium transition-all"
+            className="inline-flex items-center gap-1 px-2.5 py-1 hover:brightness-125 active:scale-95 rounded-full text-[11px] font-medium transition-all"
             style={{ background: 'var(--color-surface-alt)', color: 'var(--color-text-muted)' }}
           >
-            ⚡ 110V ou 220V?
+            <Zap size={12} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+            110V ou 220V?
           </button>
           <button
             type="button"
             onClick={() => handleSend('Já estou me deslocando até o endereço.')}
-            className="px-2.5 py-1 hover:brightness-125 active:scale-95 rounded-full text-[11px] font-medium transition-all"
+            className="inline-flex items-center gap-1 px-2.5 py-1 hover:brightness-125 active:scale-95 rounded-full text-[11px] font-medium transition-all"
             style={{ background: 'var(--color-surface-alt)', color: 'var(--color-text-muted)' }}
           >
-            🚗 A caminho
+            <Car size={12} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+            A caminho
           </button>
         </div>
       )}

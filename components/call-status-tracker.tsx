@@ -80,7 +80,7 @@ export function CallStatusTracker({
 
       {estimatedMinutes && status === 'on_the_way' && (
         <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>
-          ⏱ Chegada estimada em <strong>{estimatedMinutes} min</strong>
+          <Clock size={14} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />Chegada estimada em <strong>{estimatedMinutes} min</strong>
         </p>
       )}
 

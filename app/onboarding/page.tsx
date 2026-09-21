@@ -128,7 +128,7 @@ export default function OnboardingPage() {
         role,
       }))
     } catch {}
-    toast.success('Perfil criado! Bem-vindo ao Repara RV 🎉')
+    toast.success('Perfil criado! Bem-vindo ao Repara RV')
     router.replace(role === 'provider' ? '/painel' : '/')
   }
 
@@ -154,7 +154,7 @@ export default function OnboardingPage() {
             <Wrench size={22} className="text-white" />
           </div>
           <h1 className="text-2xl font-black tracking-tight" style={{ color: 'var(--color-text)' }}>
-            Complete seu Perfil 🚀
+            Complete seu Perfil
           </h1>
           <p className="text-xs sm:text-sm mt-1" style={{ color: 'var(--color-text-muted)' }}>
             Onboarding rápido e sem atrito para Rio Verde (GO)

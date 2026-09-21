@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Phone, Lock, ArrowRight, Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { Phone, Lock, ArrowRight, Eye, EyeOff, ShieldCheck, Lightbulb } from 'lucide-react'
 import { toast } from 'sonner'
 import { Logo } from '@/components/logo'
 import { PwaInstallButton } from '@/components/pwa-install-button'
@@ -94,7 +94,7 @@ export default function LoginPage() {
       }
 
       if (json.isNew || !profile) {
-        toast.success('Acesso liberado! Vamos completar seu cadastro 🎉')
+        toast.success('Acesso liberado! Vamos completar seu cadastro')
         router.replace('/onboarding')
       } else if (!profile.email) {
         // Achado (16/09/2026): contas criadas antes do e-mail virar
@@ -102,10 +102,10 @@ export default function LoginPage() {
         // preenchimento agora, antes de liberar o destino normal.
         router.replace(`/completar-email?role=${profile.role}`)
       } else if (profile.role === 'provider') {
-        toast.success(`Bem-vindo de volta, ${profile.full_name || 'Profissional'}! ⚡`)
+        toast.success(`Bem-vindo de volta, ${profile.full_name || 'Profissional'}!`)
         router.replace('/painel')
       } else {
-        toast.success(`Bem-vindo de volta, ${profile.full_name || 'Cliente'}! 🏠`)
+        toast.success(`Bem-vindo de volta, ${profile.full_name || 'Cliente'}!`)
         router.replace('/')
       }
     } catch {
@@ -224,7 +224,7 @@ export default function LoginPage() {
               />
             </div>
             <p className="text-[11px] mt-2 leading-snug" style={{ color: 'var(--color-text-subtle)' }}>
-              💡 <strong>Primeiro acesso?</strong> Você pode{' '}
+              <Lightbulb size={12} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" /><strong>Primeiro acesso?</strong> Você pode{' '}
               <Link href="/cadastro" className="font-bold hover:underline" style={{ color: 'var(--color-primary)' }}>
                 clicar aqui para se cadastrar
               </Link>.

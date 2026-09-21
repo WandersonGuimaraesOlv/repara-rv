@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MapPin, CheckCircle2, AlertCircle } from 'lucide-react';
+import { MapPin, CheckCircle2, AlertCircle, Lightbulb } from 'lucide-react';
 
 // Principais e mais populosos bairros de Rio Verde - GO (base expansível)
 export const BAIRROS_RIO_VERDE = [
@@ -172,7 +172,7 @@ export function EnderecoForm({ onAddressChange, initialNeighborhood = 'Setor Cen
           ))}
         </datalist>
         <p className="text-[11px] mt-1" style={{ color: 'var(--color-text-subtle)' }}>
-          💡 Digite as primeiras letras para sugestões ou digite livremente se for condomínio novo.
+          <Lightbulb size={12} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />Digite as primeiras letras para sugestões ou digite livremente se for condomínio novo.
         </p>
       </div>
 

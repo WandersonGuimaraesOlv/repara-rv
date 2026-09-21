@@ -119,7 +119,7 @@ export function PixPaymentModal({
 
         if (data?.no_show_fee_status === 'paid') {
           setIsPaid(true)
-          toast.success('🎉 Pagamento confirmado com sucesso!')
+          toast.success('Pagamento confirmado com sucesso!')
         }
         return
       }
@@ -132,7 +132,7 @@ export function PixPaymentModal({
 
       if (data?.payment_status === 'paid') {
         setIsPaid(true)
-        toast.success('🎉 Pagamento confirmado com sucesso!')
+        toast.success('Pagamento confirmado com sucesso!')
       }
       const remoteCheckout = (data?.cancel_metadata as Record<string, unknown>)?.checkout_url as string | undefined || data?.cancel_note
       if (remoteCheckout && !cardUrl) {

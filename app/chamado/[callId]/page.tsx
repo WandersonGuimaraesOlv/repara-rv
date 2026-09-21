@@ -7,7 +7,7 @@ import { ServiceCall, CancelReason } from '@/lib/types'
 import { NavigationButtons } from '@/components/navigation-buttons'
 import { EmergencySosButton } from '@/components/emergency-sos-button'
 import { formatCurrency } from '@/lib/utils'
-import { CheckCircle, XCircle, Loader2, ArrowLeft, Wrench, MapPin, DollarSign, KeyRound } from 'lucide-react'
+import { CheckCircle, XCircle, Loader2, ArrowLeft, Wrench, MapPin, DollarSign, KeyRound, AlertTriangle, Map as MapIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { CallChat } from '@/components/chat/call-chat'
@@ -248,7 +248,7 @@ export default function ChamadoProviderPage() {
 
       {/* Aviso de peças */}
       <div className="banner-warning mb-4 animate-slide-up" style={{ animationDelay: '80ms' }}>
-        <span className="text-sm flex-shrink-0">⚠️</span>
+        <AlertTriangle size={16} strokeWidth={2} className="flex-shrink-0" style={{ color: '#F59E0B' }} aria-hidden="true" />
         <p className="text-xs" style={{ color: '#FCD34D' }}>
           <strong>Lembre o cliente:</strong> peças e materiais são cobrados à parte, conforme combinado.
         </p>
@@ -258,7 +258,7 @@ export default function ChamadoProviderPage() {
       {lat !== undefined && lng !== undefined && lat !== null && lng !== null && (
         <div className="card p-4 mb-4 animate-slide-up" style={{ animationDelay: '120ms' }}>
           <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text)' }}>
-            🗺️ Navegar até o local
+            <MapIcon size={15} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1.5" aria-hidden="true" />Navegar até o local
           </p>
           <NavigationButtons lat={lat} lng={lng} address={call.client_address} />
         </div>
