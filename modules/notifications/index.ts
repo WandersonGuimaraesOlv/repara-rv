@@ -8,6 +8,8 @@ export { notifyProvider, notifyProviderBatch } from './services/unified-dispatch
 export type { NotifyResult, NotificationEnv } from './services/unified-dispatcher';
 
 export { buildNotificationEnv } from './services/notification-env';
+export { pushCallAlert } from './services/call-alerts';
+export type { CallAlertOptions } from './services/call-alerts';
 
 // WhatsApp (despacho emergencial via /admin/dashboard)
 export {

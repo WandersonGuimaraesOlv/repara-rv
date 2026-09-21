@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { DEFAULT_SERVICES } from '@/lib/catalog'
+import { runInBackground } from '@/lib/background'
+import { pushCallAlert } from '@/modules/notifications'
 
 // service_id aceita tanto UUID do catálogo quanto o id textual de DEFAULT_SERVICES
 // (ver fallback por nome logo abaixo) — por isso não é `.uuid()`.
@@ -176,9 +178,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: callError?.message || 'Erro ao criar chamado no sistema.' }, { status: 500 })
     }
 
-    // Se entrou na fila prioritária, notifica prestadores cadastrados via WhatsApp/webhook (fire-and-forget assíncrono)
+    // Avisa os prestadores em segundo plano, sem atrasar a resposta ao cliente.
+    // runInBackground usa o waitUntil do Workers: uma promessa solta ("void fetch")
+    // pode ser cancelada quando a resposta termina.
     if (isQueued) {
-      void (async () => {
+      // Fila prioritária: notify-queue avisa (push + webhook de WhatsApp, se configurado) os prestadores elegíveis
+      runInBackground((async () => {
         try {
           const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com'
           const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost'))
@@ -193,7 +198,10 @@ export async function POST(request: NextRequest) {
         } catch (err) {
           console.warn('[API /api/calls/create] Falha assíncrona ao invocar notify-queue:', err)
         }
-      })()
+      })())
+    } else {
+      // Atribuição direta ao prestador mais próximo: o Realtime só o alcança com o app aberto
+      runInBackground(pushCallAlert({ callId: call.id, providerIds: [String(nearestProvider)] }))
     }
 
     return NextResponse.json({ call_id: call.id, status: call.status })

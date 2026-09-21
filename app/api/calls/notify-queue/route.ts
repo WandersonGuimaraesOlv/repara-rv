@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
+import { pushCallAlert } from '@/modules/notifications'
 
 const notifyQueueSchema = z.object({
   call_id: z.string().uuid('call_id inválido'),
@@ -92,9 +93,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 4. Push (Web Push/FCM) pros prestadores aprovados e não bloqueados que ativaram
+    //    as notificações. Independe do webhook de WhatsApp acima (que só roda se
+    //    PROVIDER_ALERT_WEBHOOK_URL/WHATSAPP_WEBHOOK_URL estiverem configuradas).
+    const push = await pushCallAlert({ callId: call_id })
+
     return NextResponse.json({
       success: true,
       call_id,
+      push,
       notified_count: notificationPayloads.length,
       sample_message: notificationPayloads[0]?.message || null,
     })

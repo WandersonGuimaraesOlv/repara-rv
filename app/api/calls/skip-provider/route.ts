@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { runInBackground } from '@/lib/background'
+import { pushCallAlert } from '@/modules/notifications'
 
 const skipProviderSchema = z.object({
   call_id:             z.string().uuid('call_id inválido'),
@@ -144,11 +146,14 @@ export async function POST(request: NextRequest) {
           ? rawAppUrl
           : 'https://repararv.com'
 
-        fetch(`${appUrl}/api/calls/notify-queue`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ call_id }),
-        }).catch(err => console.warn('[API /api/calls/skip-provider] Falha ao invocar notify-queue:', err))
+        // waitUntil: um fetch solto pode ser cancelado no Workers quando a resposta termina
+        runInBackground(
+          fetch(`${appUrl}/api/calls/notify-queue`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ call_id }),
+          })
+        )
 
         return NextResponse.json({ status: 'queued' })
       }
@@ -175,6 +180,9 @@ export async function POST(request: NextRequest) {
       if (!updated || updated.length === 0) {
         continue
       }
+
+      // O próximo prestador só seria alcançado com o app aberto (Realtime): avisa por push também
+      runInBackground(pushCallAlert({ callId: call_id, providerIds: [String(nextProvider)] }))
 
       return NextResponse.json({ status: 'searching', provider_id: nextProvider })
     }
