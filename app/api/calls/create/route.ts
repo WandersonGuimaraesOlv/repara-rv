@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { DEFAULT_SERVICES } from '@/lib/catalog'
 import { runInBackground } from '@/lib/background'
-import { geocodeAddress, resolveCallLocation, RIO_VERDE_CENTER } from '@/lib/geocoding'
+import { geocodeAddressWithRetry, resolveCallLocation, isTransientFailure, extractGeocodableNumber, RIO_VERDE_CENTER } from '@/lib/geocoding'
 import { pushCallAlert } from '@/modules/notifications'
 
 // service_id aceita tanto UUID do catálogo quanto o id textual de DEFAULT_SERVICES
@@ -120,15 +120,27 @@ export async function POST(request: NextRequest) {
     let lng: number
 
     if (street && number && neighborhood && mapsKey) {
-      const geocode = await geocodeAddress({ street, number, neighborhood }, mapsKey)
+      // Setores mais novos de Rio Verde usam quadra/lote ("QD 18, LT 15") em vez
+      // de numeração de rua — extrai só o número do lote pra consultar o Google
+      // (achado real, ver lib/geocoding.ts). O client_address salvo continua com
+      // o texto original inteiro.
+      const geocodableNumber = extractGeocodableNumber(number)
+      const geocode = await geocodeAddressWithRetry({ street, number: geocodableNumber, neighborhood }, mapsKey)
       if (!geocode.ok) {
         console.warn('[API] geocodificação falhou:', geocode.reason)
       }
       const location = resolveCallLocation({ gps, geocode })
       if (!location) {
+        // Mensagem honesta: só peça pro cliente conferir o endereço quando o
+        // problema É o endereço. Falha transitória do Google não é culpa dele.
+        const transitoria = !geocode.ok && isTransientFailure(geocode.reason)
         return NextResponse.json(
-          { error: 'Não conseguimos localizar esse endereço em Rio Verde. Confira a rua, o número e o bairro e tente de novo.' },
-          { status: 422 }
+          {
+            error: transitoria
+              ? 'Não conseguimos confirmar seu endereço agora. Tente de novo em instantes.'
+              : 'Não conseguimos localizar esse endereço em Rio Verde. Confira a rua, o número e o bairro e tente de novo.',
+          },
+          { status: transitoria ? 503 : 422 }
         )
       }
       lat = location.lat

@@ -45,7 +45,15 @@ export type LocationType = 'ROOFTOP' | 'RANGE_INTERPOLATED' | 'GEOMETRIC_CENTER'
 
 export type GeocodeResult =
   | { ok: true; lat: number; lng: number; locationType: LocationType; partialMatch: boolean; formatted: string }
-  | { ok: false; reason: 'not_found' | 'denied' | 'unavailable' | 'timeout' }
+  | { ok: false; reason: GeocodeFailure }
+
+// 'not_found' e 'invalid' são definitivos (o endereço é que está errado).
+// O resto é transitório: chave/faturamento propagando, rede, limite momentâneo.
+export type GeocodeFailure = 'not_found' | 'invalid' | 'denied' | 'unavailable' | 'timeout'
+
+export function isTransientFailure(reason: GeocodeFailure): boolean {
+  return reason !== 'not_found' && reason !== 'invalid'
+}
 
 const googleResponseSchema = z.object({
   status: z.string(),
@@ -69,8 +77,47 @@ export interface AddressParts {
   neighborhood: string
 }
 
+// Achado em 22/09/2026, testando com o único endereço real digitado no app até
+// então ("Rua 4, nº QD 18, LT 15"): setores mais novos de Rio Verde usam
+// quadra/lote em vez de numeração de rua, e o campo "Nº" do formulário é texto
+// livre — as pessoas digitam "QD 18, LT 15" ali. Mandado assim pro Google, o
+// endereço só volta aproximado (GEOMETRIC_CENTER, partial match); extraindo só
+// o número do LOTE ("15"), o Google acha com precisão de interpolação
+// (RANGE_INTERPOLATED). O texto digitado inteiro continua indo pro
+// client_address salvo — isto só ajusta o que é enviado à Geocoding API.
+export function extractGeocodableNumber(raw: string): string {
+  const trimmed = raw.trim()
+  if (/^\d+$/.test(trimmed)) return trimmed
+
+  const loteMatch = trimmed.match(/\b(?:lt|lote)\.?\s*(\d+)/i)
+  if (loteMatch) return loteMatch[1]
+
+  const anyDigits = trimmed.match(/\d+/g)
+  if (anyDigits && anyDigits.length > 0) return anyDigits[anyDigits.length - 1]
+
+  return trimmed
+}
+
 const GEOCODE_URL = 'https://maps.googleapis.com/maps/api/geocode/json'
 const TIMEOUT_MS = 4000
+
+/**
+ * Tenta geocodificar, com UMA nova tentativa em falha transitória.
+ * Medido em 22/09/2026, logo após ligar o faturamento: 1 em cada 8 consultas
+ * idênticas voltava REQUEST_DENIED enquanto a mudança propagava nos servidores
+ * do Google. Sem a retentativa, um chamado legítimo seria recusado por isso.
+ */
+export async function geocodeAddressWithRetry(
+  parts: AddressParts,
+  apiKey: string,
+  fetchImpl: typeof fetch = fetch,
+  sleep: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+): Promise<GeocodeResult> {
+  const first = await geocodeAddress(parts, apiKey, fetchImpl)
+  if (first.ok || !isTransientFailure(first.reason)) return first
+  await sleep(300)
+  return geocodeAddress(parts, apiKey, fetchImpl)
+}
 
 export async function geocodeAddress(
   parts: AddressParts,
@@ -99,7 +146,10 @@ export async function geocodeAddress(
 
     const { status, results } = parsed.data
     if (status === 'ZERO_RESULTS') return { ok: false, reason: 'not_found' }
-    if (status === 'REQUEST_DENIED' || status === 'INVALID_REQUEST') return { ok: false, reason: 'denied' }
+    // Separados de propósito: juntar os dois já custou tempo de diagnóstico —
+    // 'denied' é problema de chave/faturamento, 'invalid' é a consulta malformada.
+    if (status === 'REQUEST_DENIED') return { ok: false, reason: 'denied' }
+    if (status === 'INVALID_REQUEST') return { ok: false, reason: 'invalid' }
     if (status !== 'OK' || !results || results.length === 0) return { ok: false, reason: 'unavailable' }
 
     const best = results[0]

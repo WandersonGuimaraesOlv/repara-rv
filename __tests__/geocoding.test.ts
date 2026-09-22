@@ -1,6 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
   geocodeAddress,
+  geocodeAddressWithRetry,
+  isTransientFailure,
+  extractGeocodableNumber,
   resolveCallLocation,
   distanceKm,
   isInsideServiceArea,
@@ -91,9 +94,14 @@ describe('geocodeAddress', () => {
     expect(res).toEqual({ ok: false, reason: 'not_found' })
   })
 
-  it('chave inválida ou sem permissão vira denied', async () => {
+  it('chave inválida ou faturamento desligado vira denied', async () => {
     const res = await geocodeAddress(PARTES, 'k', fakeFetch({ status: 'REQUEST_DENIED' }))
     expect(res).toEqual({ ok: false, reason: 'denied' })
+  })
+
+  it('consulta malformada vira invalid, separado de denied', async () => {
+    const res = await geocodeAddress(PARTES, 'k', fakeFetch({ status: 'INVALID_REQUEST' }))
+    expect(res).toEqual({ ok: false, reason: 'invalid' })
   })
 
   it('erro HTTP, resposta fora do formato ou limite estourado viram unavailable', async () => {
@@ -161,5 +169,77 @@ describe('resolveCallLocation — o endereço do serviço manda, o GPS completa'
 
   it('o ponto padrão antigo do centro continua dentro da área (não quebra chamados antigos)', () => {
     expect(isInsideServiceArea(RIO_VERDE_CENTER)).toBe(true)
+  })
+})
+
+describe('isTransientFailure', () => {
+  it('problema do endereço é definitivo; o resto é passageiro', () => {
+    expect(isTransientFailure('not_found')).toBe(false)
+    expect(isTransientFailure('invalid')).toBe(false)
+    expect(isTransientFailure('denied')).toBe(true)
+    expect(isTransientFailure('unavailable')).toBe(true)
+    expect(isTransientFailure('timeout')).toBe(true)
+  })
+})
+
+describe('geocodeAddressWithRetry', () => {
+  const semEspera = async () => {}
+
+  it('não repete quando deu certo de primeira', async () => {
+    const fetchImpl = fakeFetch(googleOk())
+    const res = await geocodeAddressWithRetry(PARTES, 'k', fetchImpl, semEspera)
+    expect(res.ok).toBe(true)
+    expect(vi.mocked(fetchImpl)).toHaveBeenCalledTimes(1)
+  })
+
+  it('repete na falha passageira e aproveita o sucesso da segunda', async () => {
+    // Medido em produção: 1 em 8 consultas idênticas voltava REQUEST_DENIED
+    // enquanto o faturamento propagava.
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ status: 'REQUEST_DENIED' }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => googleOk() }) as unknown as typeof fetch
+
+    const res = await geocodeAddressWithRetry(PARTES, 'k', fetchImpl, semEspera)
+    expect(res.ok && res.lat).toBe(CENTRO.lat)
+    expect(vi.mocked(fetchImpl)).toHaveBeenCalledTimes(2)
+  })
+
+  it('não repete quando o endereço é que não existe (economiza consulta)', async () => {
+    const fetchImpl = fakeFetch({ status: 'ZERO_RESULTS', results: [] })
+    const res = await geocodeAddressWithRetry(PARTES, 'k', fetchImpl, semEspera)
+    expect(res).toEqual({ ok: false, reason: 'not_found' })
+    expect(vi.mocked(fetchImpl)).toHaveBeenCalledTimes(1)
+  })
+
+  it('falhando as duas vezes, devolve a falha da segunda', async () => {
+    const fetchImpl = fakeFetch({ status: 'REQUEST_DENIED' })
+    const res = await geocodeAddressWithRetry(PARTES, 'k', fetchImpl, semEspera)
+    expect(res).toEqual({ ok: false, reason: 'denied' })
+    expect(vi.mocked(fetchImpl)).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('extractGeocodableNumber — setores com quadra/lote em vez de numeração de rua', () => {
+  it('número simples passa direto', () => {
+    expect(extractGeocodableNumber('100')).toBe('100')
+    expect(extractGeocodableNumber('  42  ')).toBe('42')
+  })
+
+  it('extrai o número do LOTE quando tem quadra e lote juntos (o caso real do app)', () => {
+    expect(extractGeocodableNumber('QD 18, LT 15')).toBe('15')
+    expect(extractGeocodableNumber('Quadra 18 Lote 15')).toBe('15')
+    expect(extractGeocodableNumber('lt 7')).toBe('7')
+    expect(extractGeocodableNumber('Lote 7')).toBe('7')
+  })
+
+  it('sem "lote" explícito, usa a última sequência de dígitos', () => {
+    expect(extractGeocodableNumber('Casa 2, Fundos')).toBe('2')
+    expect(extractGeocodableNumber('Quadra 18')).toBe('18')
+  })
+
+  it('sem nenhum dígito, devolve o texto original (deixa o Google tentar)', () => {
+    expect(extractGeocodableNumber('S/N')).toBe('S/N')
+    expect(extractGeocodableNumber('')).toBe('')
   })
 })
