@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { DEFAULT_SERVICES } from '@/lib/catalog'
 import { runInBackground } from '@/lib/background'
+import { geocodeAddress, resolveCallLocation, RIO_VERDE_CENTER } from '@/lib/geocoding'
 import { pushCallAlert } from '@/modules/notifications'
 
 // service_id aceita tanto UUID do catálogo quanto o id textual de DEFAULT_SERVICES
@@ -13,6 +14,10 @@ const createCallSchema = z.object({
   client_lat:      z.number().min(-90).max(90).optional(),
   client_lng:      z.number().min(-180).max(180).optional(),
   neighborhood:    z.string().min(1).optional(),
+  // Rua e número separados (o app novo manda): permitem localizar o endereço do
+  // serviço em vez de depender só do GPS do celular. Ver lib/geocoding.ts.
+  street:          z.string().trim().min(2).max(120).optional(),
+  number:          z.string().trim().min(1).max(20).optional(),
   client_id:       z.string().uuid('ID de cliente inválido').optional(),
 })
 
@@ -33,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = parsed.data
-    const { service_id, client_address, client_lat, client_lng, neighborhood } = body
+    const { service_id, client_address, client_lat, client_lng, neighborhood, street, number } = body
 
     // 1. Identifica e autentica o usuário
     let user: { id: string } | null = null
@@ -106,8 +111,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Serviço não encontrado no catálogo oficial.' }, { status: 404 })
     }
 
-    const lat = client_lat ?? -17.7915
-    const lng = client_lng ?? -50.9192
+    // Localização do chamado: o ENDEREÇO digitado manda (é onde o serviço acontece);
+    // o GPS só completa quando o endereço não foi localizado com precisão. Antes,
+    // sem GPS o chamado ia pro centro da cidade e a navegação do prestador errava.
+    const gps = client_lat !== undefined && client_lng !== undefined ? { lat: client_lat, lng: client_lng } : undefined
+    const mapsKey = process.env.GOOGLE_MAPS_API_KEY
+    let lat: number
+    let lng: number
+
+    if (street && number && neighborhood && mapsKey) {
+      const geocode = await geocodeAddress({ street, number, neighborhood }, mapsKey)
+      if (!geocode.ok) {
+        console.warn('[API] geocodificação falhou:', geocode.reason)
+      }
+      const location = resolveCallLocation({ gps, geocode })
+      if (!location) {
+        return NextResponse.json(
+          { error: 'Não conseguimos localizar esse endereço em Rio Verde. Confira a rua, o número e o bairro e tente de novo.' },
+          { status: 422 }
+        )
+      }
+      lat = location.lat
+      lng = location.lng
+      console.info('[API] localização do chamado definida por:', location.source)
+    } else {
+      // App antigo em cache (não manda rua/número) ou chave do Google não configurada.
+      if (!mapsKey) console.warn('[API] GOOGLE_MAPS_API_KEY não configurada — usando GPS ou o centro da cidade')
+      lat = gps?.lat ?? RIO_VERDE_CENTER.lat
+      lng = gps?.lng ?? RIO_VERDE_CENTER.lng
+    }
 
     // 3. Busca prestador mais próximo via PostGIS RPC
     //    ⚠️ O client_id é sempre excluído: quem solicita JAMAIS pode executar o próprio chamado.

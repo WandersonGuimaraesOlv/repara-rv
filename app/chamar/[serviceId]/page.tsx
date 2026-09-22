@@ -132,8 +132,11 @@ export default function ChamarServicePage() {
           client_id: user.id,
           client_address: structuredAddress.fullAddress,
           neighborhood: structuredAddress.neighborhood,
-          client_lat: lat ?? -17.7915,
-          client_lng: lng ?? -50.9192,
+          // Sem GPS não mandamos coordenada nenhuma (antes ia um ponto fixo do centro
+          // da cidade): o servidor localiza o endereço digitado.
+          ...(lat != null && lng != null ? { client_lat: lat, client_lng: lng } : {}),
+          street: structuredAddress.street,
+          number: structuredAddress.number,
         }),
       })
 

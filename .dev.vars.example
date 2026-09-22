@@ -38,6 +38,12 @@ FIREBASE_SERVICE_ACCOUNT_JSON=
 # Obter em: resend.com > API Keys. Remetente: noreply@repararv.com (domínio verificado)
 RESEND_API_KEY=
 
+# Google Maps Platform — Geocoding API (transforma o endereço digitado em coordenadas,
+# só no servidor). Restrinja a chave à Geocoding API e ponha um limite diário de
+# consultas no console do Google. Em produção é secret do Worker
+# (npx wrangler secret put GOOGLE_MAPS_API_KEY).
+GOOGLE_MAPS_API_KEY=
+
 # Só para rodar `npm run deploy` da sua máquina (o app NÃO usa em runtime):
 # CLOUDFLARE_ACCOUNT_ID=
 # CLOUDFLARE_API_TOKEN=
