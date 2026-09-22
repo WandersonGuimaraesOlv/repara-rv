@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 
 const subscribeSchema = z.object({
   endpoint: z.string().url('Endpoint inválido'),
@@ -41,7 +41,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const { endpoint, p256dh, auth, deviceType } = parsed.data;
 
-  const { error } = await supabase
+  // O usuário já foi autenticado acima. As escritas usam a Service Role porque a
+  // RLS deixa cada um mexer só nas próprias linhas, e um aparelho que antes
+  // estava inscrito por OUTRA conta (celular compartilhado, ou a conta antiga
+  // foi trocada) precisa passar a pertencer a quem está logado agora — senão o
+  // upsert por endpoint falha e os avisos da conta anterior continuam chegando
+  // nesse aparelho. O endpoint é uma URL secreta do próprio aparelho.
+  const admin = await createServiceClient();
+
+  const { error } = await admin
     .from('push_subscriptions')
     .upsert(
       {
@@ -63,7 +71,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // Também registra em device_tokens para o unified-dispatcher. Sem essa linha
   // o dispatcher nunca enxerga o aparelho — então uma falha aqui NÃO pode virar
   // "ativado" na tela do usuário.
-  const { error: tokenError } = await supabase
+  // Outros usuários que tinham este mesmo aparelho deixam de receber nele.
+  await admin
+    .from('device_tokens')
+    .update({ is_active: false })
+    .eq('token', endpoint)
+    .neq('user_id', user.id);
+
+  const { error: tokenError } = await admin
     .from('device_tokens')
     .upsert(
       { user_id: user.id, token: endpoint, platform: 'web', is_active: true },

@@ -22,6 +22,27 @@ export function PushNotificationsCard() {
   const [state, setState] = useState<PushState>('checking')
   const [busy, setBusy] = useState(false)
 
+  // Grava (ou regrava) a assinatura do navegador para o usuário LOGADO. É idempotente:
+  // se a linha já existe, só atualiza; se o aparelho estava com a assinatura de
+  // outra conta, passa a ser desta.
+  const registerOnServer = useCallback(async (subscription: PushSubscription): Promise<boolean> => {
+    const p256dh = subscription.getKey('p256dh')
+    const auth = subscription.getKey('auth')
+    if (!p256dh || !auth) return false
+
+    const res = await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        endpoint: subscription.endpoint,
+        p256dh: arrayBufferToBase64Url(p256dh),
+        auth: arrayBufferToBase64Url(auth),
+        deviceType: detectPushDeviceType(navigator.userAgent),
+      }),
+    })
+    return res.ok
+  }, [])
+
   const detect = useCallback(async () => {
     // No iPhone o Web Push só existe com o app instalado na tela inicial (iOS 16.4+)
     if (isIos && !isStandalone) {
@@ -44,11 +65,20 @@ export function PushNotificationsCard() {
     try {
       const registration = await navigator.serviceWorker.getRegistration()
       const subscription = await registration?.pushManager.getSubscription()
-      setState(subscription && Notification.permission === 'granted' ? 'active' : 'inactive')
+      if (!subscription || Notification.permission !== 'granted') {
+        setState('inactive')
+        return
+      }
+      // Achado de 22/09/2026 (teste no celular): o navegador guardava a assinatura
+      // de uma conta anterior e o cartão mostrava "ativo" sem o servidor ter linha
+      // nenhuma para o usuário logado — o "Testar" falhava com "não conseguimos
+      // entregar". Agora só fica "ativo" depois de o servidor confirmar.
+      const registered = await registerOnServer(subscription).catch(() => false)
+      setState(registered ? 'active' : 'inactive')
     } catch {
       setState('inactive')
     }
-  }, [isIos, isStandalone])
+  }, [isIos, isStandalone, registerOnServer])
 
   useEffect(() => {
     void detect()
@@ -75,24 +105,11 @@ export function PushNotificationsCard() {
         })
       }
 
-      const p256dh = subscription.getKey('p256dh')
-      const auth = subscription.getKey('auth')
-      if (!p256dh || !auth) throw new Error('assinatura sem chaves de criptografia')
-
-      const res = await fetch('/api/push/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          endpoint: subscription.endpoint,
-          p256dh: arrayBufferToBase64Url(p256dh),
-          auth: arrayBufferToBase64Url(auth),
-          deviceType: detectPushDeviceType(navigator.userAgent),
-        }),
-      })
-      if (!res.ok) {
+      const registered = await registerOnServer(subscription)
+      if (!registered) {
         // Servidor não guardou: não deixa o aparelho "inscrito" só no navegador
         await subscription.unsubscribe().catch(() => {})
-        throw new Error(`servidor recusou a assinatura (${res.status})`)
+        throw new Error('servidor não guardou a assinatura')
       }
 
       setState('active')
