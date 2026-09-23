@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getRequestUserId } from '@/lib/supabase/request-user';
 import { canActAsProvider } from '@/lib/call-transitions';
+import { resetMissedOffers } from '@/lib/missed-offers';
 import { generateArrivalPin } from '@/lib/utils';
 
 // Aceita os dois formatos de chave (camelCase e snake_case) que já circulam
@@ -163,6 +164,7 @@ export async function POST(req: NextRequest) {
     if (pinError) {
       console.error('[claim-queued] Erro ao gravar PIN de chegada:', pinError);
     }
+    await resetMissedOffers(supabaseAdmin, providerId);
     delete acceptedCall.arrival_pin;
 
     return NextResponse.json({ success: true, call: acceptedCall }, { status: 200 });

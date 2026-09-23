@@ -126,9 +126,12 @@ export default function AcompanharPage() {
           const res = await fetch('/api/calls/skip-provider', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            // O servidor confere os 30 s pelo relógio dele e responde
+            // { status: 'waiting' } se ainda não deu (relógio do celular adiantado).
             body: JSON.stringify({
               call_id: call.id,
               rejected_provider_id: call.provider_id,
+              reason: 'timeout',
             }),
           })
           const data = await res.json()

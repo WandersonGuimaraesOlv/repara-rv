@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { getRequestUserId } from '@/lib/supabase/request-user'
 import { runInBackground } from '@/lib/background'
-import { pushCallAlert } from '@/modules/notifications'
+import { pushAutoOfflineNotice, pushCallAlert } from '@/modules/notifications'
+import { classifyOfferEnd, registerMissedOffer, resetMissedOffers, type OfferEnd } from '@/lib/missed-offers'
 
 const skipProviderSchema = z.object({
   call_id:             z.string().uuid('call_id inválido'),
   rejected_provider_id: z.string().uuid('rejected_provider_id inválido').optional(),
+  // 'rejected' = o técnico tocou em Recusar; 'timeout' = a oferta venceu
+  // (watchdog do cliente ou contador do painel) — ver lib/missed-offers.ts
+  reason:              z.enum(['rejected', 'timeout']).optional(),
 })
 
 // Trava otimista: a rota original lia o chamado e gravava com um UPDATE sem
@@ -36,11 +41,11 @@ export async function POST(request: NextRequest) {
     // não), conseguia reatribuir ou reencaminhar um chamado alheio. Só o
     // cliente ou o prestador atual do próprio chamado podem reencaminhá-lo
     // (ver comentário logo após a leitura de `call` abaixo).
-    const supabaseUser = await createClient()
-    const { data: { user } } = await supabaseUser.auth.getUser().catch(() => ({ data: { user: null } }))
-    if (!user) {
+    const userId = await getRequestUserId(request)
+    if (!userId) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
+    const user = { id: userId }
 
     const supabase = await createServiceClient()
 
@@ -56,13 +61,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Dados inválidos', issues: parsed.error.format() }, { status: 422 })
     }
 
-    const { call_id, rejected_provider_id } = parsed.data
+    const { call_id, rejected_provider_id, reason } = parsed.data
+
+    // Técnico a quem a oferta foi feita (lido na 1ª tentativa) e como ela
+    // terminou — define se conta pro offline automático (lib/missed-offers.ts).
+    let offeredProviderId: string | null = null
+    let offerEnd: OfferEnd | null = null
+
+    const settleOffer = async () => {
+      if (!offeredProviderId || !offerEnd) return
+      if (offerEnd === 'rejected') {
+        await resetMissedOffers(supabase, offeredProviderId)
+      } else if (offerEnd === 'missed') {
+        const wentOffline = await registerMissedOffer(supabase, offeredProviderId)
+        if (wentOffline) runInBackground(pushAutoOfflineNotice(offeredProviderId))
+      }
+    }
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       // Busca o chamado atual (inclui client_id para blindagem de auto-atribuição)
       const { data: call } = await supabase
         .from('service_calls')
-        .select('id, client_id, client_location, status, provider_id, cancel_metadata, updated_at')
+        .select('id, client_id, client_location, status, provider_id, cancel_metadata, updated_at, created_at')
         .eq('id', call_id)
         .single()
 
@@ -79,6 +99,20 @@ export async function POST(request: NextRequest) {
       // app/painel) podem reencaminhar — nunca um terceiro.
       if (call.client_id !== user.id && call.provider_id !== user.id) {
         return NextResponse.json({ error: 'Você não tem permissão para reencaminhar este chamado' }, { status: 403 })
+      }
+
+      if (attempt === 1 && call.status === 'searching' && call.provider_id) {
+        offeredProviderId = call.provider_id
+        const offerAgeMs = Date.now() - new Date(call.updated_at ?? call.created_at).getTime()
+        offerEnd = classifyOfferEnd({ callerIsProvider: call.provider_id === user.id, reason, offerAgeMs })
+        // O watchdog do cliente usa o relógio do celular; quem decide se os
+        // 30 s passaram é o servidor. Ele tenta de novo em 2 s.
+        if (offerEnd === 'early') {
+          return NextResponse.json({ status: 'waiting' }, { status: 409 })
+        }
+      } else if (attempt > 1 && offeredProviderId && call.provider_id !== offeredProviderId) {
+        // Outro pedido já tirou a oferta deste técnico: não pula o próximo.
+        return NextResponse.json({ status: call.status, provider_id: call.provider_id })
       }
 
       // Histórico cumulativo de prestadores já tentados para evitar loop infinito.
@@ -155,6 +189,7 @@ export async function POST(request: NextRequest) {
           })
         )
 
+        await settleOffer()
         return NextResponse.json({ status: 'queued' })
       }
 
@@ -184,6 +219,7 @@ export async function POST(request: NextRequest) {
       // O próximo prestador só seria alcançado com o app aberto (Realtime): avisa por push também
       runInBackground(pushCallAlert({ callId: call_id, providerIds: [String(nextProvider)] }))
 
+      await settleOffer()
       return NextResponse.json({ status: 'searching', provider_id: nextProvider })
     }
 

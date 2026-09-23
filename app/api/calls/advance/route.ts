@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { getRequestUserId } from '@/lib/supabase/request-user'
 import { canActAsProvider, evaluateProviderTransition } from '@/lib/call-transitions'
 import { generateArrivalPin } from '@/lib/utils'
+import { resetMissedOffers } from '@/lib/missed-offers'
 
 // Transições do chamado pedidas pelo prestador: aceitar (app/painel), sair
 // para o endereço e concluir (app/chamado). Antes eram UPDATE direto no
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
       if (pinError) {
         console.error('[API /api/calls/advance] Erro ao gravar PIN de chegada:', pinError)
       }
+      await resetMissedOffers(supabaseAdmin, userId)
     }
 
     return NextResponse.json({ success: true, status: decision.to })

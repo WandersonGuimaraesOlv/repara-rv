@@ -9,7 +9,7 @@
 // =============================================================================
 
 import { createServiceClient } from '@/lib/supabase/server';
-import { notifyProviderBatch, type NotifyResult } from './unified-dispatcher';
+import { notifyProvider, notifyProviderBatch, type NotifyResult } from './unified-dispatcher';
 import { buildNotificationEnv } from './notification-env';
 
 export interface CallAlertOptions {
@@ -72,6 +72,25 @@ export async function pushCallAlert({ callId, providerIds }: CallAlertOptions): 
     );
   } catch (error) {
     console.warn('[call-alerts] falha ao enviar push de novo chamado:', error);
+    return null;
+  }
+}
+
+// Técnico tirado do ar por não responder ofertas seguidas (lib/missed-offers.ts).
+// Nunca lança, pelo mesmo motivo de pushCallAlert.
+export async function pushAutoOfflineNotice(providerId: string): Promise<NotifyResult | null> {
+  try {
+    return await notifyProvider(
+      providerId,
+      {
+        title: 'Você ficou offline',
+        body:  'Você não respondeu 2 chamados seguidos. Abra o Repara RV e toque em Ficar Online para voltar a receber chamados.',
+        url:   '/painel',
+      },
+      buildNotificationEnv()
+    );
+  } catch (error) {
+    console.warn('[call-alerts] falha ao enviar push de offline automático:', error);
     return null;
   }
 }

@@ -218,6 +218,34 @@ export default function PainelPage() {
       })
   }, [isOnline, gpsBlocked, profile, supabase])
 
+  // O servidor tira o técnico do ar depois de 2 chamados seguidos sem resposta
+  // (lib/missed-offers.ts). Com o painel aberto — ou ao voltar pra ele — a
+  // tela confere o status real em vez de continuar mostrando "Online".
+  useEffect(() => {
+    if (!isOnline || !profile) return
+    const checkStillOnline = async () => {
+      const { data } = await supabase
+        .from('provider_status')
+        .select('is_online')
+        .eq('provider_id', profile.id)
+        .maybeSingle()
+      if (data && data.is_online === false) {
+        setIsOnline(false)
+        audioAlert.stopAlarm()
+        toast.warning('Você está offline: o app tira do ar quem não responde 2 chamados seguidos. Toque no botão para voltar a receber chamados.')
+      }
+    }
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') checkStillOnline()
+    }
+    const interval = setInterval(checkStillOnline, 30_000)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [isOnline, profile, supabase])
+
   // Atualização rápida de Chave Pix pelo prestador
   const handleSavePixKey = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -315,6 +343,8 @@ export default function PainelPage() {
         is_online: newOnline,
         current_location: locationPoint,
         updated_at: new Date().toISOString(),
+        // Voltou por conta própria: recomeça a contagem do offline automático (lib/missed-offers.ts)
+        ...(newOnline ? { missed_offers: 0 } : {}),
       })
       .eq('provider_id', profile.id)
       .select('is_online')
@@ -458,7 +488,7 @@ export default function PainelPage() {
     await fetch('/api/calls/skip-provider', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ call_id: pendingCall.id, rejected_provider_id: profile?.id }),
+      body: JSON.stringify({ call_id: pendingCall.id, rejected_provider_id: profile?.id, reason: 'rejected' }),
     })
     setPendingCall(null)
     toast.info('Chamado recusado. Buscando próximo prestador...')
@@ -470,7 +500,7 @@ export default function PainelPage() {
     await fetch('/api/calls/skip-provider', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ call_id: pendingCall.id, rejected_provider_id: profile?.id }),
+      body: JSON.stringify({ call_id: pendingCall.id, rejected_provider_id: profile?.id, reason: 'timeout' }),
     })
     setPendingCall(null)
     toast.warning('Tempo esgotado! Chamado foi para o próximo prestador.')
