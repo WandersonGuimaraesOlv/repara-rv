@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  canActAsProvider,
   evaluateProviderTransition,
   isPinLocked,
   pinAttemptPatch,
@@ -58,6 +59,19 @@ describe('evaluateProviderTransition — transições do prestador (app/api/call
         expect(result.allowed).toBe(false)
       }
     }
+  })
+})
+
+describe('canActAsProvider — quem aceita/assume chamado', () => {
+  it('prestador e a conta admin (que o radar também encontra) podem', () => {
+    expect(canActAsProvider('provider')).toBe(true)
+    expect(canActAsProvider('admin')).toBe(true)
+  })
+
+  it('cliente e perfil sem papel não podem', () => {
+    expect(canActAsProvider('client')).toBe(false)
+    expect(canActAsProvider(null)).toBe(false)
+    expect(canActAsProvider(undefined)).toBe(false)
   })
 })
 

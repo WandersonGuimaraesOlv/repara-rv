@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
 import { getRequestUserId } from '@/lib/supabase/request-user';
+import { canActAsProvider } from '@/lib/call-transitions';
 import { generateArrivalPin } from '@/lib/utils';
 
 // Aceita os dois formatos de chave (camelCase e snake_case) que já circulam
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
       .eq('id', providerId)
       .maybeSingle();
 
-    if (providerError || !provider || provider.role !== 'provider') {
+    if (providerError || !provider || !canActAsProvider(provider.role)) {
       return NextResponse.json({ error: 'Prestador não autorizado' }, { status: 403 });
     }
 

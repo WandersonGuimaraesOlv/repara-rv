@@ -25,6 +25,15 @@ export const PROVIDER_TRANSITIONS: Record<ProviderAction, { from: readonly RideS
   complete: { from: ['in_progress'], to: 'completed' },
 }
 
+// Quem pode aceitar/assumir chamado. find_nearest_provider não filtra por
+// papel, então a conta admin do dono (que também tem provider_status, pra
+// testar o fluxo no celular) recebe chamados — e tem que conseguir aceitá-los.
+// Achado em 23/09/2026: /api/calls/advance recusava admin com "Prestador não
+// autorizado" (antes o aceite era UPDATE direto e não olhava o papel).
+export function canActAsProvider(role: string | null | undefined): boolean {
+  return role === 'provider' || role === 'admin'
+}
+
 export interface TransitionCall {
   provider_id: string | null
   status: string

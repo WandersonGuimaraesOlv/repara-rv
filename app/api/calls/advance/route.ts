@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getRequestUserId } from '@/lib/supabase/request-user'
-import { evaluateProviderTransition } from '@/lib/call-transitions'
+import { canActAsProvider, evaluateProviderTransition } from '@/lib/call-transitions'
 import { generateArrivalPin } from '@/lib/utils'
 
 // Transições do chamado pedidas pelo prestador: aceitar (app/painel), sair
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
         .eq('id', userId)
         .maybeSingle()
 
-      if (!profile || profile.role !== 'provider') {
+      if (!profile || !canActAsProvider(profile.role)) {
         return NextResponse.json({ error: 'Prestador não autorizado' }, { status: 403 })
       }
       if (profile.is_blocked) {
