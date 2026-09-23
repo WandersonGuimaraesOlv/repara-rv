@@ -8,10 +8,18 @@
 import { createRequire } from 'node:module'
 import path from 'node:path'
 
+// --staging: aponta pro projeto Supabase de staging. loadEnvFile não sobrescreve
+// variável já definida, então o arquivo carregado primeiro vence. Sem try/catch de
+// propósito: se o arquivo faltar, falha em vez de cair em produção sem avisar.
+const args = process.argv.slice(2)
+if (args.includes('--staging')) {
+  process.loadEnvFile('.env.staging.local')
+}
+
 process.loadEnvFile('.dev.vars')
 
 const require = createRequire(import.meta.url)
 const nextBin = path.join(process.cwd(), 'node_modules', 'next', 'dist', 'bin', 'next')
 
-process.argv = [process.argv[0], nextBin, 'dev', ...process.argv.slice(2)]
+process.argv = [process.argv[0], nextBin, 'dev', ...args.filter((a) => a !== '--staging')]
 require(nextBin)
