@@ -37,6 +37,15 @@ export function normalizeBrazilianPhone(raw: string): string {
   return digits.slice(0, 11)
 }
 
+// Destino depois do login (?redirect=): só caminho interno do app. Barra
+// "//site.com" e "/\site.com" (o navegador trata como outro domínio) e
+// qualquer URL absoluta — senão o link de login viraria redirecionamento aberto.
+export function safeRedirectPath(raw: string | null | undefined): string | null {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) return null
+  if (raw.startsWith('/login')) return null
+  return raw
+}
+
 export function formatDistance(km: number): string {
   if (km < 1) return `${Math.round((km * 1000) / 50) * 50} m`
   return `${km.toFixed(1).replace('.', ',')} km`

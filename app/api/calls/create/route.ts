@@ -5,6 +5,7 @@ import { DEFAULT_SERVICES } from '@/lib/catalog'
 import { runInBackground } from '@/lib/background'
 import { geocodeAddressWithRetry, resolveCallLocation, locationConflictKm, isTransientFailure, extractGeocodableNumber, RIO_VERDE_CENTER } from '@/lib/geocoding'
 import { pushCallAlert } from '@/modules/notifications'
+import { findPendingPayment, PENDING_PAYMENT_FILTER } from '@/lib/pending-payments'
 
 // service_id aceita tanto UUID do catálogo quanto o id textual de DEFAULT_SERVICES
 // (ver fallback por nome logo abaixo) — por isso não é `.uuid()`.
@@ -69,6 +70,32 @@ export async function POST(request: NextRequest) {
     // em nome de qualquer cliente sabendo o ID dele (achado de 23/09/2026).
     if (!user) {
       return NextResponse.json({ error: 'Você precisa entrar na sua conta para solicitar um prestador.' }, { status: 401 })
+    }
+
+    // 1.1 Pagamento pendente bloqueia chamado novo (pedido do dono, 23/09/2026 —
+    // cliente abriu outro chamado sem pagar o anterior). A tela de pedir já
+    // mostra a cobrança antes; isto segura também quem chama a rota direto.
+    const { data: debts, error: debtsError } = await supabase
+      .from('service_calls')
+      .select('id, status, payment_status, no_show_fee_status, created_at')
+      .eq('client_id', user.id)
+      .or(PENDING_PAYMENT_FILTER)
+    if (debtsError) {
+      console.error('[API /api/calls/create] Erro ao conferir pagamentos pendentes:', debtsError)
+      return NextResponse.json({ error: 'Não foi possível conferir seus pagamentos. Tente novamente.' }, { status: 500 })
+    }
+    const pending = findPendingPayment(debts ?? [])
+    if (pending) {
+      return NextResponse.json(
+        {
+          error: pending.kind === 'service'
+            ? 'Você tem um serviço concluído aguardando pagamento. Pague para pedir um novo serviço.'
+            : 'Você tem uma taxa de deslocamento pendente. Pague para pedir um novo serviço.',
+          pending_call_id: pending.call.id,
+          pending_kind: pending.kind,
+        },
+        { status: 409 }
+      )
     }
 
     // 2. Busca o serviço por UUID ou fallback por nome

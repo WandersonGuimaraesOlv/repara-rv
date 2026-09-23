@@ -52,6 +52,8 @@ import { PwaInstallButton } from '@/components/pwa-install-button'
 import { SiteFooter } from '@/components/site-footer'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { performLogout } from '@/lib/auth-logout'
+import { usePendingPayment } from '@/hooks/usePendingPayment'
+import { PendingPaymentReminder } from '@/components/pending-payment-reminder'
 
 const CATEGORIES = [
   { id: 'all', name: 'Todos', icon: Sparkles },
@@ -135,6 +137,12 @@ export default function TriiderClientHomePage() {
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState<boolean>(false)
   const [userOrders, setUserOrders] = useState<any[]>([])
   const [loadingOrders, setLoadingOrders] = useState<boolean>(false)
+  const { pending: pendingPayment, refresh: refreshPendingPayment } = usePendingPayment()
+
+  // Confere de novo quando a conta muda (login/logout nesta tela).
+  useEffect(() => {
+    refreshPendingPayment()
+  }, [currentUser?.id, refreshPendingPayment])
 
   // Fecha o dropdown desktop ao clicar fora
   useEffect(() => {
@@ -586,6 +594,16 @@ export default function TriiderClientHomePage() {
           2. PAINEL INICIAL (saudação + busca flutuante estilo app)
           ──────────────────────────────────────────────────────── */}
       <section className="content-container pt-4 pb-6 sm:pt-6 w-full">
+
+        {/* Pagamento pendente: lembrete + Pix aberto ao entrar no app */}
+        {pendingPayment && (
+          <PendingPaymentReminder
+            key={pendingPayment.callId}
+            pending={pendingPayment}
+            autoOpen
+            onClosed={refreshPendingPayment}
+          />
+        )}
 
         {/* Saudação pessoal */}
         <div className="flex items-center gap-3 mb-4">

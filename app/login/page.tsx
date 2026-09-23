@@ -8,7 +8,7 @@ import { Phone, Lock, ArrowRight, Eye, EyeOff, ShieldCheck, Lightbulb, AlertTria
 import { toast } from 'sonner'
 import { Logo } from '@/components/logo'
 import { PwaInstallButton } from '@/components/pwa-install-button'
-import { normalizeBrazilianPhone } from '@/lib/utils'
+import { normalizeBrazilianPhone, safeRedirectPath } from '@/lib/utils'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -106,6 +106,11 @@ export default function LoginPage() {
         } catch {}
       }
 
+      // Achado de 23/09/2026: quem era mandado pro login no meio de um pedido
+      // (/chamar) caía no /painel ou na home e tinha que refazer tudo — e
+      // parecia que o app pedia login de novo. Volta pra onde estava.
+      const redirectTo = safeRedirectPath(new URLSearchParams(window.location.search).get('redirect'))
+
       if (json.isNew || !profile) {
         toast.success('Acesso liberado! Vamos completar seu cadastro')
         router.replace('/onboarding')
@@ -114,6 +119,9 @@ export default function LoginPage() {
         // obrigatório no cadastro ficaram sem esse campo — força o
         // preenchimento agora, antes de liberar o destino normal.
         router.replace(`/completar-email?role=${profile.role}`)
+      } else if (redirectTo) {
+        toast.success(`Bem-vindo de volta, ${profile.full_name || 'Cliente'}!`)
+        router.replace(redirectTo)
       } else if (profile.role === 'provider') {
         toast.success(`Bem-vindo de volta, ${profile.full_name || 'Profissional'}!`)
         router.replace('/painel')

@@ -12,6 +12,8 @@ import { toast } from 'sonner'
 import Link from 'next/link'
 import { DEFAULT_SERVICES, getServiceScope } from '@/lib/catalog'
 import { EnderecoForm, StructuredAddress } from '@/components/endereco-form'
+import { usePendingPayment } from '@/hooks/usePendingPayment'
+import { PendingPaymentReminder } from '@/components/pending-payment-reminder'
 
 export default function ChamarServicePage() {
   const { serviceId } = useParams<{ serviceId: string }>()
@@ -26,6 +28,7 @@ export default function ChamarServicePage() {
   const [profileChecked, setProfileChecked] = useState(false)
   // GPS do celular longe do endereço digitado: o cliente escolhe pra onde o técnico vai.
   const [locationPrompt, setLocationPrompt] = useState<{ distanceKm: number } | null>(null)
+  const { pending: pendingPayment, checked: pendingChecked, refresh: refreshPendingPayment } = usePendingPayment()
 
   const scope = useMemo(() => {
     return getServiceScope(service?.name)
@@ -117,23 +120,27 @@ export default function ChamarServicePage() {
 
     setLoading(true)
 
-    try {
-      // Verifica se o usuário cliente está autenticado
-      const { data: { user } } = await supabase.auth.getUser()
-      const { data: { session } } = await supabase.auth.getSession()
+    const goToLogin = () => {
+      setLoading(false)
+      toast.info('Acesse com seu celular para chamar o prestador.')
+      router.push(`/login?redirect=/chamar/${service.id}`)
+    }
 
-      if (!user) {
-        setLoading(false)
-        toast.info('Acesse com seu celular para chamar o prestador.')
-        router.push(`/login?redirect=/chamar/${service.id}`)
+    try {
+      // Achado de 23/09/2026 (cliente mandada pro login a cada pedido): antes
+      // isto usava getUser(), que consulta o servidor de autenticação — com a
+      // rede do celular falhando ele devolve "sem usuário" mesmo logado. A
+      // sessão guardada no aparelho basta aqui; quem decide é /api/calls/create,
+      // que confere o token e responde 401 se ele não valer mais.
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) {
+        goToLogin()
         return
       }
 
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-      }
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`
+        Authorization: `Bearer ${session.access_token}`,
       }
 
       const response = await fetch('/api/calls/create', {
@@ -152,11 +159,18 @@ export default function ChamarServicePage() {
         }),
       })
 
+      if (response.status === 401) {
+        goToLogin()
+        return
+      }
+
       const result = await response.json()
       setLoading(false)
 
       if (!response.ok) {
         toast.error(result.error ?? 'Erro ao solicitar prestador. Tente novamente.')
+        // Pagamento pendente (409): troca o formulário pela cobrança.
+        if (result.pending_call_id) refreshPendingPayment()
         return
       }
 
@@ -174,7 +188,7 @@ export default function ChamarServicePage() {
     }
   }
 
-  if (!service || !profileChecked) {
+  if (!service || !profileChecked || !pendingChecked) {
     return (
       <div className="page-container items-center justify-center">
         <Loader2 size={32} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
@@ -230,6 +244,16 @@ export default function ChamarServicePage() {
           </div>
         </div>
 
+        {/* Pagamento pendente: sem pedido novo até pagar (pedido do dono, 23/09/2026) */}
+        {pendingPayment ? (
+          <PendingPaymentReminder
+            key={pendingPayment.callId}
+            pending={pendingPayment}
+            variant="block"
+            autoOpen
+            onClosed={refreshPendingPayment}
+          />
+        ) : (
         <form onSubmit={handleSubmit} className="space-y-5 animate-slide-up" style={{ animationDelay: '100ms' }}>
           {/* Localização GPS */}
           <div>
@@ -372,6 +396,7 @@ export default function ChamarServicePage() {
             </button>
           </div>
         </form>
+        )}
       </main>
 
       {locationPrompt && structuredAddress && (

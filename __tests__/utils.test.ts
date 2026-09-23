@@ -6,7 +6,23 @@ import {
   getStatusLabel,
   getStatusColor,
   cn,
+  safeRedirectPath,
 } from '../lib/utils'
+
+describe('safeRedirectPath — volta depois do login (app/login, ?redirect=)', () => {
+  it('aceita caminho interno do app, com query', () => {
+    expect(safeRedirectPath('/chamar/c6663a89-bab1-465f-937e-a4b366350cc7')).toBe('/chamar/c6663a89-bab1-465f-937e-a4b366350cc7')
+    expect(safeRedirectPath('/painel?claim=abc')).toBe('/painel?claim=abc')
+  })
+
+  it('recusa site externo (redirecionamento aberto) e o próprio login', () => {
+    for (const raw of ['https://golpe.com', '//golpe.com', '/\\golpe.com', 'javascript:alert(1)', 'chamar/x', '/login', '/login?redirect=/x']) {
+      expect(safeRedirectPath(raw)).toBeNull()
+    }
+    expect(safeRedirectPath(null)).toBeNull()
+    expect(safeRedirectPath('')).toBeNull()
+  })
+})
 
 describe('SQA Metrics & Quality: lib/utils.ts', () => {
   describe('formatCurrency', () => {
