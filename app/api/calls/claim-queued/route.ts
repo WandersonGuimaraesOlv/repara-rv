@@ -116,6 +116,7 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', callId)
         .eq('status', 'queued')
+        .or(`expires_at.is.null,expires_at.gt."${nowIso}"`) // mesma regra de claim_queued_call()
         .select();
 
       if (directError) {
@@ -125,8 +126,20 @@ export async function POST(req: NextRequest) {
       updatedCall = directData;
     }
 
-    // Se 0 linhas afetadas, outro técnico clicou 1 milissegundo antes
+    // Se 0 linhas afetadas, outro técnico clicou 1 milissegundo antes — ou o
+    // chamado venceu o prazo de 2h da fila (claim_queued_call também recusa).
     if (!updatedCall || updatedCall.length === 0) {
+      const { data: current } = await supabaseAdmin
+        .from('service_calls')
+        .select('status, expires_at')
+        .eq('id', callId)
+        .maybeSingle();
+      if (current?.status === 'queued' && current.expires_at && new Date(current.expires_at).getTime() <= Date.now()) {
+        return NextResponse.json(
+          { success: false, code: 'CALL_EXPIRED', error: 'Este chamado expirou e saiu da fila.' },
+          { status: 410 }
+        );
+      }
       return NextResponse.json(
         {
           success: false,

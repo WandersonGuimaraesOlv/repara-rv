@@ -17,24 +17,29 @@
 // app/painel/page.tsx.
 // =============================================================================
 
-import { NextResponse } from 'next/server'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { getRequestUserId } from '@/lib/supabase/request-user'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    const userId = await getRequestUserId(request)
+    if (!userId) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
     const adminDb = await createServiceClient()
 
+    // Só o que ainda dá pra assumir: mesma regra de claim_queued_call()
+    // (expires_at nulo ou no futuro). Achado de 23/09/2026: chamados de fila
+    // vencidos continuavam na lista, o "Atender" era recusado e o polling
+    // trazia o card de volta a cada 4s.
+    const nowIso = new Date().toISOString()
     const { data: queuedCalls, error } = await adminDb
       .from('service_calls')
       .select('id, neighborhood, total_price, provider_cut, platform_fee, created_at, service:quick_services(id, name, category, icon, color)')
       .eq('status', 'queued')
+      .or(`expires_at.is.null,expires_at.gt."${nowIso}"`)
       .order('created_at', { ascending: false })
       .limit(20)
 
