@@ -16,6 +16,7 @@ import { ChamadoEmFila } from '@/components/chamado-em-fila'
 import { CancelCallModal } from '@/components/cancel-call-modal'
 import { ComprovanteManutencaoModal } from '@/components/comprovante-manutencao-modal'
 import { ProviderIdentityCard } from '@/components/provider-identity-card'
+import { ProviderTrackingMap } from '@/components/provider-tracking-map'
 
 export default function AcompanharPage() {
   const { callId } = useParams<{ callId: string }>()
@@ -268,6 +269,11 @@ export default function AcompanharPage() {
               isVerified={(call.provider as { background_check_status?: string })?.background_check_status === 'approved'}
               arrivalPin={call.status === 'accepted' || call.status === 'on_the_way' ? arrivalPin : null}
             />
+          )}
+
+          {/* Técnico no mapa — só entre o aceite e o início do atendimento */}
+          {(call.status === 'accepted' || call.status === 'on_the_way') && (
+            <ProviderTrackingMap callId={callId} viewer="client" />
           )}
 
           {/* Info do serviço */}

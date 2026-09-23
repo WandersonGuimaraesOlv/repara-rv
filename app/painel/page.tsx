@@ -207,7 +207,7 @@ export default function PainelPage() {
     if (!isOnline || !gpsBlocked || !profile) return
     supabase
       .from('provider_status')
-      .update({ is_online: false, updated_at: new Date().toISOString() })
+      .update({ is_online: false, current_location: null, updated_at: new Date().toISOString() })
       .eq('provider_id', profile.id)
       .select('is_online')
       .then(({ data, error }) => {

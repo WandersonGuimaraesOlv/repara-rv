@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { evaluateCancelAuthorization, resolveCancelReasonEnum, shouldChargeNoShowFee } from '@/lib/cancel-authorization'
+import { clearOfflineProviderLocation } from '@/lib/provider-location'
 
 // `reason` aceita qualquer string, não um enum fixo — ver o comentário em
 // lib/cancel-authorization.ts (resolveCancelReasonEnum) pro porquê: o cliente
@@ -100,6 +101,10 @@ export async function POST(request: NextRequest) {
     if (updateError) {
       console.error('[API /api/calls/cancel] Erro ao atualizar:', updateError)
       return NextResponse.json({ error: 'Erro ao cancelar chamado' }, { status: 500 })
+    }
+
+    if (call.provider_id) {
+      await clearOfflineProviderLocation(supabaseAdmin, call.provider_id)
     }
 
     return NextResponse.json({

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { clearOfflineProviderLocation } from '@/lib/provider-location'
 
 // Denúncia "Não é a pessoa da foto" (verificação de identidade do
 // prestador — ver supabase/migrations/20260918_provider_identity_verification.sql).
@@ -77,6 +78,8 @@ export async function POST(request: NextRequest) {
       console.error('[API /api/calls/report-identity] Erro ao cancelar chamado:', cancelError)
       return NextResponse.json({ error: 'Erro ao cancelar chamado' }, { status: 500 })
     }
+
+    await clearOfflineProviderLocation(supabaseAdmin, call.provider_id)
 
     const { error: reportError } = await supabaseAdmin
       .from('identity_reports')

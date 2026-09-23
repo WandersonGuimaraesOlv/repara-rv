@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ServiceCall, CancelReason } from '@/lib/types'
@@ -11,6 +11,12 @@ import { CheckCircle, XCircle, Loader2, ArrowLeft, Wrench, MapPin, DollarSign, K
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { CallChat } from '@/components/chat/call-chat'
+import { ProviderTrackingMap } from '@/components/provider-tracking-map'
+import { useGeolocation } from '@/hooks/useGeolocation'
+
+// Intervalo de envio da posição durante o trajeto (o mapa do cliente busca
+// no mesmo ritmo — components/provider-tracking-map.tsx).
+const POSITION_SEND_MS = 15_000
 
 const CANCEL_REASONS: { value: CancelReason; label: string }[] = [
   { value: 'provider_absent', label: 'Cliente ausente após 10 min' },
@@ -63,6 +69,31 @@ export default function ChamadoProviderPage() {
     }
     setLoading(false)
   }, [callId, supabase])
+
+  // Posição do técnico durante o trajeto (aceito → a caminho), para o mapa do
+  // cliente em app/acompanhar. Para ao iniciar o atendimento. Parado, reenvia
+  // a mesma posição a cada POSITION_SEND_MS pra mostrar que o app está aberto.
+  const isTrip = call?.status === 'accepted' || call?.status === 'on_the_way'
+  const providerId = call?.provider_id ?? null
+  const { lat: myLat, lng: myLng, errorCode: geoErrorCode, permission: geoPermission } = useGeolocation(isTrip)
+  const lastSentAtRef = useRef(0)
+
+  const sendPosition = useCallback((lat: number, lng: number) => {
+    if (!providerId) return
+    lastSentAtRef.current = Date.now()
+    supabase
+      .from('provider_status')
+      .update({ current_location: `SRID=4326;POINT(${lng} ${lat})`, updated_at: new Date().toISOString() })
+      .eq('provider_id', providerId)
+      .then(() => {})
+  }, [providerId, supabase])
+
+  useEffect(() => {
+    if (!isTrip || myLat === null || myLng === null) return
+    if (Date.now() - lastSentAtRef.current >= POSITION_SEND_MS) sendPosition(myLat, myLng)
+    const interval = setInterval(() => sendPosition(myLat, myLng), POSITION_SEND_MS)
+    return () => clearInterval(interval)
+  }, [isTrip, myLat, myLng, sendPosition])
 
   useEffect(() => {
     loadCall()
@@ -266,6 +297,17 @@ export default function ChamadoProviderPage() {
           <strong>Lembre o cliente:</strong> peças e materiais são cobrados à parte, conforme combinado.
         </p>
       </div>
+
+      {/* Trajeto no mapa (o cliente vê a mesma posição até o PIN) */}
+      {isTrip && (geoPermission === 'denied' || geoErrorCode === 1) && (
+        <div id="tracking-gps-blocked" className="banner-warning mb-4">
+          <AlertTriangle size={16} strokeWidth={2} className="flex-shrink-0" style={{ color: '#F59E0B' }} aria-hidden="true" />
+          <p className="text-xs" style={{ color: '#FCD34D' }}>
+            Sua localização está bloqueada: o cliente não consegue ver você chegando. Libere a localização do site nas configurações do navegador.
+          </p>
+        </div>
+      )}
+      {isTrip && <ProviderTrackingMap callId={callId} viewer="provider" />}
 
       {/* Botões de navegação */}
       {lat !== undefined && lng !== undefined && lat !== null && lng !== null && (

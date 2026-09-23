@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { QuickService } from '@/lib/types'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatDistance } from '@/lib/utils'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { MapPin, Loader2, AlertTriangle, CheckCircle, ArrowLeft, CheckCircle2, XCircle, Wrench, Navigation } from 'lucide-react'
 import type { LocationChoice } from '@/lib/geocoding'
@@ -435,9 +435,4 @@ export default function ChamarServicePage() {
       )}
     </div>
   )
-}
-
-function formatDistance(km: number): string {
-  if (km < 1) return `${Math.round((km * 1000) / 50) * 50} m`
-  return `${km.toFixed(1).replace('.', ',')} km`
 }

@@ -37,6 +37,11 @@ export function normalizeBrazilianPhone(raw: string): string {
   return digits.slice(0, 11)
 }
 
+export function formatDistance(km: number): string {
+  if (km < 1) return `${Math.round((km * 1000) / 50) * 50} m`
+  return `${km.toFixed(1).replace('.', ',')} km`
+}
+
 export function formatPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '')
   if (digits.length === 11) {

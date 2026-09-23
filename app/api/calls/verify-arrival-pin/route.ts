@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { getRequestUserId } from '@/lib/supabase/request-user'
 import { evaluateProviderTransition, isPinLocked, pinAttemptPatch, PIN_LOCK_MINUTES } from '@/lib/call-transitions'
 import { generateArrivalPin } from '@/lib/utils'
+import { clearOfflineProviderLocation } from '@/lib/provider-location'
 
 // Achado de auditoria (16/09/2026): a checagem do PIN de chegada rodava
 // inteiramente no navegador do prestador. Movida pra cá, com limite por IP em
@@ -124,6 +125,8 @@ export async function POST(request: NextRequest) {
     if (!updated || updated.length === 0) {
       return NextResponse.json({ error: 'O chamado mudou enquanto você confirmava. Atualize a tela.' }, { status: 409 })
     }
+
+    await clearOfflineProviderLocation(supabaseAdmin, userId)
 
     return NextResponse.json({ success: true })
   } catch (error) {
