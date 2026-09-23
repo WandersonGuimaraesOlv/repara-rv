@@ -22,7 +22,7 @@ interface QueuedCallPreview {
 }
 import { CallAlertModal } from '@/components/call-alert-modal'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { Power, Loader2, MapPin, CreditCard, Zap, Lock, AlertTriangle, Volume2, LogOut, Camera, Bell, Clock, CheckCircle2, KeyRound, Pencil, RefreshCw, Wallet, Radio } from 'lucide-react'
+import { Power, Loader2, MapPin, CreditCard, Zap, Lock, AlertTriangle, Volume2, LogOut, Camera, Bell, Clock, CheckCircle2, KeyRound, Pencil, RefreshCw, Wallet, Radio, MapPinOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { PanelHeader } from '@/components/provider/panel-header'
 import { audioAlert } from '@/lib/audio-alert'
@@ -94,12 +94,10 @@ export default function PainelPage() {
               .maybeSingle()
             if (createdProf) prof = createdProf
           } else if (prof.role === 'client') {
-            // Habilita role de prestador para acesso imediato e transparente
-            await supabase
-              .from('profiles')
-              .update({ role: 'provider' })
-              .eq('id', authUser.id)
-            prof.role = 'provider'
+            // Cliente vira prestador pelo onboarding, que grava o cadastro como
+            // 'pending' pra análise — nunca promovido direto aqui.
+            router.replace('/onboarding?role=provider')
+            return
           }
 
           // Achado (16/09/2026): sessões que já estavam logadas antes do
@@ -126,6 +124,7 @@ export default function PainelPage() {
                   provider_id: authUser.id,
                   is_online: false,
                   pix_key: prof.pix_key || prof.phone || '',
+                  pix_key_type: 'phone',
                 })
               status = {
                 is_online: false,
@@ -281,7 +280,7 @@ export default function PainelPage() {
       ? `SRID=4326;POINT(${currentLng} ${currentLat})`
       : null
 
-    const { error: toggleError } = await supabase
+    const { data: toggled, error: toggleError } = await supabase
       .from('provider_status')
       .update({
         is_online: newOnline,
@@ -289,6 +288,7 @@ export default function PainelPage() {
         updated_at: new Date().toISOString(),
       })
       .eq('provider_id', profile.id)
+      .select('is_online')
 
     setTogglingOnline(false)
 
@@ -297,6 +297,13 @@ export default function PainelPage() {
       // checks acima passando — sem isso, a tela mostrava "Online" mesmo
       // quando o prestador continuava offline de verdade no banco.
       toast.error(toggleError.message || 'Não foi possível atualizar seu status. Tente novamente.')
+      return
+    }
+
+    // Sem erro mas sem linha alterada = não existe status de prestador pra
+    // esta conta (ou a sessão não é dela). Antes a tela dizia "online" assim mesmo.
+    if (!toggled?.length) {
+      toast.error('Não foi possível atualizar seu status: seu cadastro de prestador está incompleto. Fale com o suporte.')
       return
     }
 
@@ -915,10 +922,15 @@ export default function PainelPage() {
             <span className="text-amber-400 text-xs font-semibold block">
               <Lock size={12} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />Cadastre sua Chave Pix acima para desbloquear sua disponibilidade.
             </span>
+          ) : isOnline && geoError ? (
+            <span className="text-amber-400 text-xs font-semibold block">
+              <MapPinOff size={12} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />
+              Online sem GPS: sua posição está aproximada e chamados perto de você podem não chegar.
+            </span>
           ) : isOnline ? (
             <>
               <Radio size={13} strokeWidth={2} className="inline-block -mt-0.5 mr-1 shrink-0" style={{ color: 'var(--color-success)' }} aria-hidden="true" />
-              Você está visível para clientes próximos. Mantendo GPS ativo...
+              Você está visível para clientes próximos. GPS ativo.
             </>
           ) : (
             'Toque para ficar disponível\ne receber chamados.'
