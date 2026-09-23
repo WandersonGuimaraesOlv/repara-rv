@@ -141,7 +141,6 @@ export default function ChamarServicePage() {
         headers,
         body: JSON.stringify({
           service_id: service.id,
-          client_id: user.id,
           client_address: structuredAddress.fullAddress,
           neighborhood: structuredAddress.neighborhood,
           // Sem GPS não mandamos coordenada nenhuma (antes ia um ponto fixo do centro

@@ -70,7 +70,10 @@ async function cleanup() {
     await admin.auth.admin.deleteUser(u.id).catch(() => {});
   }
   if (auditBlocked) {
-    console.log(`   ℹ Chamado de teste ficou permanente (append-only de service_audit_logs), marcado "[MONITOR SINTETICO]": ${callId}`);
+    // O prestador de teste fica junto com o chamado permanente; sem isto ele
+    // continuaria online e disputando chamados de clientes reais.
+    if (providerUser) await admin.from('provider_status').update({ is_online: false }).eq('provider_id', providerUser.id);
+    console.log(`   ℹ Chamado de teste ficou permanente (append-only de service_audit_logs), marcado "[MONITOR SINTETICO]": ${callId} — prestador de teste colocado offline`);
   } else {
     console.log('   Limpeza concluída — nenhum dado de teste ficou para trás.');
   }
@@ -105,13 +108,17 @@ async function run() {
   const { data: service } = await admin.from('quick_services').select('id, name').eq('is_active', true).limit(1).single();
   console.log(`\n👤 Cliente e prestador de teste criados. Serviço usado: ${service.name}`);
 
-  // ── 1. Criar chamado via HTTP real (/api/calls/create) ──────────────────────
+  // ── 1. Criar chamado via HTTP real (/api/calls/create), logado como o cliente ─
+  // (a rota não aceita mais client_id sem login — ver app/api/calls/create/route.ts)
+  const asClient = createClient(SUPABASE_URL, ANON_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+  const { data: clientSession, error: clientLoginErr } = await asClient.auth.signInWithPassword({ email: clientEmail, password });
+  if (clientLoginErr) throw new Error(`Falha ao logar como o cliente de teste: ${clientLoginErr.message}`);
+
   const createRes = await fetch(`${APP_URL}/api/calls/create`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${clientSession.session.access_token}` },
     body: JSON.stringify({
       service_id: service.id,
-      client_id: clientUser.id,
       client_address: '[MONITOR SINTETICO] Rua de Teste, 100',
       client_lat: -17.7943,
       client_lng: -50.9264,

@@ -18,7 +18,6 @@ const createCallSchema = z.object({
   // serviço em vez de depender só do GPS do celular. Ver lib/geocoding.ts.
   street:          z.string().trim().min(2).max(120).optional(),
   number:          z.string().trim().min(1).max(20).optional(),
-  client_id:       z.string().uuid('ID de cliente inválido').optional(),
   // Resposta do cliente quando o GPS e o endereço digitado ficam longe um do outro.
   location_choice: z.enum(['address', 'gps']).optional(),
 })
@@ -66,18 +65,8 @@ export async function POST(request: NextRequest) {
       } catch {}
     }
 
-    // Método C: Validação pelo ID de perfil enviado pelo cliente autenticado
-    if (!user && body.client_id) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, role')
-        .eq('id', body.client_id)
-        .maybeSingle()
-      if (profile) {
-        user = { id: profile.id }
-      }
-    }
-
+    // Nunca aceitar um client_id vindo no corpo sem login: dava pra abrir chamado
+    // em nome de qualquer cliente sabendo o ID dele (achado de 23/09/2026).
     if (!user) {
       return NextResponse.json({ error: 'Você precisa entrar na sua conta para solicitar um prestador.' }, { status: 401 })
     }
