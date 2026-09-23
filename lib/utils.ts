@@ -5,16 +5,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// PIN de chegada (service_calls.arrival_pin) — gerado no aceite do chamado,
-// pro cliente conferir que o técnico que chegou é o mesmo que aceitou. Web
-// Crypto (não Math.random) pelo mesmo padrão do resto do projeto — roda tanto
-// no navegador (app/painel/page.tsx) quanto em Route Handler (Cloudflare
-// Workers, app/api/calls/claim-queued/route.ts), os dois com crypto.subtle
-// nativo disponível.
+// PIN de chegada (call_arrival_pins) — gerado pelo servidor no aceite do
+// chamado (app/api/calls/advance e claim-queued), pro cliente conferir que o
+// técnico que chegou é o mesmo que aceitou. Web Crypto (não Math.random),
+// disponível nativamente no Cloudflare Workers. Um Uint32 % 10000 deixa o
+// viés de módulo desprezível (o byte % 10 de antes favorecia 0–5).
 export function generateArrivalPin(): string {
-  const bytes = new Uint8Array(4)
-  crypto.getRandomValues(bytes)
-  return Array.from(bytes, b => (b % 10).toString()).join('')
+  const [n] = crypto.getRandomValues(new Uint32Array(1))
+  return String(n % 10000).padStart(4, '0')
 }
 
 export function formatCurrency(value: number): string {

@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     // Taxa de deslocamento (R$25, já prometida em /termos) — só quando o
     // PRESTADOR cancela por cliente ausente no portão. Ver
     // lib/cancel-authorization.ts::shouldChargeNoShowFee.
-    const chargeNoShowFee = shouldChargeNoShowFee(resolvedReason, isProvider)
+    const chargeNoShowFee = shouldChargeNoShowFee(resolvedReason, isProvider, call.status)
 
     // 3. Atualiza o chamado com auditoria completa
     const { error: updateError } = await supabaseAdmin

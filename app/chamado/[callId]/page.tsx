@@ -50,10 +50,15 @@ export default function ChamadoProviderPage() {
     if (data) {
       setCall(data as ServiceCall)
       if (data.status === 'accepted') {
-        await supabase
-          .from('service_calls')
-          .update({ status: 'on_the_way' })
-          .eq('id', callId)
+        // Transições do prestador passam pelo servidor — ver app/api/calls/advance.
+        const res = await fetch('/api/calls/advance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ call_id: callId, action: 'on_the_way' }),
+        }).catch(() => null)
+        if (res?.ok) {
+          setCall(prev => (prev ? { ...prev, status: 'on_the_way' } : prev))
+        }
       }
     }
     setLoading(false)
@@ -77,15 +82,13 @@ export default function ChamadoProviderPage() {
     }
   }, [callId, loadCall, supabase])
 
-  // PIN de chegada (service_calls.arrival_pin, gerado no aceite — ver
-  // app/painel/page.tsx e app/api/calls/claim-queued/route.ts): confere que o
-  // técnico que está prestes a iniciar o atendimento é o mesmo que aceitou o
-  // chamado. Achado de auditoria (16/09/2026): a comparação rodava inteira
-  // no navegador contra um valor que o próprio prestador já tinha em mãos, e
-  // sem limite de tentativas — movida pra POST /api/calls/verify-arrival-pin
-  // (exige sessão do prestador vinculado ao chamado, limita tentativas por
-  // IP em proxy.ts). A transição pra in_progress só acontece se a rota
-  // confirmar o PIN.
+  // PIN de chegada (call_arrival_pins, gerado pelo servidor no aceite — ver
+  // app/api/calls/advance e app/api/calls/claim-queued): só o cliente vê o
+  // código, e o prestador digita o que o cliente falar. Achado de auditoria
+  // (16/09/2026): a comparação rodava inteira no navegador — movida pra POST
+  // /api/calls/verify-arrival-pin (exige sessão do prestador vinculado ao
+  // chamado e trava o chamado depois de 5 erros). A transição pra
+  // in_progress só acontece se a rota confirmar o PIN.
   const handleStartService = async () => {
     setStarting(true)
     try {
@@ -129,15 +132,25 @@ export default function ChamadoProviderPage() {
       console.error('Erro ao chamar /api/pix/create:', pixErr)
     }
 
-    // Marca como completed mantendo payment_status pending até o cliente pagar
-    await supabase
-      .from('service_calls')
-      .update({
-        status: 'completed',
-        payment_status: 'pending',
-        completed_at: new Date().toISOString(),
+    // Marca como completed pelo servidor (payment_status continua pending até
+    // o cliente pagar) — só vale a partir de in_progress, ou seja, depois do PIN.
+    try {
+      const res = await fetch('/api/calls/advance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ call_id: callId, action: 'complete' }),
       })
-      .eq('id', callId)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setCompleting(false)
+        toast.error(data.error || 'Não foi possível concluir o serviço. Tente novamente.')
+        return
+      }
+    } catch {
+      setCompleting(false)
+      toast.error('Falha de conexão ao concluir. Tente novamente.')
+      return
+    }
 
     setCompleting(false)
     toast.success('Serviço concluído! O QR Code Pix e opção de Cartão foram gerados para o cliente.')
@@ -317,7 +330,7 @@ export default function ChamadoProviderPage() {
                 <button
                   id="btn-confirm-start-service"
                   onClick={handleStartService}
-                  disabled={starting || (Boolean(call.arrival_pin) && pinInput.length !== 4)}
+                  disabled={starting || pinInput.length !== 4}
                   className="btn-primary"
                 >
                   {starting ? <Loader2 size={16} className="animate-spin" /> : 'Confirmar e Iniciar'}

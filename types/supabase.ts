@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      call_arrival_pins: {
+        Row: {
+          call_id: string
+          created_at: string
+          failed_attempts: number
+          locked_until: string | null
+          pin: string
+        }
+        Insert: {
+          call_id: string
+          created_at?: string
+          failed_attempts?: number
+          locked_until?: string | null
+          pin: string
+        }
+        Update: {
+          call_id?: string
+          created_at?: string
+          failed_attempts?: number
+          locked_until?: string | null
+          pin?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_arrival_pins_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: true
+            referencedRelation: "service_calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_messages: {
         Row: {
           call_id: string

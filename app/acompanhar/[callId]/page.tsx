@@ -23,6 +23,7 @@ export default function AcompanharPage() {
   const supabase = createClient()
 
   const [call, setCall] = useState<ServiceCall | null>(null)
+  const [arrivalPin, setArrivalPin] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [showPix, setShowPix] = useState(false)
   const [showNoShowFeePix, setShowNoShowFeePix] = useState(false)
@@ -48,6 +49,16 @@ export default function AcompanharPage() {
 
     if (data) {
       setCall(data as ServiceCall)
+      // PIN de chegada fica em call_arrival_pins, que só o cliente do chamado
+      // lê (o prestador não) — ver app/api/calls/verify-arrival-pin.
+      if (data.status === 'accepted' || data.status === 'on_the_way') {
+        const { data: pinRow } = await supabase
+          .from('call_arrival_pins')
+          .select('pin')
+          .eq('call_id', callId)
+          .maybeSingle()
+        setArrivalPin(pinRow?.pin ?? null)
+      }
       if (data.status === 'completed' && data.payment_status !== 'paid' && !hasAutoOpenedPixRef.current) {
         hasAutoOpenedPixRef.current = true
         setShowPix(true)
@@ -255,7 +266,7 @@ export default function AcompanharPage() {
               providerName={(call.provider as { full_name?: string })?.full_name}
               avatarUrl={(call.provider as { avatar_url?: string | null })?.avatar_url}
               isVerified={(call.provider as { background_check_status?: string })?.background_check_status === 'approved'}
-              arrivalPin={call.arrival_pin}
+              arrivalPin={call.status === 'accepted' || call.status === 'on_the_way' ? arrivalPin : null}
             />
           )}
 

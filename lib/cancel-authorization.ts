@@ -24,6 +24,12 @@ export type CancelAuthResult =
 // Depois de 'accepted' o cancelamento de cliente segue outro fluxo (ex: taxa de no-show).
 const CLIENT_CANCELLABLE_STATUSES = ['searching', 'queued', 'no_providers_available']
 
+// Prestador só cancela chamado que ele aceitou e ainda não terminou. Achado
+// de 23/09/2026: sem isso ele cancelava chamado já concluído (e pago), e em
+// 'searching' derrubava o chamado do cliente em vez de recusar (recusar é
+// /api/calls/skip-provider, que passa pro próximo prestador).
+const PROVIDER_CANCELLABLE_STATUSES = ['accepted', 'on_the_way', 'in_progress']
+
 export function evaluateCancelAuthorization({
   userId,
   call,
@@ -49,6 +55,14 @@ export function evaluateCancelAuthorization({
       status: 400,
       error:
         'Cancelamento de cliente só é permitido enquanto o chamado está em busca ou na fila de espera.',
+    }
+  }
+
+  if (!isClient && !PROVIDER_CANCELLABLE_STATUSES.includes(call.status)) {
+    return {
+      allowed: false,
+      status: 400,
+      error: 'Este chamado não pode mais ser cancelado pelo prestador.',
     }
   }
 
@@ -90,7 +104,11 @@ export function resolveCancelReasonEnum(reason: string | undefined, isClient: bo
 // do No-Show") só se aplica quando é o PRESTADOR quem cancela, e o motivo
 // resolvido é 'provider_absent' ("Cliente ausente após 10 min",
 // app/chamado/[callId]/page.tsx). Nunca se aplica a cancelamento do cliente
-// (ele está do lado de dentro cancelando, não deixou ninguém esperando).
-export function shouldChargeNoShowFee(resolvedReason: CancelReasonEnum, isProvider: boolean): boolean {
-  return isProvider && resolvedReason === 'provider_absent'
+// (ele está do lado de dentro cancelando, não deixou ninguém esperando), nem
+// depois que o atendimento começou (in_progress só existe depois que o
+// cliente passou o PIN de chegada ao técnico — ou seja, atendeu).
+const NO_SHOW_STATUSES = ['accepted', 'on_the_way']
+
+export function shouldChargeNoShowFee(resolvedReason: CancelReasonEnum, isProvider: boolean, callStatus: string): boolean {
+  return isProvider && resolvedReason === 'provider_absent' && NO_SHOW_STATUSES.includes(callStatus)
 }

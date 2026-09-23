@@ -27,7 +27,6 @@ import { toast } from 'sonner'
 import { PanelHeader } from '@/components/provider/panel-header'
 import { audioAlert } from '@/lib/audio-alert'
 import { performLogout } from '@/lib/auth-logout'
-import { generateArrivalPin } from '@/lib/utils'
 import { SelfieCaptureModal } from '@/components/selfie-capture-modal'
 import { PushNotificationsCard } from '@/components/push-notifications-card'
 
@@ -432,17 +431,26 @@ export default function PainelPage() {
     setPendingCall(null)
     audioAlert.stopAlarm()
 
-    await supabase
-      .from('service_calls')
-      .update({
-        status: 'accepted',
-        accepted_at: new Date().toISOString(),
-        arrival_pin: generateArrivalPin(),
+    // Aceite pelo servidor (confere que o chamado ainda é seu e gera o PIN
+    // de chegada que só o cliente vê) — ver app/api/calls/advance.
+    try {
+      const res = await fetch('/api/calls/advance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ call_id: callId, action: 'accept' }),
       })
-      .eq('id', callId)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.error || 'Não foi possível aceitar este chamado.')
+        return
+      }
+    } catch {
+      toast.error('Falha de conexão ao aceitar o chamado. Tente novamente.')
+      return
+    }
 
     router.push(`/chamado/${callId}`)
-  }, [pendingCall, isApproved, router, supabase])
+  }, [pendingCall, isApproved, router])
 
   const handleRejectCall = useCallback(async () => {
     if (!pendingCall) return

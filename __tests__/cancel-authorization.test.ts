@@ -39,6 +39,14 @@ describe('evaluateCancelAuthorization — autorização de cancelamento (app/api
     }
   })
 
+  it('bloqueia o prestador de cancelar chamado ainda em searching (recusar é skip-provider) ou já encerrado — 400', () => {
+    for (const status of ['searching', 'completed', 'cancelled', 'expired']) {
+      const result = evaluateCancelAuthorization({ userId: 'provider-1', call: { ...baseCall, status } })
+      expect(result.allowed).toBe(false)
+      if (!result.allowed) expect(result.status).toBe(400)
+    }
+  })
+
   it('não deixa um provider_id nulo (chamado ainda na fila) casar com um userId qualquer por acidente', () => {
     const result = evaluateCancelAuthorization({
       userId: 'someone',
@@ -85,17 +93,22 @@ describe('resolveCancelReasonEnum — deriva o valor da coluna ENUM cancel_reaso
 })
 
 describe('shouldChargeNoShowFee — gatilho da taxa de deslocamento de R$25 (já prometida em /termos)', () => {
-  it('cobra quando o prestador cancela com motivo provider_absent', () => {
-    expect(shouldChargeNoShowFee('provider_absent', true)).toBe(true)
+  it('cobra quando o prestador cancela com motivo provider_absent antes de iniciar o atendimento', () => {
+    expect(shouldChargeNoShowFee('provider_absent', true, 'accepted')).toBe(true)
+    expect(shouldChargeNoShowFee('provider_absent', true, 'on_the_way')).toBe(true)
   })
 
   it('não cobra quando o prestador cancela por qualquer outro motivo', () => {
     for (const reason of ['wrong_address', 'technical_issue', 'no_provider_found', 'other', 'client_request'] as const) {
-      expect(shouldChargeNoShowFee(reason, true)).toBe(false)
+      expect(shouldChargeNoShowFee(reason, true, 'on_the_way')).toBe(false)
     }
   })
 
   it('nunca cobra quando é o cliente quem cancela, mesmo que o motivo (por acaso) seja provider_absent', () => {
-    expect(shouldChargeNoShowFee('provider_absent', false)).toBe(false)
+    expect(shouldChargeNoShowFee('provider_absent', false, 'on_the_way')).toBe(false)
+  })
+
+  it('não cobra depois que o atendimento começou — in_progress só existe depois que o cliente passou o PIN', () => {
+    expect(shouldChargeNoShowFee('provider_absent', true, 'in_progress')).toBe(false)
   })
 })

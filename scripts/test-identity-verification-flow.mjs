@@ -125,10 +125,10 @@ async function run() {
   // ── Passo 1: PIN de chegada (mesma escrita das duas rotas de aceite) ───────
   log('\n🔢 Passo 1: gerando PIN de chegada...');
   const arrivalPin = String(Math.floor(1000 + Math.random() * 9000));
-  await admin.from('service_calls').update({ arrival_pin: arrivalPin }).eq('id', createdCallId);
-  const { data: callWithPin } = await admin.from('service_calls').select('arrival_pin').eq('id', createdCallId).single();
-  results.pin = callWithPin?.arrival_pin === arrivalPin && /^\d{4}$/.test(callWithPin.arrival_pin);
-  log(`   arrival_pin gravado: ${callWithPin?.arrival_pin} — ${results.pin ? 'OK' : 'FALHOU'}`);
+  await admin.from('call_arrival_pins').upsert({ call_id: createdCallId, pin: arrivalPin }, { onConflict: 'call_id' });
+  const { data: pinRow } = await admin.from('call_arrival_pins').select('pin').eq('call_id', createdCallId).single();
+  results.pin = pinRow?.pin === arrivalPin && /^\d{4}$/.test(pinRow.pin);
+  log(`   PIN gravado em call_arrival_pins: ${pinRow?.pin} — ${results.pin ? 'OK' : 'FALHOU'}`);
 
   // ── Passo 2: selfie — upload, URL assinada, avatar_url, transição rejected->pending ──
   log('\n📸 Passo 2: simulando upload de selfie (mesma sequência de /api/profile/selfie)...');

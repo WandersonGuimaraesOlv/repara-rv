@@ -92,7 +92,7 @@ export function ProviderIdentityCard({ callId, providerName, avatarUrl, isVerifi
                 PIN de chegada
               </span>
             </div>
-            <span className="font-mono font-black text-xl tracking-[0.3em]" style={{ color: 'var(--color-accent)' }}>
+            <span id="arrival-pin-code" className="font-mono font-black text-xl tracking-[0.3em]" style={{ color: 'var(--color-accent)' }}>
               {arrivalPin}
             </span>
           </div>

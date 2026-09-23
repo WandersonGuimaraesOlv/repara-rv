@@ -1,22 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { getRequestUserId } from '@/lib/supabase/request-user'
+import { evaluateProviderTransition, isPinLocked, pinAttemptPatch, PIN_LOCK_MINUTES } from '@/lib/call-transitions'
+import { generateArrivalPin } from '@/lib/utils'
 
-// Achado de auditoria (16/09/2026): a checagem do PIN de chegada
-// (service_calls.arrival_pin) rodava inteiramente no navegador do prestador,
-// comparando contra um valor que o próprio prestador já tinha em mãos (a
-// mesma linha que ele buscou via select('*')) — sem tentativa limitada, sem
-// verificação de servidor. Move a decisão que realmente importa (a
-// transição pra in_progress) pro servidor: exige sessão do prestador
-// vinculado ao chamado E limita tentativas por IP (proxy.ts), fechando o
-// caminho de força bruta às cegas. Residual documentado, não resolvido
-// aqui por desproporcional ao risco: arrival_pin ainda aparece na linha que
-// o prestador já lê (select('*') em app/chamado/[callId]/page.tsx) e em
-// eventos Realtime dessa linha — RLS decide LINHA, não COLUNA, então
-// esconder de verdade exigiria uma view separada. Ameaça real é baixa
-// (prestador já é aprovado/verificado; o PIN é fricção adicional, não a
-// única defesa — ver também o card de identificação e a denúncia "não é a
-// pessoa da foto").
+// Achado de auditoria (16/09/2026): a checagem do PIN de chegada rodava
+// inteiramente no navegador do prestador. Movida pra cá, com limite por IP em
+// proxy.ts.
+//
+// Achado de 23/09/2026: mesmo assim o prestador sabia o PIN — ele era gerado
+// no navegador dele e ficava em service_calls.arrival_pin, coluna que ele lê.
+// O PIN agora mora em call_arrival_pins (migration
+// 20260923_arrival_pin_private_table.sql), que só o cliente do chamado lê, e
+// cada chamado trava por PIN_LOCK_MINUTES a cada 5 erros (o limite por IP do
+// proxy.ts fica em memória de cada isolate do Worker, não segura sozinho).
 const verifyPinSchema = z.object({
   call_id: z.string().uuid('call_id inválido'),
   pin: z.string().trim().max(10),
@@ -24,9 +22,8 @@ const verifyPinSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const supabaseUser = await createClient()
-    const { data: { user } } = await supabaseUser.auth.getUser().catch(() => ({ data: { user: null } }))
-    if (!user) {
+    const userId = await getRequestUserId(request)
+    if (!userId) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
@@ -47,36 +44,85 @@ export async function POST(request: NextRequest) {
 
     const { data: call } = await supabaseAdmin
       .from('service_calls')
-      .select('provider_id, status, arrival_pin')
+      .select('provider_id, status')
       .eq('id', call_id)
-      .single()
+      .maybeSingle()
 
     if (!call) {
       return NextResponse.json({ error: 'Chamado não encontrado' }, { status: 404 })
     }
 
-    if (call.provider_id !== user.id) {
-      return NextResponse.json({ error: 'Você não tem permissão para iniciar este atendimento' }, { status: 403 })
+    const decision = evaluateProviderTransition({ userId, call, action: 'start' })
+    if (!decision.allowed) {
+      return NextResponse.json({ error: decision.error }, { status: decision.status })
     }
 
-    if (call.status !== 'accepted' && call.status !== 'on_the_way') {
-      return NextResponse.json({ error: 'Este chamado não está pronto pra iniciar atendimento' }, { status: 400 })
+    const { data: pinRow } = await supabaseAdmin
+      .from('call_arrival_pins')
+      .select('pin, failed_attempts, locked_until')
+      .eq('call_id', call_id)
+      .maybeSingle()
+
+    // Sem PIN gravado (a gravação no aceite falhou): cria agora. Ele aparece
+    // na tela do cliente em poucos segundos — o atendimento nunca começa sem.
+    if (!pinRow) {
+      const { error: pinError } = await supabaseAdmin
+        .from('call_arrival_pins')
+        .insert({ call_id, pin: generateArrivalPin() })
+      if (pinError) {
+        console.error('[API /api/calls/verify-arrival-pin] Erro ao gerar PIN:', pinError)
+        return NextResponse.json({ error: 'Erro ao gerar o PIN. Tente novamente.' }, { status: 500 })
+      }
+      return NextResponse.json(
+        { error: 'O PIN acabou de aparecer na tela do cliente. Peça o código de 4 dígitos a ele.' },
+        { status: 409 }
+      )
     }
 
-    // Chamados aceitos antes desta feature não têm PIN (arrival_pin null) —
-    // não bloqueia, pra não travar atendimento em andamento no deploy.
-    if (call.arrival_pin && pin !== call.arrival_pin) {
-      return NextResponse.json({ error: 'PIN incorreto. Confirme o código de 4 dígitos com o cliente.' }, { status: 400 })
+    const now = new Date()
+    const nowIso = now.toISOString()
+    if (isPinLocked(pinRow.locked_until, now)) {
+      return NextResponse.json(
+        { error: `Muitas tentativas erradas. Aguarde ${PIN_LOCK_MINUTES} minutos e confirme o código com o cliente.` },
+        { status: 429 }
+      )
     }
 
-    const { error: updateError } = await supabaseAdmin
+    // Reserva a tentativa antes de comparar: só uma requisição avança o
+    // contador a partir deste valor, e nunca com o chamado travado.
+    const attemptPatch = pinAttemptPatch(pinRow.failed_attempts + 1, now)
+    const { data: reserved } = await supabaseAdmin
+      .from('call_arrival_pins')
+      .update(attemptPatch)
+      .eq('call_id', call_id)
+      .eq('failed_attempts', pinRow.failed_attempts)
+      .or(`locked_until.is.null,locked_until.lt."${nowIso}"`)
+      .select('call_id')
+    if (!reserved || reserved.length === 0) {
+      return NextResponse.json({ error: 'Outra tentativa estava em andamento. Tente de novo.' }, { status: 409 })
+    }
+
+    if (pin !== pinRow.pin) {
+      const error = attemptPatch.locked_until
+        ? `PIN incorreto. Muitas tentativas erradas — aguarde ${PIN_LOCK_MINUTES} minutos.`
+        : 'PIN incorreto. Confirme o código de 4 dígitos com o cliente.'
+      return NextResponse.json({ error }, { status: 400 })
+    }
+
+    const { data: updated, error: updateError } = await supabaseAdmin
       .from('service_calls')
-      .update({ status: 'in_progress', started_at: new Date().toISOString() })
+      .update({ status: decision.to, started_at: nowIso, updated_at: nowIso })
       .eq('id', call_id)
+      .eq('provider_id', userId)
+      .in('status', [...decision.from])
+      .select('id')
 
     if (updateError) {
       console.error('[API /api/calls/verify-arrival-pin] Erro ao iniciar atendimento:', updateError)
       return NextResponse.json({ error: 'Erro ao iniciar atendimento. Tente novamente.' }, { status: 500 })
+    }
+    if (!updated || updated.length === 0) {
+      return NextResponse.json({ error: 'O chamado mudou enquanto você confirmava. Atualize a tela.' }, { status: 409 })
     }
 
     return NextResponse.json({ success: true })

@@ -8,10 +8,11 @@
 //
 //   criar chamado (HTTP real, /api/calls/create)
 //     -> casado automaticamente com um prestador de teste (RPC find_nearest_provider)
-//     -> prestador aceita (mesma escrita que app/painel faz: UPDATE via sessão
-//        autenticada real, não Service Role — exercita a RLS de verdade)
+//     -> prestador aceita (POST /api/calls/advance com a sessão real dele,
+//        igual app/painel) e o PIN de chegada só aparece pro cliente
 //     -> prestador segue pro endereço (mesma auto-transição de app/chamado)
-//     -> prestador conclui o serviço (status=completed, payment_status=pending)
+//     -> concluir sem o PIN é recusado; com o PIN, inicia e conclui
+//        (status=completed, payment_status=pending)
 //     -> confirma pagamento (mesmo UPDATE condicional do webhook do Pix —
 //        sem chamar a API de verdade do Mercado Pago: um monitor sintético
 //        rodando em produção não deveria criar cobranças reais periodicamente
@@ -140,29 +141,52 @@ async function run() {
     return false;
   }
 
-  // ── 3. Prestador aceita — sessão autenticada real, exercita RLS de verdade ──
+  // ── 3. Prestador aceita — mesma rota de app/painel, com a sessão real dele ──
   const providerClient = createClient(SUPABASE_URL, ANON_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
-  await providerClient.auth.signInWithPassword({ email: providerEmail, password });
+  const { data: providerSession, error: providerLoginErr } = await providerClient.auth.signInWithPassword({ email: providerEmail, password });
+  if (providerLoginErr) throw new Error(`Falha ao logar como o prestador de teste: ${providerLoginErr.message}`);
 
-  const { error: acceptErr } = await providerClient
-    .from('service_calls')
-    .update({ status: 'accepted', accepted_at: new Date().toISOString() })
-    .eq('id', callId);
-  if (!step('Prestador aceita o chamado (UPDATE via sessão real)', !acceptErr, acceptErr?.message)) return false;
+  const asProvider = (path, body) => fetch(`${APP_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${providerSession.session.access_token}` },
+    body: JSON.stringify(body),
+  });
+
+  const acceptRes = await asProvider('/api/calls/advance', { call_id: callId, action: 'accept' });
+  if (!step('Prestador aceita o chamado (POST /api/calls/advance)', acceptRes.ok, `status=${acceptRes.status}`)) return false;
 
   const afterAccept = await getCall('status');
   if (!step('Estado no banco confirma accepted', afterAccept?.status === 'accepted', `status=${afterAccept?.status}`)) return false;
 
-  // ── 4. Prestador segue pro endereço (mesma auto-transição de app/chamado) ──
-  const { error: otwErr } = await providerClient.from('service_calls').update({ status: 'on_the_way' }).eq('id', callId);
-  if (!step('Prestador marca a caminho (on_the_way)', !otwErr, otwErr?.message)) return false;
+  // O PIN existe e só o cliente lê — o prestador tem que perguntar
+  const { data: pinRow } = await admin.from('call_arrival_pins').select('pin').eq('call_id', callId).maybeSingle();
+  if (!step('PIN de chegada gerado pelo servidor', /^\d{4}$/.test(pinRow?.pin ?? ''))) return false;
+  const { data: providerPinRead } = await providerClient.from('call_arrival_pins').select('pin').eq('call_id', callId);
+  if (!step('Prestador NÃO lê o PIN', !providerPinRead?.length, `linhas=${providerPinRead?.length ?? 0}`)) return false;
+  const { data: clientPinRead } = await asClient.from('call_arrival_pins').select('pin').eq('call_id', callId);
+  if (!step('Cliente lê o PIN do próprio chamado', clientPinRead?.[0]?.pin === pinRow.pin)) return false;
 
-  // ── 5. Prestador conclui o serviço ───────────────────────────────────────────
-  const { error: completeErr } = await providerClient
-    .from('service_calls')
-    .update({ status: 'completed', payment_status: 'pending', completed_at: new Date().toISOString() })
-    .eq('id', callId);
-  if (!step('Prestador conclui o serviço (completed, payment_status=pending)', !completeErr, completeErr?.message)) return false;
+  // ── 4. Prestador segue pro endereço (mesma auto-transição de app/chamado) ──
+  const otwRes = await asProvider('/api/calls/advance', { call_id: callId, action: 'on_the_way' });
+  if (!step('Prestador marca a caminho (on_the_way)', otwRes.ok, `status=${otwRes.status}`)) return false;
+
+  // ── 5. Não dá pra concluir sem o PIN; com o PIN, inicia e conclui ───────────
+  const earlyCompleteRes = await asProvider('/api/calls/advance', { call_id: callId, action: 'complete' });
+  if (!step('Concluir antes do PIN é recusado (409)', earlyCompleteRes.status === 409, `status=${earlyCompleteRes.status}`)) return false;
+
+  const startRes = await asProvider('/api/calls/verify-arrival-pin', { call_id: callId, pin: pinRow.pin });
+  if (!step('Prestador inicia com o PIN do cliente (in_progress)', startRes.ok, `status=${startRes.status}`)) return false;
+
+  const completeRes = await asProvider('/api/calls/advance', { call_id: callId, action: 'complete' });
+  if (!step('Prestador conclui o serviço (POST /api/calls/advance)', completeRes.ok, `status=${completeRes.status}`)) return false;
+
+  const afterComplete = await getCall('status, payment_status');
+  if (!step('Estado no banco confirma completed com payment_status=pending', afterComplete?.status === 'completed' && afterComplete?.payment_status === 'pending', JSON.stringify(afterComplete))) return false;
+
+  // Escrita direta no banco pelo prestador não existe mais (migration
+  // 20260923_provider_writes_via_server_only.sql) — só as rotas acima.
+  const { data: directWrite } = await providerClient.from('service_calls').update({ status: 'in_progress' }).eq('id', callId).select('id');
+  if (!step('Prestador NÃO muda status direto no banco', !directWrite?.length, `linhas=${directWrite?.length ?? 0}`)) return false;
 
   // ── 6. Confirma pagamento — mesmo UPDATE condicional do webhook, sem bater
   //      na API de verdade do Mercado Pago (ver comentário no topo do arquivo) ──

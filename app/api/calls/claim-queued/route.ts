@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient, createServiceClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
+import { getRequestUserId } from '@/lib/supabase/request-user';
 import { generateArrivalPin } from '@/lib/utils';
 
 // Aceita os dois formatos de chave (camelCase e snake_case) que já circulam
@@ -33,15 +34,14 @@ export async function POST(req: NextRequest) {
     // diferente, rejeita — o único chamador legítimo (app/painel/page.tsx,
     // handleClaimQueued) sempre manda o próprio profile.id, então isso nunca
     // deveria divergir numa requisição de verdade.
-    const supabaseUser = await createClient();
-    const { data: { user } } = await supabaseUser.auth.getUser().catch(() => ({ data: { user: null } }));
-    if (!user) {
+    const userId = await getRequestUserId(req);
+    if (!userId) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 });
     }
-    if (bodyProviderId && bodyProviderId !== user.id) {
+    if (bodyProviderId && bodyProviderId !== userId) {
       return NextResponse.json({ error: 'providerId não corresponde à sessão autenticada' }, { status: 403 });
     }
-    const providerId = user.id;
+    const providerId = userId;
 
     if (!callId || !providerId) {
       return NextResponse.json({ error: 'Dados incompletos (callId e providerId são obrigatórios)' }, { status: 400 });
@@ -52,12 +52,21 @@ export async function POST(req: NextRequest) {
     // 1. Validar se o prestador tem perfil ativo e não está bloqueado
     const { data: provider, error: providerError } = await supabaseAdmin
       .from('profiles')
-      .select('id, full_name, phone, role, is_blocked, mercado_pago_connected')
+      .select('id, full_name, phone, role, is_blocked, background_check_status, mercado_pago_connected')
       .eq('id', providerId)
       .maybeSingle();
 
     if (providerError || !provider || provider.role !== 'provider') {
       return NextResponse.json({ error: 'Prestador não autorizado' }, { status: 403 });
+    }
+
+    // A trava de cadastro em análise só existia na tela (app/painel) — pela
+    // rota direta, um prestador ainda não aprovado assumia chamado da fila.
+    if (provider.background_check_status !== 'approved') {
+      return NextResponse.json(
+        { error: 'Seu cadastro ainda está em análise de segurança — não é possível assumir chamados agora.' },
+        { status: 403 }
+      );
     }
 
     // 1.1 Verifica se o prestador está suspenso ou sem Chave Pix
@@ -130,17 +139,17 @@ export async function POST(req: NextRequest) {
 
     const acceptedCall = updatedCall[0];
 
-    // 2.1 PIN de chegada — claim_queued_call() não seta esse campo (função no
-    // banco, não vale a pena mexer nela só por isso), então é uma escrita de
-    // acompanhamento aqui. Sem risco de corrida: o provider_id já foi travado
-    // atomicamente acima, então essa segunda escrita não compete com mais
-    // ninguém pela mesma linha.
-    const arrivalPin = generateArrivalPin();
-    await supabaseAdmin
-      .from('service_calls')
-      .update({ arrival_pin: arrivalPin })
-      .eq('id', callId);
-    acceptedCall.arrival_pin = arrivalPin;
+    // 2.1 PIN de chegada — em call_arrival_pins, que só o cliente lê (ver
+    // app/api/calls/verify-arrival-pin). Não volta na resposta: quem chama
+    // esta rota é o prestador, e ele tem que pedir o PIN ao cliente. Se esta
+    // gravação falhar, verify-arrival-pin gera o PIN na hora de iniciar.
+    const { error: pinError } = await supabaseAdmin
+      .from('call_arrival_pins')
+      .upsert({ call_id: callId, pin: generateArrivalPin(), failed_attempts: 0, locked_until: null }, { onConflict: 'call_id' });
+    if (pinError) {
+      console.error('[claim-queued] Erro ao gravar PIN de chegada:', pinError);
+    }
+    delete acceptedCall.arrival_pin;
 
     return NextResponse.json({ success: true, call: acceptedCall }, { status: 200 });
   } catch (err: any) {
