@@ -281,7 +281,7 @@ export default function PainelPage() {
       ? `SRID=4326;POINT(${currentLng} ${currentLat})`
       : null
 
-    await supabase
+    const { error: toggleError } = await supabase
       .from('provider_status')
       .update({
         is_online: newOnline,
@@ -290,8 +290,17 @@ export default function PainelPage() {
       })
       .eq('provider_id', profile.id)
 
-    setIsOnline(newOnline)
     setTogglingOnline(false)
+
+    if (toggleError) {
+      // O banco pode recusar a escrita (ex: trava de segurança) mesmo com os
+      // checks acima passando — sem isso, a tela mostrava "Online" mesmo
+      // quando o prestador continuava offline de verdade no banco.
+      toast.error(toggleError.message || 'Não foi possível atualizar seu status. Tente novamente.')
+      return
+    }
+
+    setIsOnline(newOnline)
     toast.success(newOnline ? 'Você está online! Aguardando chamados.' : 'Você está offline.')
   }
 
