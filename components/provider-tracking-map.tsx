@@ -2,16 +2,18 @@
 
 import 'leaflet/dist/leaflet.css'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Map as LeafletMap, Marker } from 'leaflet'
+import type { Map as LeafletMap, Marker, Polyline } from 'leaflet'
 import { Navigation, Loader2 } from 'lucide-react'
 import { formatDistance } from '@/lib/utils'
 import type { Coordinates } from '@/lib/geocoding'
-import { formatAge, isPositionStale } from '@/lib/tracking'
+import { decodePolyline, formatAge, isPositionStale, remainingMinutes } from '@/lib/tracking'
 
 interface TrackingData {
   status: string
   destination: Coordinates | null
   provider: (Coordinates & { updated_at: string | null; distance_km: number | null }) | null
+  // Rota pelas ruas (Google Routes API via lib/directions.ts); null = sem rota
+  route: { encoded_polyline: string; duration_seconds: number; distance_meters: number; computed_at: string } | null
 }
 
 interface ProviderTrackingMapProps {
@@ -31,11 +33,11 @@ function pinHtml(color: string, pulse: boolean): string {
 }
 
 // Mapa do trajeto do técnico até o endereço do chamado (OpenStreetMap, sem
-// chave de API). A posição vem de /api/calls/tracking, que só responde ao
-// cliente e ao técnico deste chamado e só entre o aceite e o início do
-// atendimento. O técnico manda a posição pelo app aberto (app/chamado); com
-// o Waze/Google Maps na frente o navegador para de mandar, e a tela mostra
-// há quanto tempo foi a última posição.
+// chave de API no navegador). Posição e rota vêm de /api/calls/tracking, que
+// só responde ao cliente e ao técnico deste chamado e só entre o aceite e o
+// início do atendimento. O técnico manda a posição pelo app aberto
+// (app/chamado); com o Waze/Google Maps na frente o navegador para de mandar,
+// e a tela mostra há quanto tempo foi a última posição.
 export function ProviderTrackingMap({ callId, viewer }: ProviderTrackingMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const leafletRef = useRef<{
@@ -43,6 +45,8 @@ export function ProviderTrackingMap({ callId, viewer }: ProviderTrackingMapProps
     map: LeafletMap
     provider: Marker | null
     destination: Marker | null
+    routeLine: Polyline | null
+    routeKey: string | null
     fitted: boolean
   } | null>(null)
   const [data, setData] = useState<TrackingData | null>(null)
@@ -76,7 +80,7 @@ export function ProviderTrackingMap({ callId, viewer }: ProviderTrackingMapProps
         maxZoom: 19,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>',
       }).addTo(map)
-      leafletRef.current = { L, map, provider: null, destination: null, fitted: false }
+      leafletRef.current = { L, map, provider: null, destination: null, routeLine: null, routeKey: null, fitted: false }
       setNow(new Date())
     })
     return () => {
@@ -110,22 +114,45 @@ export function ProviderTrackingMap({ callId, viewer }: ProviderTrackingMapProps
     leaflet.destination = place(leaflet.destination, data.destination, 'var(--color-accent)', false, 'Endereço do chamado')
     leaflet.provider = place(leaflet.provider, data.provider, 'var(--color-primary)', true, 'Técnico')
 
-    const points = [data.destination, data.provider].filter((p): p is Coordinates => p !== null)
+    // Rota pelas ruas: só redesenha quando o servidor calculou uma nova.
+    let routePoints: [number, number][] = []
+    if (data.route) {
+      routePoints = decodePolyline(data.route.encoded_polyline)
+      const key = `${data.route.computed_at}:${data.route.encoded_polyline.length}`
+      if (leaflet.routeKey !== key) {
+        if (leaflet.routeLine) leaflet.routeLine.setLatLngs(routePoints)
+        // --color-primary (igual nos 3 temas); atributo de SVG não aceita var()
+        else leaflet.routeLine = L.polyline(routePoints, { color: '#0a9b70', weight: 5, opacity: 0.85, interactive: false }).addTo(map)
+        leaflet.routeKey = key
+      }
+    } else if (leaflet.routeLine) {
+      leaflet.routeLine.remove()
+      leaflet.routeLine = null
+      leaflet.routeKey = null
+    }
+
+    const points: [number, number][] = [
+      ...[data.destination, data.provider].filter((p): p is Coordinates => p !== null).map(p => [p.lat, p.lng] as [number, number]),
+      ...routePoints,
+    ]
     if (points.length === 0) return
     // getBounds() só existe depois do primeiro enquadramento
     const needsFit = !leaflet.fitted
       || (data.provider !== null && !map.getBounds().contains([data.provider.lat, data.provider.lng]))
     if (needsFit) {
-      if (points.length === 1) map.setView([points[0].lat, points[0].lng], 16)
-      else map.fitBounds(L.latLngBounds(points.map(p => [p.lat, p.lng] as [number, number])), { padding: [36, 36], maxZoom: 17 })
+      if (points.length === 1) map.setView(points[0], 16)
+      else map.fitBounds(L.latLngBounds(points), { padding: [36, 36], maxZoom: 17 })
       leaflet.fitted = true
     }
   }, [data, now])
 
   const provider = data?.provider ?? null
   const stale = provider ? isPositionStale(provider.updated_at, now) : true
-  const km = provider?.distance_km ?? null
+  const route = data?.route ?? null
+  // Pelas ruas quando há rota; senão, em linha reta.
+  const km = route ? route.distance_meters / 1000 : provider?.distance_km ?? null
   const age = provider?.updated_at ? formatAge(provider.updated_at, now) : null
+  const etaMin = route && provider && !stale ? remainingMinutes(route.duration_seconds, route.computed_at, now) : null
 
   let message: string
   if (!data) {
@@ -140,6 +167,10 @@ export function ProviderTrackingMap({ callId, viewer }: ProviderTrackingMapProps
       : `Sua posição não é atualizada ${age}. Volte ao Repara RV de vez em quando para o cliente ver você chegando.`
   } else if (km !== null && km < 0.05) {
     message = viewer === 'client' ? 'O técnico está chegando.' : 'Você chegou ao endereço.'
+  } else if (etaMin !== null && km !== null) {
+    message = viewer === 'client'
+      ? `O técnico chega em cerca de ${etaMin} min · ${formatDistance(km)} pelo caminho · atualizado ${age}`
+      : `Você chega em cerca de ${etaMin} min · ${formatDistance(km)} · o cliente vê sua posição até você iniciar o atendimento`
   } else {
     const dist = km !== null ? formatDistance(km) : null
     message = viewer === 'client'
@@ -154,6 +185,15 @@ export function ProviderTrackingMap({ callId, viewer }: ProviderTrackingMapProps
         <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
           {viewer === 'client' ? 'Acompanhe o técnico' : 'Seu trajeto até o cliente'}
         </p>
+        {etaMin !== null && (
+          <span
+            id="provider-tracking-eta"
+            className="ml-auto text-sm font-black px-2.5 py-0.5 rounded-full"
+            style={{ background: 'var(--color-primary-soft)', color: 'var(--color-accent)', border: '1px solid var(--color-border)' }}
+          >
+            ~{etaMin} min
+          </span>
+        )}
       </div>
 
       <div

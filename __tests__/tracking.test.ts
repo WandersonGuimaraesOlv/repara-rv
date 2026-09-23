@@ -1,5 +1,67 @@
 import { describe, it, expect } from 'vitest'
-import { formatAge, isPositionStale, isTrackingStatus, parseGeoJsonPoint, TRACKING_STALE_AFTER_MS } from '../lib/tracking'
+import {
+  decodePolyline,
+  formatAge,
+  isPositionStale,
+  isTrackingStatus,
+  parseDurationSeconds,
+  parseGeoJsonPoint,
+  remainingMinutes,
+  shouldRecomputeRoute,
+  TRACKING_STALE_AFTER_MS,
+  type CachedRoute,
+} from '../lib/tracking'
+
+describe('rota pelas ruas (Google Routes API) — quando recalcular, cada cálculo é cobrado', () => {
+  const now = new Date('2026-09-23T12:00:00.000Z')
+  const cache = (secondsAgo: number, over: Partial<CachedRoute> = {}): CachedRoute => ({
+    origin_lat: -17.8, origin_lng: -50.93, encoded_polyline: 'abc', duration_seconds: 600, distance_meters: 3000,
+    computed_at: new Date(now.getTime() - secondsAgo * 1000).toISOString(), ...over,
+  })
+
+  it('sem rota guardada: calcula', () => {
+    expect(shouldRecomputeRoute(null, Infinity, now)).toBe(true)
+  })
+
+  it('rota recente e técnico parado: usa a guardada', () => {
+    expect(shouldRecomputeRoute(cache(30), 0, now)).toBe(false)
+    expect(shouldRecomputeRoute(cache(150), 100, now)).toBe(false)
+  })
+
+  it('andou 300 m ou mais: recalcula, mas no máximo 1 vez por minuto', () => {
+    expect(shouldRecomputeRoute(cache(30), 800, now)).toBe(false)
+    expect(shouldRecomputeRoute(cache(61), 300, now)).toBe(true)
+  })
+
+  it('3 minutos sem recalcular: recalcula mesmo parado', () => {
+    expect(shouldRecomputeRoute(cache(180), 0, now)).toBe(true)
+  })
+
+  it('última tentativa falhou: espera 5 minutos antes de tentar de novo', () => {
+    expect(shouldRecomputeRoute(cache(200, { encoded_polyline: null }), 5000, now)).toBe(false)
+    expect(shouldRecomputeRoute(cache(300, { encoded_polyline: null }), 0, now)).toBe(true)
+  })
+
+  it('lê a duração da Routes API ("342s")', () => {
+    expect(parseDurationSeconds('342s')).toBe(342)
+    expect(parseDurationSeconds('12.5s')).toBe(13)
+    expect(parseDurationSeconds('342')).toBeNull()
+    expect(parseDurationSeconds(undefined)).toBeNull()
+  })
+
+  it('tempo que falta desconta o tempo desde o cálculo, nunca menos de 1 min', () => {
+    expect(remainingMinutes(600, '2026-09-23T11:58:00.000Z', now)).toBe(8)
+    expect(remainingMinutes(60, '2026-09-23T11:50:00.000Z', now)).toBe(1)
+  })
+
+  it('decodifica a polilinha do Google (exemplo da documentação)', () => {
+    expect(decodePolyline('_p~iF~ps|U_ulLnnqC_mqNvxq`@')).toEqual([
+      [38.5, -120.2],
+      [40.7, -120.95],
+      [43.252, -126.453],
+    ])
+  })
+})
 
 describe('isTrackingStatus — quando a posição do técnico aparece pro cliente (app/api/calls/tracking)', () => {
   it('só entre o aceite e o início do atendimento', () => {

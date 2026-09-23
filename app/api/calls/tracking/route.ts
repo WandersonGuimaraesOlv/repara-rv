@@ -4,6 +4,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { getRequestUserId } from '@/lib/supabase/request-user'
 import { isTrackingStatus, parseGeoJsonPoint } from '@/lib/tracking'
 import { distanceKm } from '@/lib/geocoding'
+import { getRouteForCall } from '@/lib/directions'
 
 // Posição do técnico para o mapa de acompanhamento (app/acompanhar e
 // app/chamado). provider_status não é mais legível por clientes (migration
@@ -61,12 +62,18 @@ export async function GET(request: NextRequest) {
       ? {
           ...position,
           updated_at: providerStatus?.updated_at ?? null,
-          // em linha reta — sem API de rotas, é o que dá pra afirmar
+          // em linha reta — quando não houver rota pelas ruas (route abaixo)
           distance_km: destination ? distanceKm(position, destination) : null,
         }
       : null
 
-    return NextResponse.json({ status: call.status, destination, provider }, { headers: noStore })
+    // Rota pelas ruas + tempo estimado (Google Routes API, guardada por
+    // chamado em call_route_cache — lib/directions.ts). null = sem rota.
+    const route = position && destination
+      ? await getRouteForCall(supabaseAdmin, call_id, position, destination, providerStatus?.updated_at ?? null, new Date())
+      : null
+
+    return NextResponse.json({ status: call.status, destination, provider, route }, { headers: noStore })
   } catch (error) {
     console.error('[API] /api/calls/tracking:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
