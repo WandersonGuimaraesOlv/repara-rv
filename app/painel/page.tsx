@@ -54,7 +54,11 @@ export default function PainelPage() {
   const hasSelfie = Boolean(profile?.avatar_url)
   const [showSelfieCapture, setShowSelfieCapture] = useState(false)
 
-  const { lat, lng, error: geoError, getPosition } = useGeolocation(true)
+  const { lat, lng, error: geoError, errorCode: geoErrorCode, permission: geoPermission, getPosition } = useGeolocation(true)
+  // Localização bloqueada pra este site (não é falha passageira de sinal).
+  const gpsBlocked = geoPermission === 'denied' || geoErrorCode === 1
+  // Botão de ficar online travado; estando online, continua livre pra ficar offline.
+  const onlineLocked = !hasPixKey || !isApproved || (!isOnline && gpsBlocked)
 
   // Dispara pedido de permissão de GPS logo na entrada do painel
   useEffect(() => {
@@ -198,6 +202,23 @@ export default function PainelPage() {
       .then(() => {})
   }, [lat, lng, isOnline, profile, supabase])
 
+  // Localização bloqueada com o prestador online: sai do ar. Sem isso ele
+  // continuava recebendo chamados pela última posição, que só envelhece.
+  useEffect(() => {
+    if (!isOnline || !gpsBlocked || !profile) return
+    supabase
+      .from('provider_status')
+      .update({ is_online: false, updated_at: new Date().toISOString() })
+      .eq('provider_id', profile.id)
+      .select('is_online')
+      .then(({ data, error }) => {
+        if (error || !data?.length) return
+        setIsOnline(false)
+        audioAlert.stopAlarm()
+        toast.error('A localização foi desativada e você ficou offline. Ative a localização para voltar a receber chamados.')
+      })
+  }, [isOnline, gpsBlocked, profile, supabase])
+
   // Atualização rápida de Chave Pix pelo prestador
   const handleSavePixKey = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -247,13 +268,22 @@ export default function PainelPage() {
       return
     }
 
+    const newOnline = !isOnline
+
+    // Sem GPS não fica online: antes o prestador era posto no centro da cidade
+    // e recebia chamados que não eram perto dele.
+    if (newOnline && gpsBlocked) {
+      toast.error('Ative a localização do celular para ficar online. Veja o passo a passo acima do botão.')
+      return
+    }
+
     setTogglingOnline(true)
 
-    const newOnline = !isOnline
     let currentLat = lat
     let currentLng = lng
 
-    if (newOnline && (!currentLat || !currentLng)) {
+    // Sem posição, ou com a posição parada desde o último erro: pede uma nova.
+    if (newOnline && (!currentLat || !currentLng || geoError)) {
       try {
         const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
           if (typeof window === 'undefined' || !('geolocation' in navigator)) {
@@ -262,17 +292,17 @@ export default function PainelPage() {
           }
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
-            timeout: 6000,
+            timeout: 10000,
             maximumAge: 30000,
           })
         })
         currentLat = pos.coords.latitude
         currentLng = pos.coords.longitude
-      } catch (err) {
-        console.warn('GPS não obtido diretamente pelo navegador, usando centro de Rio Verde:', err)
-        currentLat = -17.7915
-        currentLng = -50.9192
-        toast.info('Localização aproximada definida no Setor Central de Rio Verde.')
+      } catch {
+        setTogglingOnline(false)
+        getPosition()
+        toast.error('Não conseguimos pegar sua localização. Confira se a Localização do celular está ligada e tente de novo.')
+        return
       }
     }
 
@@ -855,6 +885,37 @@ export default function PainelPage() {
       {/* Notificações push de novos chamados (só faz sentido pra quem já pode receber chamados) */}
       {isApproved && <PushNotificationsCard />}
 
+      {/* Localização bloqueada: sem GPS não dá pra ficar online */}
+      {gpsBlocked && !isOnline && isApproved && hasPixKey && (
+        <div id="gps-required-card" className="banner-warning mb-4 animate-slide-up items-start">
+          <MapPinOff size={18} strokeWidth={2} style={{ color: '#F59E0B' }} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="text-xs space-y-2" style={{ color: '#FCD34D' }}>
+            <p>
+              <strong>Ative a localização para ficar online.</strong> O Repara RV usa o GPS para te mandar
+              chamados perto de você.
+            </p>
+            <p>
+              <strong>Android (Chrome):</strong> toque no ícone ao lado de repararv.com na barra de endereço →
+              Permissões → Localização → Permitir. Se estiver usando o app instalado, faça isso abrindo
+              repararv.com no Chrome. Confira também se a Localização do celular está ligada.
+            </p>
+            <p>
+              <strong>iPhone:</strong> Ajustes → Privacidade e Segurança → Serviços de Localização (ligado) →
+              Sites do Safari → Durante o Uso do App.
+            </p>
+            <button
+              type="button"
+              id="btn-retry-gps"
+              onClick={getPosition}
+              className="btn-secondary py-2 px-4 text-xs mt-1"
+            >
+              <RefreshCw size={14} strokeWidth={2} aria-hidden="true" />
+              Já ativei — tentar de novo
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Toggle Online/Offline */}
       <div className="flex-1 flex flex-col items-center justify-center py-8">
         <div className="relative mb-8">
@@ -864,27 +925,27 @@ export default function PainelPage() {
           <button
             id="btn-toggle-online"
             onClick={handleToggleOnline}
-            disabled={togglingOnline || !hasPixKey || !isApproved}
-            aria-disabled={!hasPixKey || !isApproved}
+            disabled={togglingOnline || onlineLocked}
+            aria-disabled={onlineLocked}
             className={`relative z-10 w-32 h-32 rounded-full flex flex-col items-center justify-center gap-2 transition-all ${
-              !hasPixKey || !isApproved
+              onlineLocked
                 ? 'opacity-60 cursor-not-allowed'
                 : 'active:scale-95 cursor-pointer hover:scale-105'
             }`}
             style={{
-              background: !hasPixKey || !isApproved
+              background: onlineLocked
                 ? 'linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95))'
                 : isOnline
                 ? 'linear-gradient(135deg, #10B981, #059669)'
                 : 'linear-gradient(135deg, var(--color-surface-alt), var(--color-surface))',
               border: `3px solid ${
-                !hasPixKey || !isApproved
+                onlineLocked
                   ? '#F59E0B'
                   : isOnline
                   ? '#10B981'
                   : 'var(--color-border)'
               }`,
-              boxShadow: !hasPixKey || !isApproved
+              boxShadow: onlineLocked
                 ? '0 0 16px rgba(245, 158, 11, 0.2)'
                 : isOnline
                 ? '0 0 32px rgba(16,185,129,0.4)'
@@ -895,20 +956,22 @@ export default function PainelPage() {
               <Loader2 size={32} className="animate-spin" color="white" />
             ) : !hasPixKey || !isApproved ? (
               <Lock size={34} className="text-amber-400" />
+            ) : onlineLocked ? (
+              <MapPinOff size={34} className="text-amber-400" aria-hidden="true" />
             ) : (
               <Power size={36} color={isOnline ? 'white' : 'var(--color-text-subtle)'} />
             )}
             <span
               className="text-xs font-bold"
               style={{
-                color: !hasPixKey || !isApproved
+                color: onlineLocked
                   ? '#FCD34D'
                   : isOnline
                   ? 'white'
                   : 'var(--color-text-subtle)',
               }}
             >
-              {!hasPixKey || !isApproved ? 'BLOQUEADO' : isOnline ? 'ONLINE' : 'OFFLINE'}
+              {!hasPixKey || !isApproved ? 'BLOQUEADO' : onlineLocked ? 'SEM GPS' : isOnline ? 'ONLINE' : 'OFFLINE'}
             </span>
           </button>
         </div>
@@ -921,6 +984,11 @@ export default function PainelPage() {
           ) : !hasPixKey ? (
             <span className="text-amber-400 text-xs font-semibold block">
               <Lock size={12} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />Cadastre sua Chave Pix acima para desbloquear sua disponibilidade.
+            </span>
+          ) : gpsBlocked && !isOnline ? (
+            <span className="text-amber-400 text-xs font-semibold block">
+              <MapPinOff size={12} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />
+              Localização desativada: veja acima como ativar para ficar online.
             </span>
           ) : isOnline && geoError ? (
             <span className="text-amber-400 text-xs font-semibold block">
