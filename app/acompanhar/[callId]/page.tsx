@@ -356,7 +356,9 @@ export default function AcompanharPage() {
             {rated && <p className="text-xs mt-2" style={{ color: 'var(--color-success)' }}>Avaliação enviada! Obrigado!</p>}
           </div>
 
-          {/* Comprovante Oficial para Imobiliária / Inquilino */}
+          {/* Comprovante Oficial para Imobiliária / Inquilino — só depois de pago:
+              ele é usado como prova de quitação junto ao locador. */}
+          {call.payment_status === 'paid' && (
           <div
             className="card p-4 mb-4 animate-slide-up text-left"
             style={{ background: 'var(--color-primary-soft)', borderColor: 'var(--color-border)' }}
@@ -381,6 +383,7 @@ export default function AcompanharPage() {
               </div>
             </div>
           </div>
+          )}
         </>
       )}
 
@@ -470,6 +473,7 @@ export default function AcompanharPage() {
             provider_name: (call.provider as { full_name?: string })?.full_name,
             completed_at: call.completed_at ?? undefined,
             created_at: call.created_at,
+            payment_status: call.payment_status,
           }}
         />
       )}

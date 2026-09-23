@@ -17,11 +17,14 @@ interface ComprovanteProps {
     provider_name?: string;
     completed_at?: string;
     created_at?: string;
+    payment_status?: string | null;
   };
 }
 
 export function ComprovanteManutencaoModal({ isOpen, onClose, call }: ComprovanteProps) {
   if (!isOpen) return null;
+
+  const isPaid = call.payment_status === 'paid';
 
   const dataConclusao = call.completed_at
     ? new Date(call.completed_at).toLocaleDateString('pt-BR', {
@@ -157,7 +160,7 @@ export function ComprovanteManutencaoModal({ isOpen, onClose, call }: Comprovant
           <div className="rounded-2xl border border-gray-200 overflow-hidden">
             <div className="bg-gray-100 px-4 py-2 flex justify-between text-[11px] font-bold text-gray-600 uppercase tracking-wider">
               <span>Serviço Executado</span>
-              <span>Valor Liquidado</span>
+              <span>{isPaid ? 'Valor Liquidado' : 'Valor'}</span>
             </div>
 
             <div className="p-4 flex justify-between items-center bg-white border-b border-gray-100">
@@ -172,15 +175,27 @@ export function ComprovanteManutencaoModal({ isOpen, onClose, call }: Comprovant
               </span>
             </div>
 
-            <div className="p-4 bg-emerald-50/50 flex justify-between items-center text-xs">
-              <div>
-                <span className="font-bold text-emerald-950 block">Pagamento Confirmado via Pix</span>
-                <span className="text-[11px] text-emerald-800">Transação processada via plataforma Repara RV</span>
+            {isPaid ? (
+              <div className="p-4 bg-emerald-50/50 flex justify-between items-center text-xs">
+                <div>
+                  <span className="font-bold text-emerald-950 block">Pagamento Confirmado via Pix</span>
+                  <span className="text-[11px] text-emerald-800">Transação processada via plataforma Repara RV</span>
+                </div>
+                <span className="font-mono font-bold text-emerald-700 bg-emerald-100/80 px-2 py-1 rounded">
+                  QUITADO
+                </span>
               </div>
-              <span className="font-mono font-bold text-emerald-700 bg-emerald-100/80 px-2 py-1 rounded">
-                QUITADO
-              </span>
-            </div>
+            ) : (
+              <div className="p-4 bg-amber-50/60 flex justify-between items-center text-xs">
+                <div>
+                  <span className="font-bold text-amber-950 block">Pagamento pendente</span>
+                  <span className="text-[11px] text-amber-800">Este documento não comprova quitação</span>
+                </div>
+                <span className="font-mono font-bold text-amber-800 bg-amber-100/80 px-2 py-1 rounded">
+                  PENDENTE
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Termo de Garantia e Autenticação */}
