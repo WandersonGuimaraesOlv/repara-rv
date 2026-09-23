@@ -1,6 +1,12 @@
 -- ==============================================================================
--- Seed: 16 Serviços Essenciais do Repara RV (Rio Verde - GO)
+-- Seed: 16 Serviços Essenciais do Repara RV (Rio Verde - GO) — HISTÓRICO
 -- ==============================================================================
+-- NÃO RODAR. O TRUNCATE ... CASCADE abaixo apaga o catálogo e, em cascata, os
+-- chamados que apontam pra ele. O catálogo real (20 serviços, UUIDs fixos) vem
+-- de supabase/migrations/20260909_seed_20_services.sql.
+DO $$ BEGIN
+  RAISE EXCEPTION 'supabase/seed.sql é histórico e destrutivo (TRUNCATE CASCADE) — não rode';
+END $$;
 
 -- Limpeza prévia da tabela de serviços rápidos (se necessário)
 TRUNCATE TABLE quick_services CASCADE;

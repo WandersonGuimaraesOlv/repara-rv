@@ -1,11 +1,13 @@
 -- =============================================================================
 -- Migration: 20260923_close_rls_leak_leftover_policies
 -- Descrição: ACHADO CRÍTICO, ATIVO EM PRODUÇÃO — reincidência do vazamento
---            documentado como corrigido em 14/09/2026 (Camada 4, item i3 do
---            plano de validação). Comparando produção com uma reconstrução
---            fiel do schema a partir das migrations, confirmado que as
---            políticas antigas e abertas NUNCA foram removidas de fato — só
---            foram criadas políticas novas e mais restritas AO LADO delas.
+--            corrigido em 14/09/2026 (Camada 4, item i3 do plano de
+--            validação). O conserto de 14/09 funcionou; em 22/09/2026 o
+--            supabase/schema.sql foi rodado por engano em produção e recriou
+--            as duas políticas abertas (ele faz DROP + CREATE delas), ao lado
+--            das políticas restritas criadas em 14/09. (Correção de 23/09: a
+--            primeira versão deste comentário dizia que as antigas nunca
+--            tinham sido removidas — a causa real só apareceu depois.)
 --
 --            RLS combina políticas permissivas do mesmo comando com OR, então
 --            a política antiga (`using: true`) anulava completamente a

@@ -3,12 +3,11 @@
 -- Descrição: Achado em 23/09/2026 ao comparar produção com uma reconstrução
 --            fiel do schema a partir das migrations rastreadas: o trigger que
 --            exige conta Mercado Pago conectada (check_provider_online_gateway
---            / trg_check_provider_online_gateway) nunca foi removido de fato
---            em produção, mesmo a migration 20260912_allow_online_with_pix_key_only.sql
---            tendo o DROP TRIGGER/DROP FUNCTION correspondente — e o
---            find_nearest_provider que roda em produção hoje é a versão MAIS
---            ANTIGA de todas (schema.sql/20260911), que também exige
---            recipient_gateway_id, não pix_key.
+--            / trg_check_provider_online_gateway) estava ativo em produção,
+--            e o find_nearest_provider era a versão MAIS ANTIGA (exige
+--            recipient_gateway_id, não pix_key). Causa: supabase/schema.sql,
+--            rodado por engano em produção em 22/09/2026, recria os dois —
+--            desfazendo o DROP de 20260912_allow_online_with_pix_key_only.sql.
 --
 --            Sintoma real, confirmado com dados de produção: existe hoje 1
 --            prestador com Chave Pix cadastrada e sem Mercado Pago conectado.

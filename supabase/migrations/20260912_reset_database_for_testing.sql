@@ -2,6 +2,13 @@
 -- REPARA RV — Reset Geral de Testes & Ativação de Split por Chave Pix
 -- Data: 2026-09-12
 -- ============================================================
+-- JÁ APLICADO EM 12/09/2026 — NÃO RODAR DE NOVO. Desliga a proteção do log de
+-- auditoria, apaga TODOS os chamados, mensagens, alertas e o próprio log, e
+-- aprova todos os prestadores (desfaz a verificação de identidade). O bloco
+-- abaixo aborta o script se ele for colado no SQL Editor.
+DO $$ BEGIN
+  RAISE EXCEPTION '20260912_reset_database_for_testing.sql já foi aplicado e apaga todos os chamados — não rode de novo';
+END $$;
 
 -- 1. Desativa temporariamente o trigger de imutabilidade para limpar chamados de teste
 ALTER TABLE service_audit_logs DISABLE TRIGGER trigger_prevent_audit_logs_mutation;

@@ -19,11 +19,12 @@
 --               do ALTER TABLE ... ENABLE ROW LEVEL SECURITY.
 --
 --            3. Conjunto de políticas RLS mais granulares em profiles,
---               quick_services, service_calls e service_ratings, que
---               substituíam na prática (via política adicional, nunca um
---               ALTER/DROP+CREATE da política original) as políticas amplas
---               de schema.sql. Nomes e condições exatas capturados por
---               introspecção direta de produção.
+--               quick_services, service_calls e service_ratings, criadas à
+--               mão em produção. As políticas amplas de schema.sql convivem
+--               com elas porque o schema.sql foi rodado de novo em produção
+--               em 22/09/2026 e as recriou — ver
+--               20260923_lock_service_calls_and_ratings.sql. Nomes e
+--               condições exatas capturados por introspecção de produção.
 -- =============================================================================
 
 -- 1. Proteção de campos sensíveis em profiles ---------------------------------

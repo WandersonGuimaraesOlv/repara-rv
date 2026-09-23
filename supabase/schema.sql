@@ -1,6 +1,15 @@
 -- ============================================================
--- REPARA RV — Schema Supabase / PostgreSQL (Idempotente)
+-- REPARA RV — Schema Supabase / PostgreSQL (HISTÓRICO)
 -- ============================================================
+-- NÃO RODAR EM BANCO QUE JÁ EXISTE. Em 22/09/2026 este arquivo foi rodado
+-- por engano na produção e desfez em silêncio correções de segurança:
+-- recriou políticas RLS abertas (CPF legível sem login), a trava do Mercado
+-- Pago e a busca de prestador antiga. O schema real é a sequência de
+-- supabase/migrations/. O bloco abaixo aborta o script inteiro se ele for
+-- colado no SQL Editor.
+DO $$ BEGIN
+  RAISE EXCEPTION 'supabase/schema.sql é histórico e não deve ser rodado — o schema real está em supabase/migrations/';
+END $$;
 
 -- Extensões necessárias
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

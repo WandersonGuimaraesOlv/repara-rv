@@ -4,10 +4,11 @@
 --            (23/09/2026), depois das correções anteriores do mesmo dia.
 --
 --   1. ACHADO REAL, EM PRODUÇÃO: a política de SELECT de emergency_alerts
---      ("Usuários envolvidos podem visualizar seus alertas") nunca teve a
---      cláusula de admin aplicada de fato, mesmo essa cláusula existindo nas
---      migrations rastreadas (20260909_emergency_alerts.sql e
---      20260909_consolidated_migration.sql). app/(admin)/admin/dashboard/page.tsx
+--      ("Usuários envolvidos podem visualizar seus alertas") estava sem a
+--      cláusula de admin que existe nas migrations rastreadas
+--      (20260909_emergency_alerts.sql e 20260909_consolidated_migration.sql).
+--      Causa provável: supabase/schema.sql, rodado por engano em produção em
+--      22/09/2026, recria essa política na versão sem admin. app/(admin)/admin/dashboard/page.tsx
 --      lê emergency_alerts com o client comum (lib/supabase/client, sujeito
 --      a RLS, não Service Role) — sem a cláusula de admin, a seção
 --      "Registro de Incidentes de Segurança" (botão SOS) só mostra alertas
