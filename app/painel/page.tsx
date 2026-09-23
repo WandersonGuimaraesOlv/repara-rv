@@ -925,7 +925,7 @@ export default function PainelPage() {
           ) : isOnline && geoError ? (
             <span className="text-amber-400 text-xs font-semibold block">
               <MapPinOff size={12} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />
-              Online sem GPS: sua posição está aproximada e chamados perto de você podem não chegar.
+              Online sem GPS: sua posição pode estar desatualizada e chamados perto de você podem não chegar.
             </span>
           ) : isOnline ? (
             <>
@@ -939,9 +939,10 @@ export default function PainelPage() {
 
         {lat && lng && isOnline && (
           <div className="flex items-center gap-1.5 mt-3">
-            <MapPin size={12} style={{ color: 'var(--color-success)' }} />
-            <p className="text-xs" style={{ color: 'var(--color-success)' }}>
-              GPS ativo — {lat.toFixed(4)}, {lng.toFixed(4)}
+            {/* Com erro de GPS o hook mantém a última posição recebida — ela não é mais "ao vivo". */}
+            <MapPin size={12} style={{ color: geoError ? 'var(--color-warning)' : 'var(--color-success)' }} aria-hidden="true" />
+            <p className="text-xs" style={{ color: geoError ? 'var(--color-warning)' : 'var(--color-success)' }}>
+              {geoError ? 'Última posição conhecida' : 'GPS ativo'} — {lat.toFixed(4)}, {lng.toFixed(4)}
             </p>
           </div>
         )}
