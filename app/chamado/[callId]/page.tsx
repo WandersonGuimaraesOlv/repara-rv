@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { CallChat } from '@/components/chat/call-chat'
 import { ProviderTrackingMap } from '@/components/provider-tracking-map'
 import { useGeolocation } from '@/hooks/useGeolocation'
+import { fetchCallParty, type CallPartyCard } from '@/lib/call-party'
 
 // Intervalo de envio da posição durante o trajeto (o mapa do cliente busca
 // no mesmo ritmo — components/provider-tracking-map.tsx).
@@ -31,6 +32,7 @@ export default function ChamadoProviderPage() {
   const supabase = createClient()
 
   const [call, setCall] = useState<ServiceCall | null>(null)
+  const [clientCard, setClientCard] = useState<CallPartyCard | null>(null)
   const [loading, setLoading] = useState(true)
   const [completing, setCompleting] = useState(false)
   const [showStartPin, setShowStartPin] = useState(false)
@@ -43,9 +45,11 @@ export default function ChamadoProviderPage() {
 
   const loadCall = useCallback(async () => {
     if (!callId) return
+    // O cliente vem de call_party_profiles (só nome, depois do aceite) — o
+    // perfil dele não é mais legível direto (achado A5).
     const { data, error } = await supabase
       .from('service_calls')
-      .select('*, service:quick_services(*), client:profiles!client_id(*)')
+      .select('*, service:quick_services(*)')
       .eq('id', callId)
       .maybeSingle()
 
@@ -55,6 +59,7 @@ export default function ChamadoProviderPage() {
 
     if (data) {
       setCall(data as ServiceCall)
+      setClientCard(await fetchCallParty(supabase, callId, 'client'))
       if (data.status === 'accepted') {
         // Transições do prestador passam pelo servidor — ver app/api/calls/advance.
         const res = await fetch('/api/calls/advance', {
@@ -270,7 +275,7 @@ export default function ChamadoProviderPage() {
               {(call.service as { name?: string })?.name ?? 'Serviço'}
             </p>
             <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              Cliente: {(call.client as { full_name?: string })?.full_name ?? 'Cliente'}
+              Cliente: {clientCard?.full_name ?? 'Cliente'}
             </p>
           </div>
         </div>

@@ -17,6 +17,7 @@ import { CancelCallModal } from '@/components/cancel-call-modal'
 import { ComprovanteManutencaoModal } from '@/components/comprovante-manutencao-modal'
 import { ProviderIdentityCard } from '@/components/provider-identity-card'
 import { ProviderTrackingMap } from '@/components/provider-tracking-map'
+import { fetchCallParty, type CallPartyCard } from '@/lib/call-party'
 
 export default function AcompanharPage() {
   const { callId } = useParams<{ callId: string }>()
@@ -24,6 +25,8 @@ export default function AcompanharPage() {
   const supabase = createClient()
 
   const [call, setCall] = useState<ServiceCall | null>(null)
+  const [providerCard, setProviderCard] = useState<CallPartyCard | null>(null)
+  const providerCardRef = useRef<CallPartyCard | null>(null)
   const [arrivalPin, setArrivalPin] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [showPix, setShowPix] = useState(false)
@@ -38,9 +41,11 @@ export default function AcompanharPage() {
   // Função para buscar o estado atual do chamado oficial no banco
   const fetchCall = useCallback(async () => {
     if (!callId) return
+    // O técnico vem de call_party_profiles (só nome/foto/selo, depois do
+    // aceite) — o perfil dele não é mais legível direto (achado A5).
     const { data, error } = await supabase
       .from('service_calls')
-      .select('*, service:quick_services(*), provider:profiles!provider_id(*), client:profiles!client_id(*)')
+      .select('*, service:quick_services(*), client:profiles!client_id(*)')
       .eq('id', callId)
       .maybeSingle()
 
@@ -50,6 +55,17 @@ export default function AcompanharPage() {
 
     if (data) {
       setCall(data as ServiceCall)
+      if (data.provider_id && data.accepted_at) {
+        // O polling roda a cada 3 s: só busca de novo se o técnico mudou
+        if (providerCardRef.current?.id !== data.provider_id) {
+          const card = await fetchCallParty(supabase, callId, 'provider')
+          providerCardRef.current = card
+          setProviderCard(card)
+        }
+      } else if (providerCardRef.current) {
+        providerCardRef.current = null
+        setProviderCard(null)
+      }
       // PIN de chegada fica em call_arrival_pins, que só o cliente do chamado
       // lê (o prestador não) — ver app/api/calls/verify-arrival-pin.
       if (data.status === 'accepted' || data.status === 'on_the_way') {
@@ -259,17 +275,17 @@ export default function AcompanharPage() {
           <div className="flex-1 flex flex-col items-center justify-center py-8">
             <CallStatusTracker
               status={call.status}
-              providerName={(call.provider as { full_name?: string })?.full_name}
+              providerName={providerCard?.full_name ?? undefined}
             />
           </div>
 
           {/* Card de identificação do prestador + PIN de chegada */}
-          {call.provider && (call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress') && (
+          {providerCard && (call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress') && (
             <ProviderIdentityCard
               callId={callId}
-              providerName={(call.provider as { full_name?: string })?.full_name}
-              avatarUrl={(call.provider as { avatar_url?: string | null })?.avatar_url}
-              isVerified={(call.provider as { background_check_status?: string })?.background_check_status === 'approved'}
+              providerName={providerCard.full_name ?? undefined}
+              avatarUrl={providerCard.avatar_url}
+              isVerified={providerCard.background_check_status === 'approved'}
               arrivalPin={call.status === 'accepted' || call.status === 'on_the_way' ? arrivalPin : null}
             />
           )}
@@ -490,7 +506,7 @@ export default function AcompanharPage() {
             client_address: call.client_address,
             client_name: (call.client as { full_name?: string })?.full_name,
             client_phone: (call.client as { phone?: string })?.phone,
-            provider_name: (call.provider as { full_name?: string })?.full_name,
+            provider_name: providerCard?.full_name ?? undefined,
             completed_at: call.completed_at ?? undefined,
             created_at: call.created_at,
             payment_status: call.payment_status,

@@ -210,6 +210,19 @@ async function run() {
     record('cliente A NÃO deveria conseguir ler o chamado do cliente B', false, `retornou: ${JSON.stringify(crossRead)}`);
   }
 
+  // ── Achado A5 (23/09/2026): perfil de outra pessoa (CPF, telefone, e-mail) ──
+  // A política "Perfis visíveis para usuários autenticados" deixava qualquer
+  // logado ler todo mundo. Migration 20260924_restrict_profile_reads*.
+  log('\n🔎 A5 — um usuário logado consegue ler o perfil (CPF/telefone/e-mail) de outro?');
+  const { data: otherProfile } = await clientAClient.from('profiles').select('id, cpf_or_cnpj, phone, email').eq('id', clientB.id);
+  record('cliente A NÃO lê o perfil do cliente B', !otherProfile?.length, `linhas=${otherProfile?.length ?? 0}`);
+  const { data: ownProfile } = await clientAClient.from('profiles').select('id').eq('id', clientA.id);
+  record('cliente A lê o próprio perfil', ownProfile?.length === 1);
+  const { data: providerReadsClient } = await providerClient.from('profiles').select('id, phone').eq('id', clientA.id);
+  record('prestador NÃO lê o perfil do cliente do chamado', !providerReadsClient?.length, `linhas=${providerReadsClient?.length ?? 0}`);
+  const { data: partyBeforeAccept } = await providerClient.rpc('call_party_profiles', { p_call_id: callA.id });
+  record('antes do aceite, call_party_profiles não mostra nem o nome do cliente', !partyBeforeAccept?.length, `linhas=${partyBeforeAccept?.length ?? 0}`);
+
   // ── Bônus: usuário anônimo (sem login) consegue ler service_calls? ──────────
   log('\n🔎 Bônus — usuário anônimo (sem login nenhum) consegue ler service_calls?');
   const anonClient = createClient(SUPABASE_URL, ANON_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
