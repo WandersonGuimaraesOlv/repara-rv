@@ -208,6 +208,10 @@ export function EnderecoForm({ onAddressChange, initialNeighborhood = 'Setor Cen
           />
         </div>
       </div>
+      <p className="text-[11px] -mt-1.5" style={{ color: 'var(--color-text-subtle)' }}>
+        <Lightbulb size={12} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1" aria-hidden="true" />
+        Setor novo ou loteamento? No Nº, pode digitar quadra e lote (ex: &quot;QD 18, LT 15&quot;) — localizamos certinho.
+      </p>
 
       {/* Ponto de Referência */}
       <div>
