@@ -3,11 +3,21 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Profile, ServiceCall } from '@/lib/types'
+import { Profile } from '@/lib/types'
 
-// Estado do chamado pendente ANTES do aceite nunca deve carregar endereço
-// completo/coordenadas (ver checkActiveCalls e o handler de Realtime abaixo).
-type PendingCallPreview = Omit<ServiceCall, 'client_address' | 'client_location'>
+// Oferta pendente ANTES do aceite: o shape exato de app/api/calls/offer —
+// nunca endereço completo nem coordenadas (achado J1, 23/09/2026).
+interface PendingCallPreview {
+  id: string
+  status: string
+  service_id: string
+  total_price: number
+  provider_cut: number
+  platform_fee: number
+  neighborhood: string | null
+  created_at: string
+  service?: { name?: string } | null
+}
 
 // Mesma regra pra fila prioritária — o shape exato que app/api/calls/queue
 // devolve (nunca client_address/client_location, ver comentário na rota).
@@ -374,80 +384,36 @@ export default function PainelPage() {
   useEffect(() => {
     if (!profile || !isOnline) return
 
-    // 1. Busca ativa e polling de 3 segundos para garantir alerta em tempo real
-    //
-    // Achado de segurança (14/09/2026): antes, este SELECT trazia client_address e
-    // client_location (coordenadas) — o card de alerta pré-aceite mostrava o
-    // endereço completo do cliente ao prestador antes dele decidir aceitar,
-    // contrariando a regra de mascaramento do AGENTS.md ("antes do aceite, o
-    // radar exibe apenas Bairro, Distância aproximada, Serviço e Valor
-    // Líquido"). Corrigido enumerando só as colunas realmente necessárias pra
-    // esta tela — o endereço completo só é buscado depois, em app/chamado/
-    // [callId], já com o chamado aceito.
+    // Oferta pendente a cada 3 s, por app/api/calls/offer. Achado J1
+    // (23/09/2026): antes era SELECT direto + Realtime na tabela, e o técnico
+    // podia ler a linha inteira do chamado ANTES de aceitar — o Realtime
+    // entregava endereço e coordenadas ao celular dele (a tela só descartava).
+    // Agora ele só lê o chamado depois do aceite (migration
+    // 20260924_provider_reads_after_accept.sql); o alarme continua vindo do
+    // CallAlertModal e o aviso com o app fechado, do push.
     const checkActiveCalls = async () => {
-      const { data: calls } = await supabase
-        .from('service_calls')
-        .select('id, status, service_id, total_price, provider_cut, platform_fee, neighborhood, created_at, client_id, provider_id, service:quick_services(*)')
-        .eq('provider_id', profile.id)
-        .eq('status', 'searching')
-        .order('created_at', { ascending: false })
-        .limit(1)
-
-      if (calls && calls.length > 0) {
-        setPendingCall(calls[0] as unknown as PendingCallPreview)
-      } else if (!calls || calls.length === 0) {
-        setPendingCall(prev => (prev?.status === 'searching' ? null : prev))
+      try {
+        const res = await fetch('/api/calls/offer', { cache: 'no-store' })
+        if (!res.ok) return
+        const { offer } = (await res.json()) as { offer: PendingCallPreview | null }
+        if (offer) {
+          setPendingCall(offer)
+        } else {
+          setPendingCall(prev => (prev?.status === 'searching' ? null : prev))
+        }
+      } catch {
+        // sem rede: tenta de novo no próximo ciclo
       }
     }
 
     checkActiveCalls()
     const pollInterval = setInterval(checkActiveCalls, 3000)
 
-    // 2. Realtime WebSocket do Supabase
-    const channel = supabase
-      .channel(`provider-calls-${profile.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'service_calls',
-          filter: `provider_id=eq.${profile.id}`,
-        },
-        async payload => {
-          const callData = payload.new as ServiceCall
-          if (callData && callData.status === 'searching') {
-            if (!callData.service && callData.service_id) {
-              const { data: srv } = await supabase
-                .from('quick_services')
-                .select('*')
-                .eq('id', callData.service_id)
-                .maybeSingle()
-              callData.service = srv as any
-            }
-            // O payload do Realtime traz a linha inteira do banco (o filtro de
-            // colunas do SELECT não se aplica aqui) — descarta endereço completo
-            // e coordenadas antes de guardar em estado, pela mesma razão do
-            // SELECT explícito em checkActiveCalls logo acima.
-            const safeCallData: Record<string, unknown> = { ...callData }
-            delete safeCallData.client_address
-            delete safeCallData.client_location
-            setPendingCall(safeCallData as unknown as PendingCallPreview)
-            audioAlert.startAlarm()
-          } else if (callData && callData.status !== 'searching') {
-            setPendingCall(null)
-            audioAlert.stopAlarm()
-          }
-        }
-      )
-      .subscribe()
-
     return () => {
-      supabase.removeChannel(channel)
       clearInterval(pollInterval)
       audioAlert.stopAlarm()
     }
-  }, [profile, isOnline, supabase])
+  }, [profile, isOnline])
 
   const handleAcceptCall = useCallback(async () => {
     if (!pendingCall) return
@@ -1106,8 +1072,7 @@ export default function PainelPage() {
       {/* Modal de alerta de chamado com som, vibração e timer */}
       {pendingCall && (
         <CallAlertModal
-          call={pendingCall}
-          serviceName={(pendingCall.service as { name?: string })?.name ?? 'Serviço Solicitado'}
+          serviceName={pendingCall.service?.name ?? 'Serviço Solicitado'}
           neighborhood={pendingCall.neighborhood || 'Rio Verde (GO)'}
           totalPrice={pendingCall.total_price}
           providerCut={pendingCall.provider_cut}

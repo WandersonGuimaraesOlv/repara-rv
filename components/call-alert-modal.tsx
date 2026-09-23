@@ -2,14 +2,13 @@
 
 import { useCallAlert } from '@/hooks/useCallAlert'
 import { useAcceptTimer } from '@/hooks/useAcceptTimer'
-import { ServiceCall } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
 import { Bell, CheckCircle, X, Clock, MapPin } from 'lucide-react'
 import { useEffect } from 'react'
 
+// Oferta antes do aceite: só serviço, bairro e valores — nunca endereço nem
+// coordenadas (ver app/api/calls/offer).
 interface CallAlertModalProps {
-  // Nunca deve carregar client_address/client_location — ver painel/page.tsx
-  call: Omit<ServiceCall, 'client_address' | 'client_location'>
   serviceName: string
   neighborhood: string
   totalPrice: number

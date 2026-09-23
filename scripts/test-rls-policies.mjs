@@ -175,23 +175,14 @@ async function run() {
     .eq('status', 'searching')
     .maybeSingle();
 
-  // Nota de arquitetura (14/09/2026): RLS decide se a LINHA é visível, não quais
-  // COLUNAS — não existe forma de o Postgres esconder client_address só de
-  // quem já tem `auth.uid() = provider_id` (acesso legítimo à linha) sem uma
-  // view/coluna separada, mudança maior que não foi pedida agora. A defesa
-  // real contra o card de alerta mostrar o endereço antes do aceite foi feita
-  // na camada de aplicação: app/painel/page.tsx não seleciona mais
-  // client_address/client_location nesta consulta, e o handler de Realtime
-  // remove os dois campos do payload antes de guardar em estado. Este script
-  // usa select('*') de propósito pra documentar que, a nível de banco, o
-  // prestador JÁ ATRIBUÍDO ainda TEM acesso de leitura à linha inteira — é
-  // esperado, não uma falha de RLS.
-  if (providerViewError || !providerView) {
-    log('   ℹ️  RLS bloqueou a leitura (não esperado, mas não seria um problema)');
-  } else {
-    const addressAccessible = typeof providerView.client_address === 'string' && providerView.client_address.length > 0;
-    log(`   ℹ️  A nível de banco, o prestador atribuído AINDA CONSEGUE ler client_address via select('*') — esperado (RLS é por linha, não por coluna). Proteção real está em app/painel/page.tsx, que não pede mais essa coluna. Coluna acessível: ${addressAccessible ? 'sim' : 'não'}`);
-  }
+  // Achado J1 (23/09/2026): até aqui isto era só registrado como "esperado" —
+  // o técnico com a oferta lia a linha inteira (endereço e coordenadas) antes
+  // de aceitar, e só a tela escondia. Desde a migration
+  // 20260924_provider_reads_after_accept.sql ele só lê depois do aceite; a
+  // oferta vem de /api/calls/offer, sem endereço.
+  const leaked = !providerViewError && providerView && typeof providerView.client_address === 'string';
+  record('prestador NÃO lê o chamado (nem o endereço) antes do aceite', !leaked,
+    leaked ? `vazou: ${providerView.client_address}` : (providerViewError?.message ?? '0 linhas'));
 
   // ── Item i4: cliente A consegue ler o chamado do cliente B? ─────────────────
   log("\n🔎 Item i4 — cliente A consegue ler o chamado do cliente B manipulando o id?");
