@@ -50,6 +50,7 @@ if (!SUPABASE_URL || !ANON_KEY || !SERVICE_ROLE_KEY) {
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
 const RUN_ID = Date.now().toString(36)
 let userId = null
+let userId2 = null
 
 function record(name, pass, detail) {
   console.log(`   ${pass ? '✅' : '❌'} ${name}${detail ? ` — ${detail}` : ''}`)
@@ -59,6 +60,7 @@ function record(name, pass, detail) {
 async function cleanup() {
   console.log('\n🧹 Limpando dados de teste...')
   if (userId) await admin.auth.admin.deleteUser(userId).catch(() => {})
+  if (userId2) await admin.auth.admin.deleteUser(userId2).catch(() => {})
   console.log('   Limpeza concluída.')
 }
 
@@ -114,6 +116,31 @@ async function run() {
   const { error: nameErr } = await asUser.from('profiles').update({ full_name: '[TESTE ESCALACAO PRIVILEGIO] nome atualizado' }).eq('id', userId)
   const { data: afterName } = await admin.from('profiles').select('full_name').eq('id', userId).single()
   results.push(record('full_name foi atualizado normalmente (trigger não quebrou autoatendimento)', !nameErr && afterName?.full_name?.includes('atualizado')))
+
+  // Achado de 23/09/2026: o gatilho não cobria role — dava pra virar admin.
+  console.log('\n👑 Tentando virar admin pela própria sessão...')
+  await asUser.from('profiles').update({ role: 'admin' }).eq('id', userId)
+  const { data: afterRole } = await admin.from('profiles').select('role').eq('id', userId).single()
+  results.push(record("role continua 'provider' (não conseguiu virar admin)", afterRole?.role === 'provider'))
+
+  console.log('\n🔁 Cliente aprovado virando prestador (caminho do "Quero ser Profissional")...')
+  await admin.from('profiles').update({ role: 'client', background_check_status: 'approved', is_blocked: false }).eq('id', userId)
+  await asUser.from('profiles').update({ role: 'provider', background_check_status: 'approved' }).eq('id', userId)
+  const { data: afterPromo } = await admin.from('profiles').select('role, background_check_status').eq('id', userId).single()
+  results.push(record("vira prestador, mas com cadastro 'pending' (não herda o 'approved' de cliente)", afterPromo?.role === 'provider' && afterPromo?.background_check_status === 'pending'))
+
+  console.log('\n🆕 Conta nova criando o próprio perfil já como admin aprovado...')
+  const email2 = `priv-esc-test-2-${RUN_ID}@repararv-test.local`
+  const { data: u2, error: create2Err } = await admin.auth.admin.createUser({ email: email2, password, email_confirm: true })
+  if (create2Err) throw new Error(`Falha ao criar 2º usuário de teste: ${create2Err.message}`)
+  userId2 = u2.user.id
+  const asUser2 = createClient(SUPABASE_URL, ANON_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
+  await asUser2.auth.signInWithPassword({ email: email2, password })
+  await asUser2.from('profiles').insert({
+    id: userId2, role: 'admin', full_name: '[TESTE ESCALACAO PRIVILEGIO] conta nova', phone: '62975000001', cpf_or_cnpj: '', background_check_status: 'approved',
+  })
+  const { data: afterInsert } = await admin.from('profiles').select('role').eq('id', userId2).single()
+  results.push(record("perfil novo nasce 'client', não 'admin'", afterInsert?.role === 'client'))
 
   console.log('\n🛡️  Confirmando que o painel admin (Service Role) ainda consegue bloquear/aprovar de verdade...')
   const { error: adminBlockErr } = await admin.from('profiles').update({ is_blocked: true }).eq('id', userId)
