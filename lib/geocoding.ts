@@ -176,6 +176,22 @@ export interface ResolvedLocation extends Coordinates {
   source: LocationSource
 }
 
+// Acima disso, o GPS do celular e o endereço digitado são tratados como
+// lugares diferentes e o cliente escolhe pra onde o técnico vai (o Maps/Waze
+// do prestador navega pra coordenada do chamado — components/navigation-buttons.tsx).
+export const LOCATION_CONFLICT_KM = 0.5
+
+export type LocationChoice = 'address' | 'gps'
+
+/** Distância entre o GPS e o endereço localizado, se passar do limite; senão null. */
+export function locationConflictKm(input: { gps?: Coordinates; geocode?: GeocodeResult }): number | null {
+  const geocode = input.geocode && input.geocode.ok && isInsideServiceArea(input.geocode) ? input.geocode : null
+  const gps = input.gps && isInsideServiceArea(input.gps) ? input.gps : null
+  if (!geocode || !gps) return null
+  const km = distanceKm(gps, geocode)
+  return km > LOCATION_CONFLICT_KM ? km : null
+}
+
 // Distância máxima entre o GPS e um endereço só aproximado (rua sem número
 // exato) pra considerar que o GPS é a posição mais precisa do mesmo lugar.
 const GPS_AGREES_WITH_APPROXIMATE_KM = 2
@@ -191,10 +207,14 @@ const GPS_AGREES_WITH_APPROXIMATE_KM = 2
  *     cliente está agora, não onde o serviço será feito: vale o endereço.
  *  3. Senão, endereço aproximado dentro da área.
  *  4. Senão, nada: quem chama deve pedir pro cliente conferir o endereço.
+ * Se o cliente escolheu explicitamente (GPS e endereço longe um do outro —
+ * ver locationConflictKm), a escolha dele vale, desde que o ponto esteja na
+ * área de atendimento.
  */
 export function resolveCallLocation(input: {
   gps?: Coordinates
   geocode?: GeocodeResult
+  choice?: LocationChoice
 }): ResolvedLocation | null {
   const geocode = input.geocode && input.geocode.ok ? input.geocode : null
   const geocodeInside = geocode && isInsideServiceArea(geocode) ? geocode : null
@@ -204,6 +224,14 @@ export function resolveCallLocation(input: {
     geocodeInside &&
     !geocodeInside.partialMatch &&
     (geocodeInside.locationType === 'ROOFTOP' || geocodeInside.locationType === 'RANGE_INTERPOLATED')
+
+  if (input.choice === 'gps' && gps) {
+    return { lat: gps.lat, lng: gps.lng, source: 'gps' }
+  }
+  if (input.choice === 'address' && geocodeInside) {
+    return { lat: geocodeInside.lat, lng: geocodeInside.lng, source: precise ? 'geocode' : 'geocode_aproximado' }
+  }
+
   if (geocodeInside && precise) {
     return { lat: geocodeInside.lat, lng: geocodeInside.lng, source: 'geocode' }
   }

@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { DEFAULT_SERVICES } from '@/lib/catalog'
 import { runInBackground } from '@/lib/background'
-import { geocodeAddressWithRetry, resolveCallLocation, isTransientFailure, extractGeocodableNumber, RIO_VERDE_CENTER } from '@/lib/geocoding'
+import { geocodeAddressWithRetry, resolveCallLocation, locationConflictKm, isTransientFailure, extractGeocodableNumber, RIO_VERDE_CENTER } from '@/lib/geocoding'
 import { pushCallAlert } from '@/modules/notifications'
 
 // service_id aceita tanto UUID do catálogo quanto o id textual de DEFAULT_SERVICES
@@ -19,6 +19,8 @@ const createCallSchema = z.object({
   street:          z.string().trim().min(2).max(120).optional(),
   number:          z.string().trim().min(1).max(20).optional(),
   client_id:       z.string().uuid('ID de cliente inválido').optional(),
+  // Resposta do cliente quando o GPS e o endereço digitado ficam longe um do outro.
+  location_choice: z.enum(['address', 'gps']).optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -129,7 +131,17 @@ export async function POST(request: NextRequest) {
       if (!geocode.ok) {
         console.warn('[API] geocodificação falhou:', geocode.reason)
       }
-      const location = resolveCallLocation({ gps, geocode })
+
+      // GPS e endereço digitado em lugares diferentes: pergunta pro cliente pra
+      // onde o técnico vai, antes de criar o chamado (nada é gravado aqui).
+      if (!body.location_choice) {
+        const conflictKm = locationConflictKm({ gps, geocode })
+        if (conflictKm !== null) {
+          return NextResponse.json({ needs_location_choice: true, distance_km: Math.round(conflictKm * 10) / 10 })
+        }
+      }
+
+      const location = resolveCallLocation({ gps, geocode, choice: body.location_choice })
       if (!location) {
         // Mensagem honesta: só peça pro cliente conferir o endereço quando o
         // problema É o endereço. Falha transitória do Google não é culpa dele.

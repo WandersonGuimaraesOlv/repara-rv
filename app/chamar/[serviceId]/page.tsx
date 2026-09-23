@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { QuickService } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
 import { useGeolocation } from '@/hooks/useGeolocation'
-import { MapPin, Loader2, AlertTriangle, CheckCircle, ArrowLeft, CheckCircle2, XCircle, Wrench } from 'lucide-react'
+import { MapPin, Loader2, AlertTriangle, CheckCircle, ArrowLeft, CheckCircle2, XCircle, Wrench, Navigation } from 'lucide-react'
+import type { LocationChoice } from '@/lib/geocoding'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { DEFAULT_SERVICES, getServiceScope } from '@/lib/catalog'
@@ -23,6 +24,8 @@ export default function ChamarServicePage() {
   const [loading, setLoading] = useState(false)
   const [defaultNeighborhood, setDefaultNeighborhood] = useState<string | undefined>(undefined)
   const [profileChecked, setProfileChecked] = useState(false)
+  // GPS do celular longe do endereço digitado: o cliente escolhe pra onde o técnico vai.
+  const [locationPrompt, setLocationPrompt] = useState<{ distanceKm: number } | null>(null)
 
   const scope = useMemo(() => {
     return getServiceScope(service?.name)
@@ -93,6 +96,15 @@ export default function ChamarServicePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    await submitCall()
+  }
+
+  const chooseLocation = (choice: LocationChoice) => {
+    setLocationPrompt(null)
+    submitCall(choice)
+  }
+
+  const submitCall = async (locationChoice?: LocationChoice) => {
     if (!confirmed) {
       toast.error('Confirme que leu o aviso sobre peças e materiais')
       return
@@ -137,6 +149,7 @@ export default function ChamarServicePage() {
           ...(lat != null && lng != null ? { client_lat: lat, client_lng: lng } : {}),
           street: structuredAddress.street,
           number: structuredAddress.number,
+          ...(locationChoice ? { location_choice: locationChoice } : {}),
         }),
       })
 
@@ -145,6 +158,11 @@ export default function ChamarServicePage() {
 
       if (!response.ok) {
         toast.error(result.error ?? 'Erro ao solicitar prestador. Tente novamente.')
+        return
+      }
+
+      if (result.needs_location_choice) {
+        setLocationPrompt({ distanceKm: result.distance_km })
         return
       }
 
@@ -356,6 +374,71 @@ export default function ChamarServicePage() {
           </div>
         </form>
       </main>
+
+      {locationPrompt && structuredAddress && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in"
+          style={{ background: 'rgba(7, 16, 15, 0.8)', backdropFilter: 'blur(8px)' }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="location-choice-title"
+        >
+          <div
+            className="rounded-3xl p-6 max-w-md w-full shadow-2xl text-left animate-slide-up"
+            style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+          >
+            <h3 id="location-choice-title" className="text-lg font-black leading-tight" style={{ color: 'var(--color-text)' }}>
+              Onde vai ser o serviço?
+            </h3>
+            <p className="text-sm mt-2" style={{ color: 'var(--color-text-muted)' }}>
+              O endereço que você digitou fica a <strong style={{ color: 'var(--color-text)' }}>{formatDistance(locationPrompt.distanceKm)}</strong> de onde seu celular está agora. O técnico vai até o local que você escolher.
+            </p>
+
+            <div className="flex flex-col gap-2 mt-5">
+              <button
+                type="button"
+                id="btn-location-address"
+                onClick={() => chooseLocation('address')}
+                className="btn-primary py-3 text-sm justify-start text-left"
+              >
+                <MapPin size={18} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+                <span>
+                  <span className="block font-bold">No endereço digitado</span>
+                  <span className="block text-xs font-normal opacity-90">
+                    {structuredAddress.street}, {structuredAddress.number} — {structuredAddress.neighborhood}
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                id="btn-location-gps"
+                onClick={() => chooseLocation('gps')}
+                className="btn-secondary py-3 text-sm justify-start text-left"
+              >
+                <Navigation size={18} strokeWidth={2} className="shrink-0" aria-hidden="true" />
+                <span>
+                  <span className="block font-bold">Onde estou agora</span>
+                  <span className="block text-xs font-normal opacity-90">Usar a localização do celular</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                id="btn-location-fix"
+                onClick={() => setLocationPrompt(null)}
+                className="text-xs font-semibold mt-1 py-2"
+                style={{ color: 'var(--color-text-muted)' }}
+              >
+                Corrigir o endereço
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+function formatDistance(km: number): string {
+  if (km < 1) return `${Math.round((km * 1000) / 50) * 50} m`
+  return `${km.toFixed(1).replace('.', ',')} km`
 }

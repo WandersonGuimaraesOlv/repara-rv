@@ -5,9 +5,11 @@ import {
   isTransientFailure,
   extractGeocodableNumber,
   resolveCallLocation,
+  locationConflictKm,
   distanceKm,
   isInsideServiceArea,
   RIO_VERDE_CENTER,
+  LOCATION_CONFLICT_KM,
   type GeocodeResult,
 } from '../lib/geocoding'
 
@@ -169,6 +171,55 @@ describe('resolveCallLocation — o endereço do serviço manda, o GPS completa'
 
   it('o ponto padrão antigo do centro continua dentro da área (não quebra chamados antigos)', () => {
     expect(isInsideServiceArea(RIO_VERDE_CENTER)).toBe(true)
+  })
+})
+
+describe('locationConflictKm — quando perguntar pro cliente pra onde o técnico vai', () => {
+  // ~300 m ao norte do centro: mesma casa/quarteirão, dentro da margem de erro
+  const VIZINHO = { lat: -17.7888, lng: -50.9192 }
+
+  it('GPS longe do endereço: devolve a distância', () => {
+    const km = locationConflictKm({ gps: OUTRO_BAIRRO, geocode: ok() })
+    expect(km).not.toBeNull()
+    expect(km!).toBeGreaterThan(LOCATION_CONFLICT_KM)
+    expect(km!).toBeCloseTo(distanceKm(OUTRO_BAIRRO, CENTRO), 5)
+  })
+
+  it('GPS perto do endereço: não pergunta', () => {
+    expect(locationConflictKm({ gps: VIZINHO, geocode: ok() })).toBeNull()
+  })
+
+  it('também pergunta quando o endereço só foi achado de forma aproximada', () => {
+    expect(locationConflictKm({ gps: OUTRO_BAIRRO, geocode: ok({ locationType: 'APPROXIMATE' }) })).not.toBeNull()
+  })
+
+  it('sem GPS, sem endereço localizado ou com um dos dois fora da área: não pergunta', () => {
+    expect(locationConflictKm({ geocode: ok() })).toBeNull()
+    expect(locationConflictKm({ gps: OUTRO_BAIRRO, geocode: { ok: false, reason: 'not_found' } })).toBeNull()
+    expect(locationConflictKm({ gps: GOIANIA, geocode: ok() })).toBeNull()
+    expect(locationConflictKm({ gps: OUTRO_BAIRRO, geocode: ok({ lat: GOIANIA.lat, lng: GOIANIA.lng }) })).toBeNull()
+  })
+})
+
+describe('resolveCallLocation com a escolha do cliente', () => {
+  it('escolheu "onde estou agora": vale o GPS, mesmo com endereço preciso', () => {
+    expect(resolveCallLocation({ gps: OUTRO_BAIRRO, geocode: ok(), choice: 'gps' })).toEqual({
+      lat: OUTRO_BAIRRO.lat, lng: OUTRO_BAIRRO.lng, source: 'gps',
+    })
+  })
+
+  it('escolheu "endereço digitado": vale o endereço, mesmo aproximado e com GPS por perto', () => {
+    expect(resolveCallLocation({ gps: PERTO, geocode: ok({ locationType: 'APPROXIMATE' }), choice: 'address' })).toEqual({
+      lat: CENTRO.lat, lng: CENTRO.lng, source: 'geocode_aproximado',
+    })
+    expect(resolveCallLocation({ gps: OUTRO_BAIRRO, geocode: ok(), choice: 'address' })?.source).toBe('geocode')
+  })
+
+  it('escolha que aponta pra ponto inválido cai na regra normal', () => {
+    // escolheu GPS, mas o GPS está fora da área: usa o endereço
+    expect(resolveCallLocation({ gps: GOIANIA, geocode: ok(), choice: 'gps' })?.source).toBe('geocode')
+    // escolheu endereço, mas ele não foi localizado: usa o GPS
+    expect(resolveCallLocation({ gps: PERTO, geocode: { ok: false, reason: 'not_found' }, choice: 'address' })?.source).toBe('gps')
   })
 })
 
