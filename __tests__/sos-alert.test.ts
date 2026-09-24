@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { buildSosEmail } from '../modules/notifications/services/sos-alert'
 import { formatEmergencyMessage } from '../lib/utils'
 
+// Simula o Cloudflare Workers, que roda em UTC — sem isso o teste do fuso
+// passaria numa máquina em Brasília mesmo com o erro.
+process.env.TZ = 'UTC'
+
 describe('buildSosEmail — e-mail de SOS pra equipe (app/api/emergency/notify)', () => {
   const message = formatEmergencyMessage({
     callerName: 'Ana <script>',
@@ -28,6 +32,11 @@ describe('buildSosEmail — e-mail de SOS pra equipe (app/api/emergency/notify)'
     expect(email.html).toContain('Rua A, 10')
     expect(email.html).toContain('<a href="https://maps.google.com/?q=-17.79,-50.92">')
     expect(email.html).toContain('https://repararv.com/admin/dashboard')
+  })
+
+  it('horário no fuso de Rio Verde, não em UTC (servidor roda em UTC)', () => {
+    // timestamp 12:00 UTC = 09:00 em Brasília
+    expect(email.html).toContain('Horário: 09:00')
   })
 
   it('escapa HTML vindo do nome do usuário', () => {

@@ -128,7 +128,9 @@ export interface FormatEmergencyParams {
 
 export function formatEmergencyMessage(params: FormatEmergencyParams): string {
   const dateObj = params.timestamp ? new Date(params.timestamp) : new Date()
-  const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  // Montado no servidor (Cloudflare Workers roda em UTC): sem o fuso, o
+  // e-mail do SOS saía com 3 h a mais (achado em 24/09/2026, "11:47" às 08:47).
+  const timeStr = dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
 
   const roleLabel = params.callerRole === 'client' ? 'Cliente' : 'Prestador'
   const otherRoleLabel = params.callerRole === 'client' ? 'Prestador no local' : 'Cliente no local'
