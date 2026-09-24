@@ -134,6 +134,7 @@ export default function RecuperarPinPage() {
                 <Phone size={17} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
                 <input
                   id="recuperar-phone"
+                  name="tel"
                   type="tel"
                   value={formatDisplayPhone(phone)}
                   onChange={e => handlePhoneChange(e.target.value)}
@@ -196,15 +197,15 @@ export default function RecuperarPinPage() {
                   <Lock size={15} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
                   <input
                     id="recuperar-new-pin"
-                    type={showPin ? 'text' : 'password'}
+                    type="text"
                     value={newPin}
                     onChange={e => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
                     placeholder="Ex: 4827"
-                    className="input pl-10 tracking-widest font-mono"
+                    className={`input pl-10 tracking-widest font-mono ${showPin ? '' : 'pin-masked'}`}
                     inputMode="numeric"
                     maxLength={8}
                     required
-                    autoComplete="new-password"
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -215,15 +216,15 @@ export default function RecuperarPinPage() {
                   <Lock size={15} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
                   <input
                     id="recuperar-confirm-pin"
-                    type={showPin ? 'text' : 'password'}
+                    type="text"
                     value={confirmPin}
                     onChange={e => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
                     placeholder="Repita o PIN"
-                    className="input pl-10 tracking-widest font-mono"
+                    className={`input pl-10 tracking-widest font-mono ${showPin ? '' : 'pin-masked'}`}
                     inputMode="numeric"
                     maxLength={8}
                     required
-                    autoComplete="new-password"
+                    autoComplete="off"
                   />
                 </div>
               </div>

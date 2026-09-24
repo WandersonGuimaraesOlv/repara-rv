@@ -772,3 +772,11 @@ body {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
+
+/* PIN escondido sem ser campo de senha (24/09/2026): com type="password" o
+   iPhone e o Android sugeriam "senha forte" (letras e números) no PIN, e no
+   login preenchiam uma senha guardada errada. O campo é texto numérico e só
+   a exibição vira bolinhas. */
+.pin-masked {
+  -webkit-text-security: disc;
+}

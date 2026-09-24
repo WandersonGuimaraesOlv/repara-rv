@@ -7,7 +7,23 @@ import {
   getStatusColor,
   cn,
   safeRedirectPath,
+  normalizeBrazilianPhone,
 } from '../lib/utils'
+
+describe('normalizeBrazilianPhone — celular como o preenchimento automático entrega', () => {
+  it('aceita os formatos que o iPhone e o Android preenchem', () => {
+    expect(normalizeBrazilianPhone('(64) 98115-5550')).toBe('64981155550')
+    expect(normalizeBrazilianPhone('+55 64 98115-5550')).toBe('64981155550')
+    expect(normalizeBrazilianPhone('5564981155550')).toBe('64981155550')
+    expect(normalizeBrazilianPhone('0 64 98115-5550')).toBe('64981155550')
+    expect(normalizeBrazilianPhone('064981155550')).toBe('64981155550')
+  })
+
+  it('não mexe em número já certo, inclusive de DDD 55', () => {
+    expect(normalizeBrazilianPhone('55991234567')).toBe('55991234567')
+    expect(normalizeBrazilianPhone('6432211234')).toBe('6432211234')
+  })
+})
 
 describe('safeRedirectPath — volta depois do login (app/login, ?redirect=)', () => {
   it('aceita caminho interno do app, com query', () => {

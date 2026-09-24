@@ -341,6 +341,7 @@ export default function CadastroPage() {
               <User size={17} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
               <input
                 id="cadastro-name"
+                name="name"
                 type="text"
                 value={fullName}
                 onChange={e => setFullName(e.target.value)}
@@ -360,6 +361,7 @@ export default function CadastroPage() {
               <Mail size={17} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
               <input
                 id="cadastro-email"
+                name="email"
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -378,6 +380,7 @@ export default function CadastroPage() {
               <Phone size={17} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
               <input
                 id="cadastro-phone"
+                name="tel"
                 type="tel"
                 value={formatDisplayPhone(phone)}
                 onChange={e => handlePhoneChange(e.target.value)}
@@ -404,6 +407,7 @@ export default function CadastroPage() {
             </div>
             <input
               id="cadastro-cpf"
+              name="cpf"
               type="text"
               value={cpfOrCnpj}
               onChange={e => setCpfOrCnpj(e.target.value.replace(/\D/g, '').slice(0, 14))}
@@ -411,6 +415,7 @@ export default function CadastroPage() {
               className="input font-mono"
               inputMode="numeric"
               required
+              autoComplete="off"
             />
           </div>
 
@@ -424,7 +429,8 @@ export default function CadastroPage() {
               <MapPin size={17} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
               <input
                 id="cadastro-cep"
-                type="tel"
+                name="postal-code"
+                type="text"
                 value={cep}
                 onChange={e => handleCepChange(e.target.value)}
                 placeholder="75900-000"
@@ -478,15 +484,15 @@ export default function CadastroPage() {
                 <Lock size={15} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
                 <input
                   id="cadastro-pin"
-                  type={showPin ? 'text' : 'password'}
+                  type="text"
                   value={pin}
                   onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="Ex: 1234"
-                  className="input pl-10 tracking-widest font-mono"
+                  className={`input pl-10 tracking-widest font-mono ${showPin ? '' : 'pin-masked'}`}
                   inputMode="numeric"
                   maxLength={6}
                   required
-                  autoComplete="new-password"
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -497,15 +503,15 @@ export default function CadastroPage() {
                 <Lock size={15} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
                 <input
                   id="cadastro-confirm-pin"
-                  type={showPin ? 'text' : 'password'}
+                  type="text"
                   value={confirmPin}
                   onChange={e => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="Repita o PIN"
-                  className="input pl-10 tracking-widest font-mono"
+                  className={`input pl-10 tracking-widest font-mono ${showPin ? '' : 'pin-masked'}`}
                   inputMode="numeric"
                   maxLength={6}
                   required
-                  autoComplete="new-password"
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -546,12 +552,14 @@ export default function CadastroPage() {
                   <label htmlFor="cadastro-pix-key" className="label">Chave Pix para Recebimentos</label>
                   <input
                     id="cadastro-pix-key"
+                    name="pix-key"
                     type="text"
                     value={pixKey}
                     onChange={e => setPixKey(e.target.value)}
                     placeholder={pixKeyType === 'phone' ? 'Ex: 64999999999' : 'Informe sua chave Pix'}
                     className="input text-sm"
                     required={role === 'provider'}
+                    autoComplete="off"
                   />
                 </div>
               </div>

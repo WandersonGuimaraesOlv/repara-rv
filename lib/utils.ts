@@ -29,8 +29,12 @@ export function formatCurrency(value: number): string {
 // achado real em produção em 15/09/2026 (cadastro aceitou "55649811555" no
 // lugar de "64981155550"). DDD 55 (RS) existe de verdade, então só removemos
 // o "55" quando sobra dígito demais (>11) — nunca de um número já correto.
+//
+// Preenchimento automático do celular (24/09/2026): alguns aparelhos entregam o
+// número com o "0" de discagem nacional na frente ("0 64 98115-5550"). Nenhum
+// DDD começa com 0, então zeros à esquerda saem sempre.
 export function normalizeBrazilianPhone(raw: string): string {
-  let digits = raw.replace(/\D/g, '')
+  let digits = raw.replace(/\D/g, '').replace(/^0+/, '')
   if (digits.length > 11 && digits.startsWith('55')) {
     digits = digits.slice(2)
   }

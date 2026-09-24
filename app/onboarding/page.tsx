@@ -7,6 +7,7 @@ import { UserRole } from '@/lib/types'
 import { User, Wrench, ChevronRight, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 import { isValidCpfOrCnpj } from '@/lib/validations/br-documents'
+import { normalizeBrazilianPhone } from '@/lib/utils'
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -212,9 +213,10 @@ export default function OnboardingPage() {
             <label htmlFor="input-onboarding-phone" className="label">Celular (com DDD)</label>
             <input
               id="input-onboarding-phone"
+              name="tel"
               type="tel"
               value={phone}
-              onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+              onChange={e => setPhone(normalizeBrazilianPhone(e.target.value))}
               placeholder="Ex: 64 99999-9999"
               className="input"
               inputMode="numeric"
@@ -235,6 +237,7 @@ export default function OnboardingPage() {
             </div>
             <input
               id="input-cpf-cnpj"
+              name="cpf"
               type="text"
               value={cpfOrCnpj}
               onChange={e => setCpfOrCnpj(e.target.value.replace(/\D/g, '').slice(0, 14))}
@@ -242,6 +245,7 @@ export default function OnboardingPage() {
               className="input font-mono"
               inputMode="numeric"
               required
+              autoComplete="off"
             />
           </div>
 
@@ -289,6 +293,8 @@ export default function OnboardingPage() {
                       : 'sua-chave-pix'
                   }
                   className="input"
+                  name="pix-key"
+                  autoComplete="off"
                 />
               </div>
 

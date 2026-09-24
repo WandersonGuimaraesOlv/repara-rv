@@ -200,6 +200,7 @@ export default function LoginPage() {
               <Phone size={17} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
               <input
                 id="input-phone"
+                name="tel"
                 type="tel"
                 value={formatDisplayPhone(phone)}
                 onChange={e => handlePhoneChange(e.target.value)}
@@ -233,15 +234,15 @@ export default function LoginPage() {
               <Lock size={17} className="absolute left-4 pointer-events-none" style={{ color: 'var(--color-text-subtle)' }} />
               <input
                 id="input-pin"
-                type={showPin ? 'text' : 'password'}
+                type="text"
                 value={pin}
                 onChange={e => { setPendingNewPhone(null); setPin(e.target.value.replace(/\D/g, '').slice(0, 6)) }}
                 placeholder="Ex: 1234"
-                className="input pl-11 tracking-widest font-mono"
+                className={`input pl-11 tracking-widest font-mono ${showPin ? '' : 'pin-masked'}`}
                 inputMode="numeric"
                 required
                 maxLength={6}
-                autoComplete="current-password"
+                autoComplete="off"
               />
             </div>
             <p className="text-[11px] mt-2 leading-snug" style={{ color: 'var(--color-text-subtle)' }}>
