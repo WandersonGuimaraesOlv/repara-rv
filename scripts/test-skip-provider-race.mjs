@@ -33,8 +33,8 @@
 //      prestador pode ficar online bem no meio do teste. O script confere no
 //      final se o prestador atribuído é mesmo um dos nossos de teste e avisa
 //      em CAIXA ALTA se não for.)
-//   2. O branch "sem próximo prestador" de skip-provider chama (fire-and-
-//      forget) POST /api/calls/notify-queue — que manda uma notificação PUSH
+//   2. O branch "sem próximo prestador" de skip-provider dispara (fire-and-
+//      forget) o push da fila (pushCallAlert) — que manda uma notificação PUSH
 //      de verdade pra todo prestador real aprovado que tenha ativado as
 //      notificações no painel (/painel → "Ativar notificações").
 //      Isso seria um incidente real (spam de "cliente aguardando" pra
@@ -291,7 +291,7 @@ async function run() {
   const queuedResponses = results.filter((r) => r.body?.status === 'queued');
   if (queuedResponses.length > 0) {
     log('\n🚨🚨🚨 ALERTA CRÍTICO: uma ou mais chamadas caíram no branch "sem prestador disponível" 🚨🚨🚨');
-    log('   Isso significa que POST /api/calls/notify-queue foi disparado de verdade para');
+    log('   Isso significa que o push da fila foi disparado de verdade para');
     log('   este chamado de teste — prestadores REAIS aprovados que tenham ativado as');
     log('   notificações push podem ter recebido um aviso falso agora. Confira o log');
     log('   do servidor (`npm run dev`) e,');

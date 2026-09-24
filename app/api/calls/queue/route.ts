@@ -20,6 +20,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getRequestUserId } from '@/lib/supabase/request-user'
+import { canActAsProvider } from '@/lib/call-transitions'
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +30,17 @@ export async function GET(request: NextRequest) {
     }
 
     const adminDb = await createServiceClient()
+
+    // Só quem atende chamado vê a fila (auditoria de 24/09/2026: bastava estar
+    // logado — um cliente listava os chamados de todo mundo na fila).
+    const { data: profile } = await adminDb
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .maybeSingle()
+    if (!profile || !canActAsProvider(profile.role)) {
+      return NextResponse.json({ error: 'Acesso restrito a prestadores' }, { status: 403 })
+    }
 
     // Só o que ainda dá pra assumir: mesma regra de claim_queued_call()
     // (expires_at nulo ou no futuro). Achado de 23/09/2026: chamados de fila

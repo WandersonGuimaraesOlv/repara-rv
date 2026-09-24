@@ -254,23 +254,11 @@ export async function POST(request: NextRequest) {
     // runInBackground usa o waitUntil do Workers: uma promessa solta ("void fetch")
     // pode ser cancelada quando a resposta termina.
     if (isQueued) {
-      // Fila prioritária: notify-queue avisa por push os prestadores elegíveis
-      runInBackground((async () => {
-        try {
-          const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com'
-          const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost'))
-            ? rawAppUrl
-            : 'https://repararv.com'
-
-          await fetch(`${appUrl}/api/calls/notify-queue`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ call_id: call.id }),
-          })
-        } catch (err) {
-          console.warn('[API /api/calls/create] Falha assíncrona ao invocar notify-queue:', err)
-        }
-      })())
+      // Fila prioritária: push pra todos os prestadores elegíveis. Direto, sem
+      // a antiga rota HTTP /api/calls/notify-queue — ela não conferia quem
+      // chamava e qualquer um com o id de um chamado na fila disparava aviso
+      // pra todos os técnicos (auditoria de 24/09/2026).
+      runInBackground(pushCallAlert({ callId: call.id }))
     } else {
       // Atribuição direta ao prestador mais próximo: o Realtime só o alcança com o app aberto
       runInBackground(pushCallAlert({ callId: call.id, providerIds: [String(nearestProvider)] }))

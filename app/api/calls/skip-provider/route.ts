@@ -174,20 +174,9 @@ export async function POST(request: NextRequest) {
           continue
         }
 
-        // Notifica prestadores cadastrados da fila prioritária
-        const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com'
-        const appUrl = (rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost'))
-          ? rawAppUrl
-          : 'https://repararv.com'
-
-        // waitUntil: um fetch solto pode ser cancelado no Workers quando a resposta termina
-        runInBackground(
-          fetch(`${appUrl}/api/calls/notify-queue`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ call_id }),
-          })
-        )
+        // Push da fila prioritária pra todos os prestadores elegíveis (direto,
+        // sem a antiga rota aberta /api/calls/notify-queue)
+        runInBackground(pushCallAlert({ callId: call_id }))
 
         await settleOffer()
         return NextResponse.json({ status: 'queued' })
