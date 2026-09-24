@@ -6,6 +6,9 @@ export type RideStatus =
   | 'accepted'
   | 'on_the_way'
   | 'in_progress'
+  // Técnico concluiu; o cliente confere antes do Pix (migration
+  // 20260924_client_approves_completion.sql)
+  | 'awaiting_approval'
   | 'completed'
   | 'cancelled'
   | 'no_providers_available'
@@ -96,6 +99,7 @@ export interface ServiceCall {
   client_location: GeoPoint
   cancel_reason?: CancelReason | null
   cancel_note?: string | null
+  cancelled_by_role?: UserRole | null
   payment_status?: PaymentStatus
   pix_payment_id?: string | null
   pix_qr_code?: string | null
@@ -117,6 +121,13 @@ export interface ServiceCall {
   // 20260918_provider_identity_verification.sql
   arrival_pin?: string | null
   started_at?: string | null
+  // Conferência do cliente antes do Pix — ver migration
+  // 20260924_client_approves_completion.sql
+  completion_requested_at?: string | null
+  completion_approved_at?: string | null
+  completion_approved_by?: string | null
+  completion_issue?: string | null
+  completion_issue_count?: number
   // Joins opcionais
   service?: QuickService
   client?: Profile

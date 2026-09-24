@@ -7,7 +7,7 @@ import { ServiceCall, CancelReason } from '@/lib/types'
 import { NavigationButtons } from '@/components/navigation-buttons'
 import { EmergencySosButton } from '@/components/emergency-sos-button'
 import { formatCurrency } from '@/lib/utils'
-import { CheckCircle, XCircle, Loader2, ArrowLeft, Wrench, MapPin, DollarSign, KeyRound, AlertTriangle, Map as MapIcon } from 'lucide-react'
+import { CheckCircle, XCircle, Loader2, ArrowLeft, Wrench, MapPin, DollarSign, KeyRound, AlertTriangle, Map as MapIcon, ClipboardCheck, Hourglass, PartyPopper } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { CallChat } from '@/components/chat/call-chat'
@@ -118,6 +118,42 @@ export default function ChamadoProviderPage() {
     }
   }, [callId, loadCall, supabase])
 
+  // Depois de concluir, o técnico espera no local a conferência e o pagamento
+  // do cliente (lib/completion-review.ts). Consulta a cada 5 s além do
+  // Realtime, que no celular às vezes cai.
+  const isWaitingClient = call?.status === 'awaiting_approval' || (call?.status === 'completed' && call?.payment_status !== 'paid')
+  useEffect(() => {
+    if (!isWaitingClient) return
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from('service_calls')
+        .select('status, payment_status, completion_issue, completion_issue_count, cancelled_by_role')
+        .eq('id', callId)
+        .maybeSingle()
+      if (data) setCall(prev => (prev ? ({ ...prev, ...data } as ServiceCall) : prev))
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [isWaitingClient, callId, supabase])
+
+  // Avisa na tela quando o cliente decide ou paga
+  const prevStateRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!call) return
+    const state = `${call.status}:${call.payment_status ?? ''}`
+    const prev = prevStateRef.current
+    prevStateRef.current = state
+    if (!prev || prev === state) return
+    if (prev.startsWith('awaiting_approval:') && call.status === 'in_progress') {
+      toast.error('O cliente apontou um problema. Veja o que ele escreveu e corrija.')
+    } else if (prev.startsWith('awaiting_approval:') && call.status === 'completed') {
+      toast.success('O cliente aprovou o serviço! Agora ele faz o pagamento.')
+    } else if (call.status === 'completed' && call.payment_status === 'paid') {
+      toast.success('Pagamento confirmado. Pode ir!')
+    } else if (call.status === 'cancelled') {
+      toast.info('Este chamado foi cancelado.')
+    }
+  }, [call])
+
   // PIN de chegada (call_arrival_pins, gerado pelo servidor no aceite — ver
   // app/api/calls/advance e app/api/calls/claim-queued): só o cliente vê o
   // código, e o prestador digita o que o cliente falar. Achado de auditoria
@@ -153,23 +189,9 @@ export default function ChamadoProviderPage() {
   const handleComplete = async () => {
     setCompleting(true)
 
-    // Cria cobrança Pix e Cartão no Mercado Pago
-    try {
-      await fetch('/api/pix/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          call_id: callId,
-          amount: call?.total_price,
-          description: `Repara RV - ${(call?.service as { name?: string })?.name ?? 'Serviço'}`,
-        }),
-      })
-    } catch (pixErr) {
-      console.error('Erro ao chamar /api/pix/create:', pixErr)
-    }
-
-    // Marca como completed pelo servidor (payment_status continua pending até
-    // o cliente pagar) — só vale a partir de in_progress, ou seja, depois do PIN.
+    // Pede a conferência do cliente (awaiting_approval) — só vale a partir de
+    // in_progress, ou seja, depois do PIN. O Pix só aparece pro cliente depois
+    // que ele aprova (lib/completion-review.ts); a cobrança é gerada na tela dele.
     try {
       const res = await fetch('/api/calls/advance', {
         method: 'POST',
@@ -189,8 +211,9 @@ export default function ChamadoProviderPage() {
     }
 
     setCompleting(false)
-    toast.success('Serviço concluído! O QR Code Pix e opção de Cartão foram gerados para o cliente.')
-    router.replace('/painel')
+    prevStateRef.current = `awaiting_approval:${call?.payment_status ?? ''}`
+    setCall(prev => (prev ? { ...prev, status: 'awaiting_approval' } : prev))
+    toast.success('Pronto! Agora o cliente confere o serviço. Espere no local.')
   }
 
   const handleCancel = async () => {
@@ -255,6 +278,7 @@ export default function ChamadoProviderPage() {
             callId={callId}
             userRole="provider"
             status={call.status}
+            paymentStatus={call.payment_status}
             clientAddress={call.client_address}
             clientLocation={call.client_location}
           />
@@ -326,7 +350,7 @@ export default function ChamadoProviderPage() {
       {isTrip && <ProviderTrackingMap callId={callId} viewer="provider" />}
 
       {/* Chat em Tempo Real com Alinhamento de Materiais e Peças */}
-      {(call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress' || call.status === 'completed') && (
+      {(call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress' || call.status === 'awaiting_approval' || call.status === 'completed') && (
         <CallChat
           callId={callId}
           currentUserId={call.provider_id || ''}
@@ -387,6 +411,15 @@ export default function ChamadoProviderPage() {
             </div>
           )}
 
+          {call.status === 'in_progress' && call.completion_issue && (
+            <div id="completion-issue-banner" className="banner-warning">
+              <AlertTriangle size={16} strokeWidth={2} className="flex-shrink-0" style={{ color: '#F59E0B' }} aria-hidden="true" />
+              <p className="text-xs" style={{ color: '#FCD34D' }}>
+                <strong>O cliente apontou um problema:</strong> “{call.completion_issue}”. Corrija e toque em Concluir de novo para ele conferir.
+              </p>
+            </div>
+          )}
+
           {call.status === 'in_progress' && (
             <button
               id="btn-complete-service"
@@ -397,19 +430,67 @@ export default function ChamadoProviderPage() {
               {completing ? (
                 <><Loader2 size={18} className="animate-spin" /> Finalizando...</>
               ) : (
-                <><CheckCircle size={18} /> Serviço concluído — gerar Pix</>
+                <><CheckCircle size={18} /> Concluí o serviço — cliente confere</>
               )}
             </button>
           )}
 
-          <button
-            id="btn-show-cancel"
-            onClick={() => setShowCancel(true)}
-            className="btn-danger"
-          >
-            <XCircle size={16} />
-            Não consigo atender
-          </button>
+          {call.status === 'awaiting_approval' && (
+            <div id="waiting-client-approval" className="card p-4 flex items-start gap-3" style={{ borderColor: 'var(--color-warning)' }}>
+              <ClipboardCheck size={22} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: 'var(--color-warning)' }} aria-hidden="true" />
+              <div className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                <strong className="block mb-1" style={{ color: 'var(--color-text)' }}>Aguardando o cliente conferir</strong>
+                Fique no local: o cliente testa o serviço e aprova no app dele. Depois da aprovação, ele faz o pagamento.
+              </div>
+            </div>
+          )}
+
+          {call.status === 'completed' && call.payment_status !== 'paid' && (
+            <div id="waiting-client-payment" className="card p-4 flex items-start gap-3" style={{ borderColor: 'var(--color-border-strong)' }}>
+              <Hourglass size={22} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} aria-hidden="true" />
+              <div className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                <strong className="block mb-1" style={{ color: 'var(--color-text)' }}>O cliente aprovou. Aguardando o pagamento</strong>
+                Só saia depois que o pagamento for confirmado aqui. Não receba em dinheiro: o cliente paga pelo app, por Pix ou cartão.
+              </div>
+            </div>
+          )}
+
+          {call.status === 'completed' && call.payment_status === 'paid' && (
+            <div id="payment-confirmed" className="card p-4 space-y-3" style={{ borderColor: 'var(--color-success)' }}>
+              <div className="flex items-start gap-3">
+                <PartyPopper size={22} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: 'var(--color-success)' }} aria-hidden="true" />
+                <div className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                  <strong className="block mb-1" style={{ color: 'var(--color-text)' }}>Pagamento confirmado. Pode ir!</strong>
+                  Você recebe {formatCurrency(call.provider_cut)} na sua chave Pix.
+                </div>
+              </div>
+              <Link href="/painel" id="btn-finish-back-to-painel" className="btn-primary">
+                <ArrowLeft size={16} /> Voltar ao painel
+              </Link>
+            </div>
+          )}
+
+          {call.status === 'cancelled' && (
+            <div id="call-cancelled" className="card p-4 space-y-3" style={{ borderColor: 'rgba(239,68,68,0.4)' }}>
+              <p className="text-sm" style={{ color: 'var(--color-text)' }}>
+                {call.cancelled_by_role === 'admin' ? 'A equipe do Repara RV cancelou este chamado.' : 'Este chamado foi cancelado.'}
+              </p>
+              <Link href="/painel" className="btn-secondary">
+                <ArrowLeft size={16} /> Voltar ao painel
+              </Link>
+            </div>
+          )}
+
+          {(call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress') && (
+            <button
+              id="btn-show-cancel"
+              onClick={() => setShowCancel(true)}
+              className="btn-danger"
+            >
+              <XCircle size={16} />
+              Não consigo atender
+            </button>
+          )}
         </div>
       )}
 

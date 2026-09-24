@@ -109,6 +109,8 @@ function getStatusConfig(status: string) {
       return { label: 'Técnico a Caminho', colorVar: '--color-info', isActive: true }
     case 'in_progress':
       return { label: 'Em Atendimento', colorVar: '--color-primary', isActive: true }
+    case 'awaiting_approval':
+      return { label: 'Confira o serviço', colorVar: '--color-warning', isActive: true }
     case 'completed':
       return { label: 'Concluído', colorVar: '--color-success', isActive: false }
     case 'cancelled':

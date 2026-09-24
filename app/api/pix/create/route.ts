@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { getRequestUserId } from '@/lib/supabase/request-user'
 
 // `amount` propositalmente NÃO faz parte do schema: o valor cobrado é SEMPRE
 // call.total_price, lido do banco (achado real de 14/09/2026 — antes disso o
@@ -22,11 +23,11 @@ export async function POST(request: NextRequest) {
     // autorização — qualquer call_id, de qualquer chamador, gerava e via o
     // QR Code/link de pagamento (e o valor exato) de um chamado alheio. Só o
     // cliente (paga o serviço ou a taxa de no-show, via PixPaymentModal) ou o
-    // prestador (dispara a cobrança ao concluir, app/chamado/[callId]) podem
-    // gerar/ver a cobrança deste chamado.
-    const supabaseUser = await createClient()
-    const { data: { user } } = await supabaseUser.auth.getUser().catch(() => ({ data: { user: null } }))
-    if (!user) {
+    // prestador do chamado podem gerar/ver a cobrança. Desde 24/09/2026 quem
+    // gera é a tela do cliente, depois que ele aprova a conclusão. Sessão por
+    // cookie ou Bearer, como as outras rotas de chamado.
+    const userId = await getRequestUserId(request)
+    if (!userId) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
 
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Chamado não encontrado' }, { status: 404 })
     }
 
-    if (call.client_id !== user.id && call.provider_id !== user.id) {
+    if (call.client_id !== userId && call.provider_id !== userId) {
       return NextResponse.json({ error: 'Você não tem permissão para gerar cobrança deste chamado' }, { status: 403 })
     }
 
@@ -147,6 +148,16 @@ export async function POST(request: NextRequest) {
         payment_id: paymentId,
         no_show_fee_status: 'pending',
       })
+    }
+
+    // Cobrança do serviço só depois que o cliente aprovou a conclusão
+    // (lib/completion-review.ts, pedido do dono em 24/09/2026). Antes o
+    // técnico gerava o Pix ao concluir, sem conferência nenhuma.
+    if (call.status !== 'completed') {
+      return NextResponse.json(
+        { error: 'O pagamento é liberado depois que o cliente confere e aprova o serviço.' },
+        { status: 409 }
+      )
     }
 
     const existingCheckout = (call.cancel_metadata as Record<string, unknown>)?.checkout_url as string | undefined || call.cancel_note || null

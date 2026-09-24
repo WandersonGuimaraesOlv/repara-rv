@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import { updateCallPaymentStatusAction } from '@/app/actions/admin-users'
 import { PushNotificationsCard } from '@/components/push-notifications-card'
+import { ActiveCallsPanel } from '@/components/admin/active-calls-panel'
 import { toast } from 'sonner'
 
 interface ServiceCallRecord {
@@ -56,6 +57,8 @@ interface ServiceCallRecord {
   completed_at?: string | null
   cancelled_at?: string | null
   expires_at?: string | null
+  completion_issue?: string | null
+  completion_issue_count?: number | null
   service?: { name: string; category: string } | null
   client?: { full_name: string; phone: string } | null
   provider?: { full_name: string; phone: string } | null
@@ -182,6 +185,8 @@ export default function AdminDashboardPage() {
           completed_at,
           cancelled_at,
           expires_at,
+          completion_issue,
+          completion_issue_count,
           service:quick_services(name, category),
           client:profiles!client_id(full_name, phone),
           provider:profiles!provider_id(full_name, phone)
@@ -280,7 +285,7 @@ export default function AdminDashboardPage() {
     const paidCompleted = completed.filter(c => c.payment_status === 'paid')
     const pendingCompleted = completed.filter(c => c.payment_status !== 'paid')
     const cancelled = calls.filter(c => c.status === 'cancelled' || c.status === 'no_providers_available' || c.status === 'expired')
-    const inProgress = calls.filter(c => ['accepted', 'on_the_way', 'in_progress'].includes(c.status))
+    const inProgress = calls.filter(c => ['accepted', 'on_the_way', 'in_progress', 'awaiting_approval'].includes(c.status))
     const queuedCount = allQueuedCalls.length
 
     // 1. GMV Total (Volume Bruto Transacionado pelos Clientes)
@@ -607,6 +612,9 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Chamados em andamento: cancelar travado e aprovar pelo cliente */}
+      <ActiveCallsPanel calls={calls} now={currentTime} onChanged={fetchData} />
 
       {/* ============================================================ */}
       {/* GRID DE KPIs PRINCIPAIS (GMV vs. TAKE RATE vs. REPASSE TÉCNICOS) */}

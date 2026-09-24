@@ -84,6 +84,7 @@ export function getStatusLabel(status: string): string {
     accepted: 'Prestador a caminho',
     on_the_way: 'Prestador a caminho',
     in_progress: 'Serviço em andamento',
+    awaiting_approval: 'Confira o serviço',
     completed: 'Concluído',
     cancelled: 'Chamado cancelado',
     cancelled_by_client: 'Cancelado pelo cliente',
@@ -101,6 +102,7 @@ export function getStatusColor(status: string): string {
     accepted: 'text-blue-400',
     on_the_way: 'text-blue-400',
     in_progress: 'text-indigo-400',
+    awaiting_approval: 'text-amber-400',
     completed: 'text-emerald-400',
     cancelled: 'text-red-400',
     cancelled_by_client: 'text-red-400',
@@ -111,8 +113,11 @@ export function getStatusColor(status: string): string {
   return colors[status] ?? 'text-slate-400'
 }
 
-export function isEmergencySosActive(status: string): boolean {
-  return ['accepted', 'on_the_way', 'in_progress'].includes(status)
+// Enquanto o técnico está a caminho ou no local — e ele só vai embora depois
+// do pagamento (conferência antes do Pix, pedido do dono em 24/09/2026).
+export function isEmergencySosActive(status: string, paymentStatus?: string | null): boolean {
+  if (status === 'completed') return paymentStatus !== 'paid'
+  return ['accepted', 'on_the_way', 'in_progress', 'awaiting_approval'].includes(status)
 }
 
 export interface FormatEmergencyParams {

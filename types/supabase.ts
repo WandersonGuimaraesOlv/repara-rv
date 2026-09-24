@@ -679,6 +679,11 @@ export type Database = {
           client_id: string
           client_location: unknown
           completed_at: string | null
+          completion_approved_at: string | null
+          completion_approved_by: string | null
+          completion_issue: string | null
+          completion_issue_count: number
+          completion_requested_at: string | null
           created_at: string | null
           expires_at: string | null
           id: string
@@ -717,6 +722,11 @@ export type Database = {
           client_id: string
           client_location: unknown
           completed_at?: string | null
+          completion_approved_at?: string | null
+          completion_approved_by?: string | null
+          completion_issue?: string | null
+          completion_issue_count?: number
+          completion_requested_at?: string | null
           created_at?: string | null
           expires_at?: string | null
           id?: string
@@ -755,6 +765,11 @@ export type Database = {
           client_id?: string
           client_location?: unknown
           completed_at?: string | null
+          completion_approved_at?: string | null
+          completion_approved_by?: string | null
+          completion_issue?: string | null
+          completion_issue_count?: number
+          completion_requested_at?: string | null
           created_at?: string | null
           expires_at?: string | null
           id?: string
@@ -777,6 +792,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "service_calls_completion_approved_by_fkey"
+            columns: ["completion_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "service_calls_cancelled_by_fkey"
             columns: ["cancelled_by"]
@@ -1055,6 +1077,11 @@ export type Database = {
           client_id: string
           client_location: unknown
           completed_at: string | null
+          completion_approved_at: string | null
+          completion_approved_by: string | null
+          completion_issue: string | null
+          completion_issue_count: number
+          completion_requested_at: string | null
           created_at: string | null
           expires_at: string | null
           id: string
@@ -1872,6 +1899,7 @@ export type Database = {
         | "accepted"
         | "on_the_way"
         | "in_progress"
+        | "awaiting_approval"
         | "completed"
         | "cancelled"
         | "no_providers_available"
@@ -2027,6 +2055,7 @@ export const Constants = {
         "accepted",
         "on_the_way",
         "in_progress",
+        "awaiting_approval",
         "completed",
         "cancelled",
         "no_providers_available",

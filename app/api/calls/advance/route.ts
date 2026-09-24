@@ -9,7 +9,8 @@ import { resetMissedOffers } from '@/lib/missed-offers'
 // Transições do chamado pedidas pelo prestador: aceitar (app/painel), sair
 // para o endereço e concluir (app/chamado). Antes eram UPDATE direto no
 // navegador — ver lib/call-transitions.ts. Iniciar o atendimento continua em
-// /api/calls/verify-arrival-pin, que exige o PIN do cliente.
+// /api/calls/verify-arrival-pin, que exige o PIN do cliente. Concluir leva a
+// awaiting_approval: o cliente confere em /api/calls/review-completion.
 const advanceSchema = z.object({
   call_id: z.string().uuid('call_id inválido'),
   action: z.enum(['accept', 'on_the_way', 'complete']),
@@ -73,7 +74,9 @@ export async function POST(request: NextRequest) {
     const nowIso = new Date().toISOString()
     const patch: Record<string, string> = { status: decision.to, updated_at: nowIso }
     if (action === 'accept') patch.accepted_at = nowIso
-    if (action === 'complete') patch.completed_at = nowIso
+    // Concluir só pede a conferência do cliente (awaiting_approval) —
+    // completed_at é gravado na aprovação (app/api/calls/review-completion).
+    if (action === 'complete') patch.completion_requested_at = nowIso
 
     // Condicional no status de origem e no prestador: se o chamado mudou
     // entre a leitura acima e agora (cliente cancelou, passou pro próximo

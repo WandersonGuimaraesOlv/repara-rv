@@ -180,6 +180,32 @@ async function run() {
   const completeRes = await asProvider('/api/calls/advance', { call_id: callId, action: 'complete' });
   if (!step('Prestador conclui o serviço (POST /api/calls/advance)', completeRes.ok, `status=${completeRes.status}`)) return false;
 
+  // Conferência do cliente antes do Pix (24/09/2026): concluir só pede a
+  // aprovação; o Pix não sai antes dela, e o prestador não aprova sozinho.
+  const afterRequest = await getCall('status');
+  if (!step('Estado no banco confirma awaiting_approval', afterRequest?.status === 'awaiting_approval', JSON.stringify(afterRequest))) return false;
+
+  const asClientPost = (path, body) => fetch(`${APP_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${clientSession.session.access_token}` },
+    body: JSON.stringify(body),
+  });
+
+  const earlyPixRes = await asClientPost('/api/pix/create', { call_id: callId });
+  if (!step('Pix antes da aprovação é recusado (409)', earlyPixRes.status === 409, `status=${earlyPixRes.status}`)) return false;
+
+  const providerApproveRes = await asProvider('/api/calls/review-completion', { call_id: callId, decision: 'approve' });
+  if (!step('Prestador NÃO aprova o próprio serviço (403)', providerApproveRes.status === 403, `status=${providerApproveRes.status}`)) return false;
+
+  const rejectRes = await asClientPost('/api/calls/review-completion', { call_id: callId, decision: 'reject', reason: '[MONITOR SINTETICO] problema de teste na conferência' });
+  if (!step('Cliente aponta problema: volta pra in_progress', rejectRes.ok && (await getCall('status'))?.status === 'in_progress', `status=${rejectRes.status}`)) return false;
+
+  const recompleteRes = await asProvider('/api/calls/advance', { call_id: callId, action: 'complete' });
+  if (!step('Prestador corrige e conclui de novo', recompleteRes.ok, `status=${recompleteRes.status}`)) return false;
+
+  const approveRes = await asClientPost('/api/calls/review-completion', { call_id: callId, decision: 'approve' });
+  if (!step('Cliente aprova a conclusão (POST /api/calls/review-completion)', approveRes.ok, `status=${approveRes.status}`)) return false;
+
   const afterComplete = await getCall('status, payment_status');
   if (!step('Estado no banco confirma completed com payment_status=pending', afterComplete?.status === 'completed' && afterComplete?.payment_status === 'pending', JSON.stringify(afterComplete))) return false;
 

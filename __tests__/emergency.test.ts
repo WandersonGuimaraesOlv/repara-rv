@@ -15,9 +15,15 @@ describe('Central de Segurança & Botão SOS', () => {
 
     it('deve retornar FALSE durante status em que não há contato presencial ou o serviço já findou', () => {
       expect(isEmergencySosActive('searching')).toBe(false)
-      expect(isEmergencySosActive('completed')).toBe(false)
+      expect(isEmergencySosActive('completed', 'paid')).toBe(false)
       expect(isEmergencySosActive('cancelled')).toBe(false)
       expect(isEmergencySosActive('no_providers_available')).toBe(false)
+    })
+
+    it('continua TRUE enquanto o técnico espera no local a conferência e o pagamento (24/09/2026)', () => {
+      expect(isEmergencySosActive('awaiting_approval')).toBe(true)
+      expect(isEmergencySosActive('completed', 'pending')).toBe(true)
+      expect(isEmergencySosActive('completed')).toBe(true)
     })
   })
 

@@ -27,14 +27,15 @@
 // Rodando isolado, ou com >60s de intervalo entre execuções, passa de forma
 // estável.
 //
-// PARA DEIXAR O RUN AUTOMATIZÁVEL (CI/staging), NÃO clica em "Concluir"
-// (#btn-complete-service) até o fim: esse botão dispara /api/pix/create, que
-// chama a API de verdade do Mercado Pago. Rodar isso repetidamente criaria
-// cobranças reais no gateway de pagamento. O teste vai até in_progress: o
-// prestador digita o PIN de chegada que aparece na tela do cliente (o PIN
-// mora em call_arrival_pins, que o prestador não lê). Pra validar
-// "concluir → Pix" de ponta a ponta, rode TEST_INCLUDE_PIX=1 npx playwright
-// test — aí ele clica em concluir de verdade.
+// PARA DEIXAR O RUN AUTOMATIZÁVEL (CI/staging), NÃO aprova a conclusão pelo
+// cliente (#btn-approve-completion): a aprovação abre o Pix do cliente, que
+// chama /api/pix/create e a API de verdade do Mercado Pago. Rodar isso
+// repetidamente criaria cobranças reais no gateway de pagamento. O teste vai
+// até a conferência: o prestador digita o PIN de chegada que aparece na tela
+// do cliente (o PIN mora em call_arrival_pins, que o prestador não lê),
+// conclui, o cliente aponta um problema, o prestador conclui de novo. Pra
+// validar "aprovar → Pix" de ponta a ponta, rode TEST_INCLUDE_PIX=1 npx
+// playwright test — aí o cliente aprova de verdade.
 // =============================================================================
 
 import { test, expect, chromium, type Browser, type BrowserContext } from '@playwright/test'
@@ -161,12 +162,39 @@ test.describe('Ciclo completo do chamado — cliente pede, prestador aceita e at
       expect(data?.status).toBe('in_progress')
     }).toPass({ timeout: 5_000 })
 
+    // ── Conferência do cliente antes do Pix (24/09/2026) ────────────────────
+    const statusIs = async (status: string) => {
+      await expect(async () => {
+        const { data } = await admin.from('service_calls').select('status').eq('id', callId!).single()
+        expect(data?.status).toBe(status)
+      }).toPass({ timeout: 10_000 })
+    }
+
+    await expect(providerPage.locator('#btn-complete-service')).toBeEnabled()
+    await providerPage.click('#btn-complete-service')
+    await statusIs('awaiting_approval')
+    await expect(providerPage.locator('#waiting-client-approval')).toBeVisible()
+
+    // Cliente aponta um problema → volta pro prestador, que vê o motivo
+    await expect(clientPage.locator('#completion-review')).toBeVisible({ timeout: 10_000 })
+    await clientPage.click('#btn-report-completion-issue')
+    await clientPage.fill('#input-completion-issue', '[E2E] o chuveiro continua pingando')
+    await clientPage.click('#btn-send-completion-issue')
+    await statusIs('in_progress')
+    await expect(providerPage.locator('#completion-issue-banner')).toContainText('continua pingando', { timeout: 10_000 })
+
+    // Prestador corrige e conclui de novo
+    await providerPage.click('#btn-complete-service')
+    await statusIs('awaiting_approval')
+    await expect(clientPage.locator('#btn-approve-completion')).toBeVisible({ timeout: 10_000 })
+
     if (process.env.TEST_INCLUDE_PIX === '1') {
-      // ⚠️ Isso chama a API de verdade do Mercado Pago (ver comentário no topo
-      // do arquivo) — só roda quando explicitamente pedido.
-      await expect(providerPage.locator('#btn-complete-service')).toBeEnabled()
-      await providerPage.click('#btn-complete-service')
-      await providerPage.waitForURL('/painel', { timeout: 20_000 })
+      // ⚠️ A aprovação abre o Pix do cliente, que chama a API de verdade do
+      // Mercado Pago (ver comentário no topo do arquivo) — só roda quando
+      // explicitamente pedido.
+      await clientPage.click('#btn-approve-completion')
+      await statusIs('completed')
+      await expect(providerPage.locator('#waiting-client-payment')).toBeVisible({ timeout: 10_000 })
 
       const { data: completed } = await admin
         .from('service_calls')

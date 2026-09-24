@@ -22,7 +22,9 @@ export const PROVIDER_TRANSITIONS: Record<ProviderAction, { from: readonly RideS
   on_the_way: { from: ['accepted'], to: 'on_the_way' },
   // start só por /api/calls/verify-arrival-pin, depois do PIN certo
   start: { from: ['accepted', 'on_the_way'], to: 'in_progress' },
-  complete: { from: ['in_progress'], to: 'completed' },
+  // O técnico só PEDE a conclusão: o cliente confere e aprova antes do Pix
+  // (lib/completion-review.ts). Pedido do dono, 24/09/2026.
+  complete: { from: ['in_progress'], to: 'awaiting_approval' },
 }
 
 // Quem pode aceitar/assumir chamado. find_nearest_provider não filtra por

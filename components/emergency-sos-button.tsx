@@ -9,6 +9,7 @@ interface EmergencySosButtonProps {
   callId: string
   userRole: 'client' | 'provider'
   status: string
+  paymentStatus?: string | null
   clientAddress?: string
   clientLocation?: { coordinates?: [number, number] }
 }
@@ -17,14 +18,15 @@ export function EmergencySosButton({
   callId,
   userRole,
   status,
+  paymentStatus,
   clientAddress,
   clientLocation,
 }: EmergencySosButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isTriggering, setIsTriggering] = useState(false)
 
-  // O botão só fica visível durante accepted, on_the_way e in_progress
-  if (!isEmergencySosActive(status)) {
+  // Visível enquanto o técnico está a caminho ou no local (até o pagamento)
+  if (!isEmergencySosActive(status, paymentStatus)) {
     return null
   }
 

@@ -7,6 +7,15 @@ import {
   toggleUserBlockedSchema,
   resetUserPinSchema,
 } from '@/lib/validations/admin-users'
+import {
+  adminApproveCompletionSchema,
+  adminCancelCallSchema,
+  canAdminCancel,
+  completionReviewPatch,
+} from '@/lib/completion-review'
+import { clearOfflineProviderLocation } from '@/lib/provider-location'
+import { runInBackground } from '@/lib/background'
+import { notifyProvider, buildNotificationEnv } from '@/modules/notifications'
 import { revalidatePath } from 'next/cache'
 
 /**
@@ -251,6 +260,125 @@ export async function updateCallPaymentStatusAction(input: {
   revalidatePath('/admin/dashboard')
   revalidatePath('/admin/usuarios')
   return { success: true, data }
+}
+
+/**
+ * Cancela um chamado ainda não concluído (lacuna do plano de contingência,
+ * 24/09/2026): depois do aceite o cliente não cancela, e se o técnico some
+ * ninguém conseguia encerrar o chamado pelo app. Sem cobrança de ninguém.
+ */
+export async function cancelCallAsAdminAction(input: { callId: string; reason: string }) {
+  const parsed = adminCancelCallSchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? 'Dados inválidos.' }
+  }
+
+  const authCheck = await requireAdmin()
+  if (!authCheck.authorized || !authCheck.user) {
+    return { success: false, error: authCheck.error }
+  }
+
+  const { callId, reason } = parsed.data
+  const adminDb = await createServiceClient()
+  const { data: call } = await adminDb
+    .from('service_calls')
+    .select('status, provider_id')
+    .eq('id', callId)
+    .maybeSingle()
+
+  if (!call) {
+    return { success: false, error: 'Chamado não encontrado.' }
+  }
+  if (!canAdminCancel(call.status)) {
+    return { success: false, error: 'Chamado concluído ou já encerrado não pode ser cancelado por aqui.' }
+  }
+
+  const nowIso = new Date().toISOString()
+  // Condicional no status lido: se o técnico concluiu ou o cliente aprovou
+  // nesse meio-tempo, nada é gravado.
+  const { data: updated, error } = await adminDb
+    .from('service_calls')
+    .update({
+      status: 'cancelled',
+      cancel_reason: 'other',
+      cancellation_reason: `Cancelado pela equipe: ${reason}`,
+      cancel_note: reason,
+      cancellation_stage: call.status,
+      cancelled_by: authCheck.user.id,
+      cancelled_by_role: 'admin',
+      cancelled_at: nowIso,
+      updated_at: nowIso,
+    })
+    .eq('id', callId)
+    .eq('status', call.status)
+    .select('id')
+
+  if (error) {
+    console.error('[admin] Erro ao cancelar chamado:', error)
+    return { success: false, error: 'Erro ao cancelar o chamado no banco.' }
+  }
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'O chamado mudou enquanto você decidia. Atualize a tela.' }
+  }
+
+  if (call.provider_id) {
+    await clearOfflineProviderLocation(adminDb, call.provider_id)
+    runInBackground(
+      notifyProvider(
+        call.provider_id,
+        {
+          title: 'Chamado cancelado pela equipe',
+          body: 'A equipe do Repara RV cancelou um chamado seu. Abra o app para ver.',
+          url: '/painel',
+        },
+        buildNotificationEnv()
+      )
+    )
+  }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
+/**
+ * Aprova a conclusão pelo cliente (impasse na conferência antes do Pix —
+ * lib/completion-review.ts). O chamado vira concluído e o Pix aparece pro
+ * cliente, como se ele tivesse aprovado; fica registrado quem aprovou.
+ */
+export async function approveCompletionAsAdminAction(input: { callId: string }) {
+  const parsed = adminApproveCompletionSchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? 'Dados inválidos.' }
+  }
+
+  const authCheck = await requireAdmin()
+  if (!authCheck.authorized || !authCheck.user) {
+    return { success: false, error: authCheck.error }
+  }
+
+  const { callId } = parsed.data
+  const adminDb = await createServiceClient()
+  const patch = completionReviewPatch(
+    { call_id: callId, decision: 'approve' },
+    { approvedBy: authCheck.user.id, issueCount: 0, nowIso: new Date().toISOString() }
+  )
+  const { data: updated, error } = await adminDb
+    .from('service_calls')
+    .update(patch)
+    .eq('id', callId)
+    .eq('status', 'awaiting_approval')
+    .select('id')
+
+  if (error) {
+    console.error('[admin] Erro ao aprovar conclusão:', error)
+    return { success: false, error: 'Erro ao aprovar a conclusão no banco.' }
+  }
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Este chamado não está aguardando a conferência do cliente. Atualize a tela.' }
+  }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
 }
 
 /**

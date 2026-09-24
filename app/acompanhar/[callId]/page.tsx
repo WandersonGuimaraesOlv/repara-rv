@@ -8,7 +8,8 @@ import { CallStatusTracker } from '@/components/call-status-tracker'
 import { PixPaymentModal } from '@/components/pix-payment-modal'
 import { EmergencySosButton } from '@/components/emergency-sos-button'
 import { formatCurrency } from '@/lib/utils'
-import { XCircle, Loader2, Star, ArrowLeft, CheckCircle2, AlertTriangle, CreditCard, FileText, MapPin, Clock, RotateCcw } from 'lucide-react'
+import { XCircle, Loader2, Star, ArrowLeft, CheckCircle2, AlertTriangle, CreditCard, FileText, MapPin, Clock, RotateCcw, ClipboardCheck } from 'lucide-react'
+import { COMPLETION_ISSUE_MAX_LENGTH, COMPLETION_ISSUE_MIN_LENGTH } from '@/lib/completion-review'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { CallChat } from '@/components/chat/call-chat'
@@ -37,6 +38,10 @@ export default function AcompanharPage() {
   const [rating, setRating] = useState(0)
   const [rated, setRated] = useState(false)
   const hasAutoOpenedPixRef = useRef(false)
+  // Conferência do serviço antes do Pix (lib/completion-review.ts)
+  const [reviewing, setReviewing] = useState(false)
+  const [showIssueForm, setShowIssueForm] = useState(false)
+  const [issueText, setIssueText] = useState('')
 
   // Função para buscar o estado atual do chamado oficial no banco
   const fetchCall = useCallback(async () => {
@@ -97,7 +102,7 @@ export default function AcompanharPage() {
           fetchCall()
           if (payload.new.status === 'completed') {
             if (payload.new.payment_status !== 'paid') {
-              toast.info('Serviço concluído pelo técnico! Realize o pagamento via Pix.')
+              toast.info('Serviço aprovado! Faça o pagamento pelo Pix ou cartão.')
               setShowPix(true)
             } else {
               toast.success('Pagamento confirmado com sucesso!')
@@ -109,6 +114,9 @@ export default function AcompanharPage() {
           }
           if (payload.new.status === 'queued') {
             toast.info('Seu chamado está na fila prioritária. Fique nesta tela: avisamos aqui assim que um técnico aceitar!')
+          }
+          if (payload.new.status === 'awaiting_approval') {
+            toast.info('O técnico terminou. Confira o serviço antes de pagar.')
           }
           if (payload.new.status === 'expired') {
             toast.info('Nenhum técnico pôde atender a tempo e seu chamado expirou. Nada foi cobrado.')
@@ -206,6 +214,37 @@ export default function AcompanharPage() {
     }
   }
 
+  const handleReview = async (decision: 'approve' | 'reject') => {
+    setReviewing(true)
+    try {
+      const res = await fetch('/api/calls/review-completion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          decision === 'approve'
+            ? { call_id: callId, decision }
+            : { call_id: callId, decision, reason: issueText.trim() }
+        ),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(json.error || 'Não foi possível registrar agora. Tente de novo.')
+        return
+      }
+      if (decision === 'reject') {
+        toast.success('Avisamos o técnico e a equipe. Ele vai corrigir e concluir de novo.')
+        setShowIssueForm(false)
+        setIssueText('')
+      }
+      // Aprovado: o fetchCall vê completed e abre o Pix sozinho
+      await fetchCall()
+    } catch {
+      toast.error('Falha de conexão. Tente de novo.')
+    } finally {
+      setReviewing(false)
+    }
+  }
+
   const handleRate = async (stars: number) => {
     if (rated) return
     setRating(stars)
@@ -246,6 +285,7 @@ export default function AcompanharPage() {
             callId={callId}
             userRole="client"
             status={call.status}
+            paymentStatus={call.payment_status}
             clientAddress={call.client_address}
             clientLocation={call.client_location}
           />
@@ -282,8 +322,90 @@ export default function AcompanharPage() {
             />
           </div>
 
+          {/* Conferência antes do Pix: o técnico concluiu e espera no local
+              (lib/completion-review.ts). Nada aprova sozinho. */}
+          {call.status === 'awaiting_approval' && (
+            <div id="completion-review" className="card p-4 mb-4 space-y-3" style={{ borderColor: 'var(--color-warning)' }}>
+              <div className="flex items-start gap-3">
+                <ClipboardCheck size={22} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: 'var(--color-warning)' }} aria-hidden="true" />
+                <div className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+                  <strong className="block mb-1" style={{ color: 'var(--color-text)' }}>O técnico informou que terminou</strong>
+                  Teste o que foi feito antes de aprovar: ligue o chuveiro, abra a torneira, acenda a luz. O pagamento só é liberado depois da sua aprovação, e o técnico espera no local.
+                </div>
+              </div>
+
+              {!showIssueForm ? (
+                <div className="space-y-2">
+                  <button
+                    id="btn-approve-completion"
+                    onClick={() => handleReview('approve')}
+                    disabled={reviewing}
+                    className="btn-primary"
+                  >
+                    {reviewing ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} strokeWidth={2} aria-hidden="true" />}
+                    Está tudo certo — ir para o pagamento
+                  </button>
+                  <button
+                    id="btn-report-completion-issue"
+                    onClick={() => setShowIssueForm(true)}
+                    disabled={reviewing}
+                    className="btn-secondary"
+                  >
+                    <AlertTriangle size={16} strokeWidth={2} aria-hidden="true" /> Encontrei um problema
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label htmlFor="input-completion-issue" className="text-xs font-semibold block" style={{ color: 'var(--color-text)' }}>
+                    O que não ficou certo?
+                  </label>
+                  <textarea
+                    id="input-completion-issue"
+                    value={issueText}
+                    onChange={e => setIssueText(e.target.value.slice(0, COMPLETION_ISSUE_MAX_LENGTH))}
+                    placeholder="Ex.: o chuveiro continua pingando no registro."
+                    className="input resize-none"
+                    rows={3}
+                    autoFocus
+                  />
+                  <p className="text-[11px]" style={{ color: 'var(--color-text-subtle)' }}>
+                    O técnico vê o que você escrever e corrige no local. A equipe do Repara RV também é avisada.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      id="btn-cancel-completion-issue"
+                      onClick={() => { setShowIssueForm(false); setIssueText('') }}
+                      disabled={reviewing}
+                      className="btn-secondary"
+                    >
+                      Voltar
+                    </button>
+                    <button
+                      id="btn-send-completion-issue"
+                      onClick={() => handleReview('reject')}
+                      disabled={reviewing || issueText.trim().length < COMPLETION_ISSUE_MIN_LENGTH}
+                      className="btn-primary"
+                    >
+                      {reviewing ? <Loader2 size={16} className="animate-spin" /> : 'Enviar ao técnico'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Problema apontado na conferência: o técnico está corrigindo */}
+          {call.status === 'in_progress' && call.completion_issue && (
+            <div id="completion-issue-pending" className="banner-warning mb-4">
+              <AlertTriangle size={16} strokeWidth={2} className="flex-shrink-0" style={{ color: '#F59E0B' }} aria-hidden="true" />
+              <p className="text-xs" style={{ color: '#FCD34D' }}>
+                Você apontou: “{call.completion_issue}”. O técnico está corrigindo e vai concluir de novo para você conferir.
+              </p>
+            </div>
+          )}
+
           {/* Card de identificação do prestador + PIN de chegada */}
-          {providerCard && (call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress') && (
+          {providerCard && (call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress' || call.status === 'awaiting_approval') && (
             <ProviderIdentityCard
               callId={callId}
               providerName={providerCard.full_name ?? undefined}
@@ -325,7 +447,7 @@ export default function AcompanharPage() {
       )}
 
       {/* Chat em Tempo Real com Alinhamento de Materiais e Peças */}
-      {(call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress' || call.status === 'completed') && (
+      {(call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress' || call.status === 'awaiting_approval' || call.status === 'completed') && (
         <CallChat
           callId={callId}
           currentUserId={call.client_id}
@@ -501,7 +623,12 @@ export default function AcompanharPage() {
 
       {/* Voltar ao início (apenas após cancelamento explícito) */}
       {call.status === 'cancelled' && (
-        <div className="pb-6">
+        <div className="pb-6 space-y-3">
+          {call.cancelled_by_role === 'admin' && (
+            <p id="cancelled-by-team" className="text-sm text-center" style={{ color: 'var(--color-text-muted)' }}>
+              A equipe do Repara RV cancelou este chamado. Nada foi cobrado.
+            </p>
+          )}
           <Link href="/" id="btn-go-home" className="btn-primary">
             ← Voltar ao início
           </Link>

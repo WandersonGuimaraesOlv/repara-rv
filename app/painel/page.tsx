@@ -39,6 +39,8 @@ import { audioAlert } from '@/lib/audio-alert'
 import { performLogout } from '@/lib/auth-logout'
 import { SelfieCaptureModal } from '@/components/selfie-capture-modal'
 import { PushNotificationsCard } from '@/components/push-notifications-card'
+import { useOngoingProviderCall } from '@/hooks/useOngoingProviderCall'
+import Link from 'next/link'
 
 export default function PainelPage() {
   const router = useRouter()
@@ -576,6 +578,8 @@ export default function PainelPage() {
     }
   }, [profile, hasPixKey, isApproved, claimingCallId, handleClaimQueued])
 
+  const ongoingCall = useOngoingProviderCall(profile?.id ?? null)
+
   if (!profile) {
     return (
       <div className="page-container items-center justify-center">
@@ -590,6 +594,25 @@ export default function PainelPage() {
     <div className="page-container p-4">
       {/* Header com Navegação Segura e Status */}
       <PanelHeader isOnline={isOnline} />
+
+      {/* Chamado em andamento: o técnico só vai embora depois do pagamento
+          (conferência antes do Pix) — atalho de volta pra tela do chamado */}
+      {ongoingCall && (
+        <Link
+          href={`/chamado/${ongoingCall.id}`}
+          id="btn-back-to-ongoing-call"
+          className="banner-warning mb-3 flex items-center gap-3"
+        >
+          <AlertTriangle size={16} strokeWidth={2} className="flex-shrink-0" style={{ color: '#F59E0B' }} aria-hidden="true" />
+          <span className="text-xs flex-1" style={{ color: '#FCD34D' }}>
+            {ongoingCall.status === 'awaiting_approval'
+              ? 'O cliente está conferindo o seu serviço. Toque para voltar ao chamado.'
+              : ongoingCall.status === 'completed'
+                ? 'Aguardando o pagamento do cliente. Toque para voltar ao chamado.'
+                : 'Você tem um chamado em andamento. Toque para voltar a ele.'}
+          </span>
+        </Link>
+      )}
 
       {/* Indicador de Alerta Sonoro */}
       <div className="flex items-center justify-between mb-3 px-1">

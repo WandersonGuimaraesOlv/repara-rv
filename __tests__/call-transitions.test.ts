@@ -24,13 +24,14 @@ describe('evaluateProviderTransition — transições do prestador (app/api/call
       .toMatchObject({ allowed: false, status: 403 })
   })
 
-  it('segue a ordem aceitar → a caminho → iniciar (PIN) → concluir', () => {
+  it('segue a ordem aceitar → a caminho → iniciar (PIN) → concluir (pede a conferência do cliente)', () => {
     const expected: [ProviderAction, string, string][] = [
       ['accept', 'searching', 'accepted'],
       ['on_the_way', 'accepted', 'on_the_way'],
       ['start', 'accepted', 'in_progress'],
       ['start', 'on_the_way', 'in_progress'],
-      ['complete', 'in_progress', 'completed'],
+      // Concluir só pede a conferência: completed vem da aprovação do cliente
+      ['complete', 'in_progress', 'awaiting_approval'],
     ]
     for (const [action, from, to] of expected) {
       const result = evaluateProviderTransition({ userId: 'provider-1', call: call(from), action })
@@ -39,7 +40,8 @@ describe('evaluateProviderTransition — transições do prestador (app/api/call
   })
 
   it('achado de 23/09/2026: não conclui sem ter iniciado com o PIN (on_the_way → completed) — 409', () => {
-    for (const status of ['searching', 'accepted', 'on_the_way']) {
+    // awaiting_approval: já pediu a conferência — o cliente é quem decide agora
+    for (const status of ['searching', 'accepted', 'on_the_way', 'awaiting_approval']) {
       const result = evaluateProviderTransition({ userId: 'provider-1', call: call(status), action: 'complete' })
       expect(result).toMatchObject({ allowed: false, status: 409 })
     }
