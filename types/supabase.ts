@@ -88,6 +88,44 @@ export type Database = {
           },
         ]
       }
+      call_route_cache: {
+        Row: {
+          call_id: string
+          computed_at: string
+          distance_meters: number | null
+          duration_seconds: number | null
+          encoded_polyline: string | null
+          origin_lat: number
+          origin_lng: number
+        }
+        Insert: {
+          call_id: string
+          computed_at?: string
+          distance_meters?: number | null
+          duration_seconds?: number | null
+          encoded_polyline?: string | null
+          origin_lat: number
+          origin_lng: number
+        }
+        Update: {
+          call_id?: string
+          computed_at?: string
+          distance_meters?: number | null
+          duration_seconds?: number | null
+          encoded_polyline?: string | null
+          origin_lat?: number
+          origin_lng?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_route_cache_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: true
+            referencedRelation: "service_calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compliance_bans: {
         Row: {
           banned_by: string | null
@@ -182,6 +220,8 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
           resolved_notes: string | null
           triggered_by: string
           user_role: Database["public"]["Enums"]["user_role"]
@@ -193,6 +233,8 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           resolved_notes?: string | null
           triggered_by: string
           user_role: Database["public"]["Enums"]["user_role"]
@@ -204,6 +246,8 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
           resolved_notes?: string | null
           triggered_by?: string
           user_role?: Database["public"]["Enums"]["user_role"]
@@ -214,6 +258,13 @@ export type Database = {
             columns: ["call_id"]
             isOneToOne: false
             referencedRelation: "service_calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_alerts_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -356,13 +407,31 @@ export type Database = {
           },
         ]
       }
+      ops_alerts: {
+        Row: {
+          alert_key: string
+          last_sent_at: string
+          suppressed_count: number
+        }
+        Insert: {
+          alert_key: string
+          last_sent_at: string
+          suppressed_count?: number
+        }
+        Update: {
+          alert_key?: string
+          last_sent_at?: string
+          suppressed_count?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           background_check_status: string | null
           cep: string | null
           completed_orders_count: number | null
-          cpf_or_cnpj: string | null
+          cpf_or_cnpj: string
           created_at: string | null
           document_number: string | null
           email: string | null
@@ -386,7 +455,7 @@ export type Database = {
           background_check_status?: string | null
           cep?: string | null
           completed_orders_count?: number | null
-          cpf_or_cnpj?: string | null
+          cpf_or_cnpj?: string
           created_at?: string | null
           document_number?: string | null
           email?: string | null
@@ -410,7 +479,7 @@ export type Database = {
           background_check_status?: string | null
           cep?: string | null
           completed_orders_count?: number | null
-          cpf_or_cnpj?: string | null
+          cpf_or_cnpj?: string
           created_at?: string | null
           document_number?: string | null
           email?: string | null
@@ -487,6 +556,7 @@ export type Database = {
         Row: {
           current_location: unknown
           is_online: boolean | null
+          missed_offers: number
           pix_key: string
           pix_key_type: string
           provider_id: string
@@ -496,6 +566,7 @@ export type Database = {
         Insert: {
           current_location?: unknown
           is_online?: boolean | null
+          missed_offers?: number
           pix_key: string
           pix_key_type: string
           provider_id: string
@@ -505,6 +576,7 @@ export type Database = {
         Update: {
           current_location?: unknown
           is_online?: boolean | null
+          missed_offers?: number
           pix_key?: string
           pix_key_type?: string
           provider_id?: string
@@ -567,11 +639,14 @@ export type Database = {
           category: string
           color: string | null
           description: string | null
+          duration_est: string | null
           fixed_price: number
           icon: string | null
           id: string
+          included: string[] | null
           is_active: boolean | null
           name: string
+          not_included: string[] | null
           platform_fee: number
           sort_order: number | null
         }
@@ -579,11 +654,14 @@ export type Database = {
           category: string
           color?: string | null
           description?: string | null
+          duration_est?: string | null
           fixed_price: number
           icon?: string | null
           id?: string
+          included?: string[] | null
           is_active?: boolean | null
           name: string
+          not_included?: string[] | null
           platform_fee?: number
           sort_order?: number | null
         }
@@ -591,11 +669,14 @@ export type Database = {
           category?: string
           color?: string | null
           description?: string | null
+          duration_est?: string | null
           fixed_price?: number
           icon?: string | null
           id?: string
+          included?: string[] | null
           is_active?: boolean | null
           name?: string
+          not_included?: string[] | null
           platform_fee?: number
           sort_order?: number | null
         }
@@ -692,7 +773,12 @@ export type Database = {
           no_show_fee_pix_copy_paste: string | null
           no_show_fee_pix_qr_code: string | null
           no_show_fee_status: string | null
+          paid_at: string | null
           payment_status: Database["public"]["Enums"]["payment_status"] | null
+          payout_amount: number | null
+          payout_at: string | null
+          payout_by: string | null
+          payout_reference: string | null
           pix_copy_paste: string | null
           pix_payment_id: string | null
           pix_qr_code: string | null
@@ -735,7 +821,12 @@ export type Database = {
           no_show_fee_pix_copy_paste?: string | null
           no_show_fee_pix_qr_code?: string | null
           no_show_fee_status?: string | null
+          paid_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
+          payout_amount?: number | null
+          payout_at?: string | null
+          payout_by?: string | null
+          payout_reference?: string | null
           pix_copy_paste?: string | null
           pix_payment_id?: string | null
           pix_qr_code?: string | null
@@ -778,7 +869,12 @@ export type Database = {
           no_show_fee_pix_copy_paste?: string | null
           no_show_fee_pix_qr_code?: string | null
           no_show_fee_status?: string | null
+          paid_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
+          payout_amount?: number | null
+          payout_at?: string | null
+          payout_by?: string | null
+          payout_reference?: string | null
           pix_copy_paste?: string | null
           pix_payment_id?: string | null
           pix_qr_code?: string | null
@@ -793,13 +889,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "service_calls_completion_approved_by_fkey"
-            columns: ["completion_approved_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "service_calls_cancelled_by_fkey"
             columns: ["cancelled_by"]
             isOneToOne: false
@@ -809,6 +898,20 @@ export type Database = {
           {
             foreignKeyName: "service_calls_client_id_fkey"
             columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_calls_completion_approved_by_fkey"
+            columns: ["completion_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_calls_payout_by_fkey"
+            columns: ["payout_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -884,6 +987,74 @@ export type Database = {
           srtext?: string | null
         }
         Relationships: []
+      }
+      warranty_claims: {
+        Row: {
+          call_id: string
+          client_id: string
+          created_at: string
+          description: string
+          id: string
+          provider_id: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+        }
+        Insert: {
+          call_id: string
+          client_id: string
+          created_at?: string
+          description: string
+          id?: string
+          provider_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Update: {
+          call_id?: string
+          client_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          provider_id?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "warranty_claims_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "service_calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warranty_claims_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warranty_claims_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "warranty_claims_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -1058,6 +1229,20 @@ export type Database = {
             }
             Returns: string
           }
+      call_party_profiles: {
+        Args: { p_call_id: string }
+        Returns: {
+          avatar_url: string
+          background_check_status: string
+          full_name: string
+          id: string
+          party: string
+        }[]
+      }
+      claim_ops_alert: {
+        Args: { p_key: string; p_window_minutes?: number }
+        Returns: boolean
+      }
       claim_queued_call: {
         Args: { p_call_id: string; p_provider_id: string }
         Returns: {
@@ -1090,7 +1275,12 @@ export type Database = {
           no_show_fee_pix_copy_paste: string | null
           no_show_fee_pix_qr_code: string | null
           no_show_fee_status: string | null
+          paid_at: string | null
           payment_status: Database["public"]["Enums"]["payment_status"] | null
+          payout_amount: number | null
+          payout_at: string | null
+          payout_by: string | null
+          payout_reference: string | null
           pix_copy_paste: string | null
           pix_payment_id: string | null
           pix_qr_code: string | null
@@ -1247,6 +1437,7 @@ export type Database = {
       }
       geomfromewkt: { Args: { "": string }; Returns: unknown }
       gettransactionid: { Args: never; Returns: unknown }
+      is_admin: { Args: never; Returns: boolean }
       longtransactionsenabled: { Args: never; Returns: boolean }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
@@ -1288,6 +1479,10 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      register_missed_offer: {
+        Args: { p_limit: number; p_provider_id: string }
+        Returns: boolean
+      }
       reorder_legal_clauses: {
         Args: { p_document_slug: string; p_ordered_ids: string[] }
         Returns: undefined
@@ -1896,6 +2091,7 @@ export type Database = {
       payment_status: "pending" | "paid" | "refunded"
       ride_status:
         | "searching"
+        | "queued"
         | "accepted"
         | "on_the_way"
         | "in_progress"
@@ -1903,7 +2099,6 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "no_providers_available"
-        | "queued"
         | "expired"
       user_role: "client" | "provider" | "admin"
     }
@@ -2052,6 +2247,7 @@ export const Constants = {
       payment_status: ["pending", "paid", "refunded"],
       ride_status: [
         "searching",
+        "queued",
         "accepted",
         "on_the_way",
         "in_progress",
@@ -2059,7 +2255,6 @@ export const Constants = {
         "completed",
         "cancelled",
         "no_providers_available",
-        "queued",
         "expired",
       ],
       user_role: ["client", "provider", "admin"],

@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getRequestUserId } from '@/lib/supabase/request-user'
 import { livePaymentBlockedReason } from '@/lib/payment-environment'
+import { runInBackground } from '@/lib/background'
+import { alertOps, alertRouteError } from '@/modules/notifications'
 
 // `amount` propositalmente NÃO faz parte do schema: o valor cobrado é SEMPRE
 // call.total_price, lido do banco (achado real de 14/09/2026 — antes disso o
@@ -121,6 +123,15 @@ export async function POST(request: NextRequest) {
       if (!mpRes.ok) {
         const mpErr = await mpRes.json().catch(() => ({}))
         console.error('[API /api/pix/create] Erro MP Pix (taxa no-show):', mpErr)
+        runInBackground(alertOps({
+          kind: 'pix_create_failed',
+          route: '/api/pix/create (taxa de ausência)',
+          callId: call_id,
+          errorCode: mpRes.status,
+          summary: 'O Mercado Pago recusou gerar o Pix da taxa de ausência',
+          impact: 'O cliente não consegue pagar pelo app e continua bloqueado para pedir outro serviço.',
+          action: 'Confira o status do Mercado Pago e o token MERCADOPAGO_ACCESS_TOKEN do Worker; veja os registros (Observability) no horário acima.',
+        }))
         return NextResponse.json(
           { error: 'Não foi possível gerar a cobrança da taxa. Tente novamente em instantes.' },
           { status: 502 }
@@ -217,6 +228,8 @@ export async function POST(request: NextRequest) {
     let qrCode = call.pix_copy_paste || null
     let qrCodeBase64 = call.pix_qr_code || null
     let paymentId = call.pix_payment_id || null
+    // Pro alerta de erro: o que o Mercado Pago respondeu (Pix / cartão)
+    const mpErrors: string[] = []
 
     if (!qrCodeBase64 || !qrCode) {
       try {
@@ -250,9 +263,11 @@ export async function POST(request: NextRequest) {
         } else {
           const pixErr = await mpPixRes.json().catch(() => ({}))
           console.error('[API /api/pix/create] Erro MP Pix:', pixErr)
+          mpErrors.push(`Pix ${mpPixRes.status}`)
         }
       } catch (err) {
         console.error('[API /api/pix/create] Falha ao chamar MP Pix:', err)
+        mpErrors.push('Pix sem resposta')
       }
     }
 
@@ -295,14 +310,25 @@ export async function POST(request: NextRequest) {
         } else {
           const prefErr = await mpPrefRes.json().catch(() => ({}))
           console.error('[API /api/pix/create] Erro MP Preference:', prefErr)
+          mpErrors.push(`cartão ${mpPrefRes.status}`)
         }
       } catch (err) {
         console.error('[API /api/pix/create] Falha ao criar MP Preference:', err)
+        mpErrors.push('cartão sem resposta')
       }
     }
 
     // Se falhou a geração de ambos
     if (!qrCodeBase64 && !checkoutUrl) {
+      runInBackground(alertOps({
+        kind: 'pix_create_failed',
+        route: '/api/pix/create',
+        callId: call_id,
+        errorCode: mpErrors.join(', ') || null,
+        summary: 'O Mercado Pago não gerou nem o Pix nem o link de cartão de um chamado',
+        impact: 'O cliente não consegue pagar pelo app e continua bloqueado para pedir outro serviço.',
+        action: 'Confira o status do Mercado Pago e o token MERCADOPAGO_ACCESS_TOKEN do Worker; veja os registros (Observability) no horário acima.',
+      }))
       return NextResponse.json(
         { success: false, error: 'Não foi possível comunicar com o Mercado Pago para gerar a cobrança. Tente novamente em instantes.' },
         { status: 502 }
@@ -338,6 +364,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('[API] /api/pix/create exceção:', error)
+    runInBackground(alertRouteError('/api/pix/create'))
     return NextResponse.json({ error: 'Erro interno ao gerar pagamento.' }, { status: 500 })
   }
 }

@@ -33,6 +33,9 @@ import {
 import { updateCallPaymentStatusAction } from '@/app/actions/admin-users'
 import { PushNotificationsCard } from '@/components/push-notifications-card'
 import { ActiveCallsPanel } from '@/components/admin/active-calls-panel'
+import { PayoutsPanel } from '@/components/admin/payouts-panel'
+import { WarrantyPanel } from '@/components/admin/warranty-panel'
+import { SosResolve } from '@/components/admin/sos-resolve'
 import { toast } from 'sonner'
 
 interface ServiceCallRecord {
@@ -82,6 +85,8 @@ interface EmergencyAlertRecord {
   call_id: string
   user_role: string
   resolved: boolean
+  resolved_notes?: string | null
+  resolved_at?: string | null
   latitude?: number | null
   longitude?: number | null
   created_at: string
@@ -616,6 +621,12 @@ export default function AdminDashboardPage() {
       {/* Chamados em andamento: cancelar travado e aprovar pelo cliente */}
       <ActiveCallsPanel calls={calls} now={currentTime} onChanged={fetchData} />
 
+      {/* Garantias de 7 dias acionadas pelos clientes */}
+      <WarrantyPanel />
+
+      {/* Repasse manual ao técnico: pendentes, prazo de 48 h e registro */}
+      <PayoutsPanel now={currentTime} />
+
       {/* ============================================================ */}
       {/* GRID DE KPIs PRINCIPAIS (GMV vs. TAKE RATE vs. REPASSE TÉCNICOS) */}
       {/* ============================================================ */}
@@ -1083,16 +1094,8 @@ export default function AdminDashboardPage() {
                                 >
                                   <MessageCircle size={11} /> WhatsApp do Técnico
                                 </a>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(cleanProvPhone)
-                                    toast.success(`Chave Pix copiada: ${cleanProvPhone} (Repassar ${formatCurrency(providerCut)})`)
-                                  }}
-                                  className="inline-flex items-center gap-1 text-[10px] text-cyan-400 hover:text-cyan-300 font-semibold transition-colors cursor-pointer text-left"
-                                >
-                                  <Copy size={11} /> Copiar Pix: {cleanProvPhone}
-                                </button>
+                                {/* A chave Pix de verdade (provider_status) fica em "Repasses aos técnicos" —
+                                    aqui copiava o telefone como se fosse a chave (24/09/2026). */}
                               </div>
                             )}
                           </td>
@@ -1444,10 +1447,17 @@ export default function AdminDashboardPage() {
                     )}
                   </div>
 
-                  <div className="text-right">
+                  <div className="flex flex-col items-start sm:items-end gap-2 sm:max-w-xs">
                     <span className="text-xs text-[var(--color-text-muted)]">
-                      {new Date(alert.created_at).toLocaleString('pt-BR')}
+                      {new Date(alert.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
                     </span>
+                    <SosResolve
+                      alertId={alert.id}
+                      resolved={alert.resolved}
+                      resolvedNotes={alert.resolved_notes ?? null}
+                      resolvedAt={alert.resolved_at ?? null}
+                      onResolved={fetchData}
+                    />
                   </div>
                 </div>
               ))}

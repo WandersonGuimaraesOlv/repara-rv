@@ -10,6 +10,7 @@ import { EmergencySosButton } from '@/components/emergency-sos-button'
 import { formatCurrency } from '@/lib/utils'
 import { XCircle, Loader2, Star, ArrowLeft, CheckCircle2, AlertTriangle, CreditCard, FileText, MapPin, Clock, RotateCcw, ClipboardCheck } from 'lucide-react'
 import { COMPLETION_ISSUE_MAX_LENGTH, COMPLETION_ISSUE_MIN_LENGTH } from '@/lib/completion-review'
+import { WarrantyCard } from '@/components/warranty-card'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { CallChat } from '@/components/chat/call-chat'
@@ -544,6 +545,11 @@ export default function AcompanharPage() {
               </div>
             </div>
           </div>
+          )}
+
+          {/* Garantia de 7 dias (lib/warranty.ts): só serviço pago */}
+          {call.payment_status === 'paid' && call.completed_at && (
+            <WarrantyCard callId={callId} completedAt={call.completed_at} />
           )}
         </>
       )}

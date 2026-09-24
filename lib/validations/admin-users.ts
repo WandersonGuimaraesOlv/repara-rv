@@ -35,3 +35,9 @@ export const resetUserPinSchema = z
 
 export type ResetUserPinInput = z.infer<typeof resetUserPinSchema>
 
+
+// Encerrar um alerta de SOS no painel (o que a equipe fez)
+export const resolveSosSchema = z.object({
+  alertId: z.string().uuid('ID do alerta inválido'),
+  notes: z.string().trim().min(5, 'Escreva o que foi feito (pelo menos 5 caracteres).').max(1000, 'Use no máximo 1000 caracteres.'),
+})

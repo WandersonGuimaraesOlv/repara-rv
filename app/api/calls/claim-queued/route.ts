@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createServiceClient } from '@/lib/supabase/server';
+import { runInBackground } from '@/lib/background';
+import { alertRouteError } from '@/modules/notifications';
 import { getRequestUserId } from '@/lib/supabase/request-user';
 import { canActAsProvider } from '@/lib/call-transitions';
 import { resetMissedOffers } from '@/lib/missed-offers';
@@ -187,6 +189,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, call: acceptedCall }, { status: 200 });
   } catch (err) {
     console.error('[API /api/calls/claim-queued] Erro interno:', err);
+    runInBackground(alertRouteError('/api/calls/claim-queued'));
     return NextResponse.json({ error: 'Erro ao processar aceite da fila' }, { status: 500 });
   }
 }

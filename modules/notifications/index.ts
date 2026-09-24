@@ -19,6 +19,14 @@ export type { SosAlertInput } from './services/sos-alert';
 export { alertAboutCompletionIssue, buildCompletionIssueEmail } from './services/completion-alert';
 export type { CompletionIssueInput } from './services/completion-alert';
 
+// Alertas de erro por e-mail pra equipe (com limite de envio)
+export { alertOps, alertRouteError, buildOpsAlertEmail, environmentLabel } from './services/ops-alert';
+export type { OpsAlertInput, OpsAlertKind } from './services/ops-alert';
+
+// Garantia de 7 dias acionada pelo cliente → equipe + técnico
+export { alertAboutWarrantyClaim, buildWarrantyEmail } from './services/warranty-alert';
+export type { WarrantyAlertInput } from './services/warranty-alert';
+
 // Alerta de fila estagnada (e-mail ao time via Resend)
 export { sendEmail } from './services/email-dispatcher';
 export {

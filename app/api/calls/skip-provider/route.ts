@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getRequestUserId } from '@/lib/supabase/request-user'
 import { runInBackground } from '@/lib/background'
-import { pushAutoOfflineNotice, pushCallAlert } from '@/modules/notifications'
+import { pushAutoOfflineNotice, pushCallAlert, alertRouteError } from '@/modules/notifications'
 import { classifyOfferEnd, registerMissedOffer, resetMissedOffers, type OfferEnd } from '@/lib/missed-offers'
 
 const skipProviderSchema = z.object({
@@ -222,6 +222,7 @@ export async function POST(request: NextRequest) {
     )
   } catch (error) {
     console.error('[API] /api/calls/skip-provider:', error)
+    runInBackground(alertRouteError('/api/calls/skip-provider'))
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

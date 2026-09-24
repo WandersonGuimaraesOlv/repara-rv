@@ -4,7 +4,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { DEFAULT_SERVICES } from '@/lib/catalog'
 import { runInBackground } from '@/lib/background'
 import { geocodeAddressWithRetry, resolveCallLocation, locationConflictKm, isTransientFailure, extractGeocodableNumber, RIO_VERDE_CENTER } from '@/lib/geocoding'
-import { pushCallAlert } from '@/modules/notifications'
+import { pushCallAlert, alertRouteError } from '@/modules/notifications'
 import { findPendingPayment, PENDING_PAYMENT_FILTER } from '@/lib/pending-payments'
 
 // service_id aceita tanto UUID do catálogo quanto o id textual de DEFAULT_SERVICES
@@ -247,6 +247,7 @@ export async function POST(request: NextRequest) {
 
     if (callError || !call) {
       console.error('[API] Erro ao criar service_calls:', callError)
+      runInBackground(alertRouteError('/api/calls/create (gravar chamado)'))
       return NextResponse.json({ error: 'Erro ao criar chamado no sistema.' }, { status: 500 })
     }
 
@@ -267,6 +268,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ call_id: call.id, status: call.status })
   } catch (error) {
     console.error('[API] /api/calls/create exceção:', error)
+    runInBackground(alertRouteError('/api/calls/create'))
     return NextResponse.json({ error: 'Erro interno ao processar pedido.' }, { status: 500 })
   }
 }

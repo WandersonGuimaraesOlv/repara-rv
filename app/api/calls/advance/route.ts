@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
+import { runInBackground } from '@/lib/background'
+import { alertRouteError } from '@/modules/notifications'
 import { getRequestUserId } from '@/lib/supabase/request-user'
 import { canActAsProvider, evaluateProviderTransition } from '@/lib/call-transitions'
 import { generateArrivalPin } from '@/lib/utils'
@@ -112,6 +114,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, status: decision.to })
   } catch (error) {
     console.error('[API] /api/calls/advance:', error)
+    runInBackground(alertRouteError('/api/calls/advance'))
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

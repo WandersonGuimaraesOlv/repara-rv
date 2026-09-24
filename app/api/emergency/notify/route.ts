@@ -4,7 +4,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { getRequestUserId } from '@/lib/supabase/request-user'
 import { formatEmergencyMessage } from '@/lib/utils'
 import { runInBackground } from '@/lib/background'
-import { alertTeamAboutSos } from '@/modules/notifications'
+import { alertTeamAboutSos, alertRouteError } from '@/modules/notifications'
 
 // user_role e triggered_by que o cliente mandava aqui nunca foram usados pra
 // autorização de verdade (achado de segurança, ver comentário abaixo) — o
@@ -145,6 +145,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (err) {
     console.error('[Emergency API Internal Error]', err)
+    runInBackground(alertRouteError('/api/emergency/notify'))
     return NextResponse.json({ error: 'Erro interno ao processar alerta SOS' }, { status: 500 })
   }
 }

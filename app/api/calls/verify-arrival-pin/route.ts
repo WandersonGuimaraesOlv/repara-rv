@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
+import { runInBackground } from '@/lib/background'
+import { alertRouteError } from '@/modules/notifications'
 import { getRequestUserId } from '@/lib/supabase/request-user'
 import { evaluateProviderTransition, isPinLocked, pinAttemptPatch, PIN_LOCK_MINUTES } from '@/lib/call-transitions'
 import { generateArrivalPin } from '@/lib/utils'
@@ -131,6 +133,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('[API] /api/calls/verify-arrival-pin:', error)
+    runInBackground(alertRouteError('/api/calls/verify-arrival-pin'))
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { runInBackground } from '@/lib/background'
+import { alertRouteError } from '@/modules/notifications'
 import { evaluateCancelAuthorization, resolveCancelReasonEnum, shouldChargeNoShowFee } from '@/lib/cancel-authorization'
 import { clearOfflineProviderLocation } from '@/lib/provider-location'
 
@@ -114,6 +116,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('[API] /api/calls/cancel:', error)
+    runInBackground(alertRouteError('/api/calls/cancel'))
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

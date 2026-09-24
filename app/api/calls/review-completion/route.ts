@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { getRequestUserId } from '@/lib/supabase/request-user'
 import { runInBackground } from '@/lib/background'
 import { completionReviewPatch, completionReviewSchema, evaluateCompletionReview } from '@/lib/completion-review'
-import { alertAboutCompletionIssue } from '@/modules/notifications'
+import { alertAboutCompletionIssue, alertRouteError } from '@/modules/notifications'
 
 // Conferência do serviço pelo cliente antes do Pix (pedido do dono em
 // 24/09/2026 — ver lib/completion-review.ts). Aprovar leva a completed (o Pix
@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, status: patch.status })
   } catch (error) {
     console.error('[API] /api/calls/review-completion:', error)
+    runInBackground(alertRouteError('/api/calls/review-completion'))
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

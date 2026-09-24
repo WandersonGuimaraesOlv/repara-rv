@@ -14,6 +14,9 @@ import {
   completionReviewPatch,
 } from '@/lib/completion-review'
 import { clearOfflineProviderLocation } from '@/lib/provider-location'
+import { markPayoutSchema, undoPayoutSchema } from '@/lib/payouts'
+import { resolveWarrantySchema } from '@/lib/warranty'
+import { resolveSosSchema } from '@/lib/validations/admin-users'
 import { runInBackground } from '@/lib/background'
 import { notifyProvider, buildNotificationEnv } from '@/modules/notifications'
 import { revalidatePath } from 'next/cache'
@@ -246,9 +249,27 @@ export async function updateCallPaymentStatusAction(input: {
   }
 
   const adminDb = await createServiceClient()
+
+  // Repasse já feito: voltar o pagamento pra pendente deixaria o técnico pago
+  // por um serviço "não pago". Desfazer o repasse primeiro.
+  if (input.paymentStatus !== 'paid') {
+    const { data: current } = await adminDb
+      .from('service_calls')
+      .select('payout_at')
+      .eq('id', input.callId)
+      .maybeSingle()
+    if (current?.payout_at) {
+      return { success: false, error: 'O repasse deste chamado já foi feito. Desfaça o repasse antes de mudar o pagamento.' }
+    }
+  }
+
   const { data, error } = await adminDb
     .from('service_calls')
-    .update({ payment_status: input.paymentStatus })
+    .update({
+      payment_status: input.paymentStatus,
+      // paid_at conta o prazo de 48 h do repasse (lib/payouts.ts)
+      paid_at: input.paymentStatus === 'paid' ? new Date().toISOString() : null,
+    })
     .eq('id', input.callId)
     .select('id, status, payment_status')
     .single()
@@ -567,3 +588,324 @@ export async function resetUserPinAction(input: unknown) {
   return { success: true, data: { full_name: profile?.full_name || 'Usuário' } }
 }
 
+
+// ── Repasse manual ao técnico (lib/payouts.ts) ──────────────────────────────
+
+export interface PayoutRow {
+  callId: string
+  serviceName: string
+  providerId: string | null
+  providerName: string
+  providerPhone: string | null
+  pixKey: string | null
+  pixKeyType: string | null
+  amount: number
+  paidAt: string | null
+  completedAt: string | null
+  payoutAt: string | null
+  payoutAmount: number | null
+  payoutReference: string | null
+  hasOpenWarranty: boolean
+}
+
+/**
+ * Chamados concluídos e pagos: os que falta repassar e os repassados nos
+ * últimos 30 dias. A chave Pix vem de provider_status (a mesma que o técnico
+ * cadastrou), nunca do telefone.
+ */
+export async function getPayoutsAction(): Promise<{ success: boolean; error?: string; data?: PayoutRow[] }> {
+  const authCheck = await requireAdmin()
+  if (!authCheck.authorized) {
+    return { success: false, error: authCheck.error }
+  }
+
+  const adminDb = await createServiceClient()
+  const since = new Date(Date.now() - 30 * 24 * 3600_000).toISOString()
+  const { data: calls, error } = await adminDb
+    .from('service_calls')
+    .select('id, provider_id, provider_cut, paid_at, completed_at, payout_at, payout_amount, payout_reference, service:quick_services(name), provider:profiles!provider_id(full_name, phone)')
+    .eq('status', 'completed')
+    .eq('payment_status', 'paid')
+    .or(`payout_at.is.null,payout_at.gt."${since}"`)
+    .order('paid_at', { ascending: true, nullsFirst: true })
+
+  if (error) {
+    console.error('[admin] Erro ao listar repasses:', error)
+    return { success: false, error: 'Erro ao carregar os repasses.' }
+  }
+
+  const rows = calls ?? []
+  const providerIds = [...new Set(rows.map((c) => c.provider_id).filter((id): id is string => Boolean(id)))]
+  const callIds = rows.map((c) => c.id)
+
+  const [{ data: statuses }, { data: warranties }] = await Promise.all([
+    providerIds.length
+      ? adminDb.from('provider_status').select('provider_id, pix_key, pix_key_type').in('provider_id', providerIds)
+      : Promise.resolve({ data: [] as { provider_id: string; pix_key: string | null; pix_key_type: string | null }[] }),
+    callIds.length
+      ? adminDb.from('warranty_claims').select('call_id').eq('status', 'open').in('call_id', callIds)
+      : Promise.resolve({ data: [] as { call_id: string }[] }),
+  ])
+
+  const pixByProvider = new Map((statuses ?? []).map((s) => [s.provider_id, s]))
+  const openWarranty = new Set((warranties ?? []).map((w) => w.call_id))
+
+  return {
+    success: true,
+    data: rows.map((c) => {
+      const provider = c.provider as { full_name?: string; phone?: string } | null
+      const pix = c.provider_id ? pixByProvider.get(c.provider_id) : undefined
+      return {
+        callId: c.id,
+        serviceName: (c.service as { name?: string } | null)?.name ?? 'Serviço',
+        providerId: c.provider_id,
+        providerName: provider?.full_name ?? 'Técnico',
+        providerPhone: provider?.phone ?? null,
+        pixKey: pix?.pix_key ?? null,
+        pixKeyType: pix?.pix_key_type ?? null,
+        amount: Number(c.provider_cut),
+        paidAt: c.paid_at,
+        completedAt: c.completed_at,
+        payoutAt: c.payout_at,
+        payoutAmount: c.payout_amount === null ? null : Number(c.payout_amount),
+        payoutReference: c.payout_reference,
+        hasOpenWarranty: openWarranty.has(c.id),
+      }
+    }),
+  }
+}
+
+/**
+ * Registra que a equipe já fez o Pix de repasse ao técnico. Condicional:
+ * só chamado concluído, pago e ainda sem repasse; com garantia aberta o
+ * repasse fica suspenso (Contrato, cláusula 4).
+ */
+export async function markPayoutDoneAction(input: { callId: string; reference?: string }) {
+  const parsed = markPayoutSchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? 'Dados inválidos.' }
+  }
+
+  const authCheck = await requireAdmin()
+  if (!authCheck.authorized || !authCheck.user) {
+    return { success: false, error: authCheck.error }
+  }
+
+  const { callId, reference } = parsed.data
+  const adminDb = await createServiceClient()
+
+  const { data: openClaim } = await adminDb
+    .from('warranty_claims')
+    .select('id')
+    .eq('call_id', callId)
+    .eq('status', 'open')
+    .maybeSingle()
+  if (openClaim) {
+    return { success: false, error: 'Há uma garantia aberta neste chamado: o repasse fica suspenso até ela ser resolvida.' }
+  }
+
+  const { data: call } = await adminDb
+    .from('service_calls')
+    .select('provider_cut')
+    .eq('id', callId)
+    .maybeSingle()
+  if (!call) {
+    return { success: false, error: 'Chamado não encontrado.' }
+  }
+
+  const { data: updated, error } = await adminDb
+    .from('service_calls')
+    .update({
+      payout_at: new Date().toISOString(),
+      payout_by: authCheck.user.id,
+      payout_amount: call.provider_cut,
+      payout_reference: reference || null,
+    })
+    .eq('id', callId)
+    .eq('status', 'completed')
+    .eq('payment_status', 'paid')
+    .is('payout_at', null)
+    .select('id')
+
+  if (error) {
+    console.error('[admin] Erro ao registrar repasse:', error)
+    return { success: false, error: 'Erro ao registrar o repasse no banco.' }
+  }
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Este chamado não está aguardando repasse (já repassado ou ainda não pago). Atualize a tela.' }
+  }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
+/** Desfaz um repasse marcado por engano. */
+export async function undoPayoutAction(input: { callId: string }) {
+  const parsed = undoPayoutSchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? 'Dados inválidos.' }
+  }
+
+  const authCheck = await requireAdmin()
+  if (!authCheck.authorized) {
+    return { success: false, error: authCheck.error }
+  }
+
+  const adminDb = await createServiceClient()
+  const { data: updated, error } = await adminDb
+    .from('service_calls')
+    .update({ payout_at: null, payout_by: null, payout_amount: null, payout_reference: null })
+    .eq('id', parsed.data.callId)
+    .not('payout_at', 'is', null)
+    .select('id')
+
+  if (error) {
+    console.error('[admin] Erro ao desfazer repasse:', error)
+    return { success: false, error: 'Erro ao desfazer o repasse no banco.' }
+  }
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Este chamado não tem repasse registrado.' }
+  }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
+// ── Garantia de 7 dias (lib/warranty.ts) ────────────────────────────────────
+
+export interface WarrantyClaimRow {
+  id: string
+  callId: string
+  status: 'open' | 'resolved' | 'rejected'
+  description: string
+  resolutionNote: string | null
+  createdAt: string
+  resolvedAt: string | null
+  serviceName: string
+  completedAt: string | null
+  clientName: string
+  clientPhone: string | null
+  providerName: string
+  providerPhone: string | null
+}
+
+/** Garantias abertas e as resolvidas/recusadas nos últimos 30 dias. */
+export async function getWarrantyClaimsAction(): Promise<{ success: boolean; error?: string; data?: WarrantyClaimRow[] }> {
+  const authCheck = await requireAdmin()
+  if (!authCheck.authorized) {
+    return { success: false, error: authCheck.error }
+  }
+
+  const adminDb = await createServiceClient()
+  const since = new Date(Date.now() - 30 * 24 * 3600_000).toISOString()
+  const { data, error } = await adminDb
+    .from('warranty_claims')
+    .select('id, call_id, status, description, resolution_note, created_at, resolved_at, client:profiles!client_id(full_name, phone), provider:profiles!provider_id(full_name, phone), call:service_calls!call_id(completed_at, service:quick_services(name))')
+    .or(`status.eq.open,created_at.gt."${since}"`)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('[admin] Erro ao listar garantias:', error)
+    return { success: false, error: 'Erro ao carregar as garantias.' }
+  }
+
+  return {
+    success: true,
+    data: (data ?? []).map((w) => {
+      const client = w.client as { full_name?: string; phone?: string } | null
+      const provider = w.provider as { full_name?: string; phone?: string } | null
+      const call = w.call as { completed_at?: string | null; service?: { name?: string } | null } | null
+      return {
+        id: w.id,
+        callId: w.call_id,
+        status: w.status as WarrantyClaimRow['status'],
+        description: w.description,
+        resolutionNote: w.resolution_note,
+        createdAt: w.created_at,
+        resolvedAt: w.resolved_at,
+        serviceName: call?.service?.name ?? 'Serviço',
+        completedAt: call?.completed_at ?? null,
+        clientName: client?.full_name ?? 'Cliente',
+        clientPhone: client?.phone ?? null,
+        providerName: provider?.full_name ?? 'Técnico',
+        providerPhone: provider?.phone ?? null,
+      }
+    }),
+  }
+}
+
+/** Encerra a garantia: resolvida (retorno feito) ou recusada (fora da cobertura). */
+export async function resolveWarrantyClaimAction(input: { claimId: string; outcome: 'resolved' | 'rejected'; note: string }) {
+  const parsed = resolveWarrantySchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? 'Dados inválidos.' }
+  }
+
+  const authCheck = await requireAdmin()
+  if (!authCheck.authorized || !authCheck.user) {
+    return { success: false, error: authCheck.error }
+  }
+
+  const adminDb = await createServiceClient()
+  const { data: updated, error } = await adminDb
+    .from('warranty_claims')
+    .update({
+      status: parsed.data.outcome,
+      resolution_note: parsed.data.note,
+      resolved_at: new Date().toISOString(),
+      resolved_by: authCheck.user.id,
+    })
+    .eq('id', parsed.data.claimId)
+    .eq('status', 'open')
+    .select('id')
+
+  if (error) {
+    console.error('[admin] Erro ao encerrar garantia:', error)
+    return { success: false, error: 'Erro ao encerrar a garantia no banco.' }
+  }
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Esta garantia já foi encerrada. Atualize a tela.' }
+  }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}
+
+// ── SOS ─────────────────────────────────────────────────────────────────────
+
+/** Marca um alerta de SOS como resolvido, com o que foi feito. */
+export async function resolveSosAlertAction(input: { alertId: string; notes: string }) {
+  const parsed = resolveSosSchema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? 'Dados inválidos.' }
+  }
+
+  const authCheck = await requireAdmin()
+  if (!authCheck.authorized || !authCheck.user) {
+    return { success: false, error: authCheck.error }
+  }
+
+  const adminDb = await createServiceClient()
+  const { data: updated, error } = await adminDb
+    .from('emergency_alerts')
+    .update({
+      resolved: true,
+      resolved_notes: parsed.data.notes,
+      resolved_at: new Date().toISOString(),
+      resolved_by: authCheck.user.id,
+    })
+    .eq('id', parsed.data.alertId)
+    .or('resolved.is.null,resolved.eq.false')
+    .select('id')
+
+  if (error) {
+    console.error('[admin] Erro ao resolver SOS:', error)
+    return { success: false, error: 'Erro ao registrar a resolução do SOS.' }
+  }
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Este SOS já foi resolvido. Atualize a tela.' }
+  }
+
+  revalidatePath('/admin/dashboard')
+  return { success: true }
+}

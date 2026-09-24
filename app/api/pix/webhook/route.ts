@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { PixWebhookPayload } from '@/lib/types'
+import { runInBackground } from '@/lib/background'
+import { alertOps } from '@/modules/notifications'
 
 /**
  * Webhook do Mercado Pago para confirmação de pagamento Pix.
@@ -113,6 +115,14 @@ export async function POST(request: NextRequest) {
     if (!signatureCheck.ok) {
       if (signatureCheck.secretConfigured) {
         console.error('[Webhook Pix] Assinatura inválida — notificação rejeitada:', signatureCheck.reason)
+        runInBackground(alertOps({
+          kind: 'webhook_invalid_signature',
+          route: '/api/pix/webhook',
+          errorCode: 401,
+          summary: 'Aviso de pagamento com assinatura inválida foi recusado',
+          impact: 'Pode ser tentativa de fraude (recusada). Se o segredo do webhook mudou no Mercado Pago, pagamentos verdadeiros também deixam de ser confirmados.',
+          action: 'Confira se o MERCADOPAGO_WEBHOOK_SECRET do Worker é o mesmo do painel do Mercado Pago (Webhooks). Se for, foi tentativa externa e nada precisa ser feito.',
+        }))
         return NextResponse.json({ error: 'Assinatura inválida' }, { status: 401 })
       }
       // Segredo ainda não configurado dos dois lados: não bloqueia a confirmação de
@@ -140,6 +150,23 @@ export async function POST(request: NextRequest) {
     const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
+
+    // Achado de 24/09/2026: consulta com erro (token inválido, Mercado Pago
+    // fora) caía em "não aprovado" e respondia 200 — o pagamento nunca era
+    // confirmado e ninguém sabia. Agora avisa a equipe e responde 502, pro
+    // Mercado Pago reenviar a notificação depois.
+    if (!mpResponse.ok) {
+      console.error('[Webhook] Falha ao consultar o pagamento no Mercado Pago:', mpResponse.status)
+      runInBackground(alertOps({
+        kind: 'webhook_payment_lookup_failed',
+        route: '/api/pix/webhook',
+        errorCode: mpResponse.status,
+        summary: 'Não deu pra consultar um pagamento no Mercado Pago',
+        impact: 'Um pagamento pode não ter sido confirmado no app. O Mercado Pago vai reenviar o aviso, mas se o erro continuar o cliente fica como devedor.',
+        action: 'Confira o token MERCADOPAGO_ACCESS_TOKEN do Worker e o status do Mercado Pago. Se o cliente pagou, marque como pago no painel admin (chamados concluídos).',
+      }))
+      return NextResponse.json({ error: 'Falha ao consultar o pagamento' }, { status: 502 })
+    }
     const payment = await mpResponse.json()
 
     if (payment.status !== 'approved') {
@@ -195,6 +222,14 @@ export async function POST(request: NextRequest) {
 
     if (!callIdToUpdate || !matchType) {
       console.warn('[Webhook] Chamado não encontrado para payment_id:', paymentId, 'external_reference:', payment.external_reference)
+      runInBackground(alertOps({
+        kind: 'webhook_call_not_found',
+        route: '/api/pix/webhook',
+        errorCode: `pagamento ${paymentId}`,
+        summary: 'Pagamento aprovado sem chamado correspondente no app',
+        impact: 'Alguém pagou e o app não achou o chamado: o cliente pode continuar aparecendo como devedor.',
+        action: 'Procure o pagamento pelo código acima no painel do Mercado Pago, ache o chamado e marque como pago no painel admin.',
+      }))
       return NextResponse.json({ received: true })
     }
 
@@ -214,7 +249,8 @@ export async function POST(request: NextRequest) {
           .eq('no_show_fee_status', 'pending')
       : supabase
           .from('service_calls')
-          .update({ payment_status: 'paid', pix_payment_id: String(paymentId) })
+          // paid_at conta o prazo de 48 h do repasse manual (Contrato, cláusula 4)
+          .update({ payment_status: 'paid', pix_payment_id: String(paymentId), paid_at: new Date().toISOString() })
           .eq('id', callIdToUpdate)
           .eq('payment_status', 'pending')
 
@@ -229,6 +265,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true })
   } catch (error) {
     console.error('[API] /api/pix/webhook:', error)
+    runInBackground(alertOps({
+      kind: 'webhook_error',
+      route: '/api/pix/webhook',
+      errorCode: 500,
+      summary: 'Erro ao processar aviso de pagamento',
+      impact: 'Um pagamento pode não ter sido confirmado no app. O Mercado Pago vai reenviar o aviso.',
+      action: 'Veja os registros do Worker repara-rv (Observability) no horário acima e, se o cliente pagou, marque como pago no painel admin.',
+    }))
     return NextResponse.json({ error: 'Webhook error' }, { status: 500 })
   }
 }

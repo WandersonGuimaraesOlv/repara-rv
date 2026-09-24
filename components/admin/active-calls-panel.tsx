@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Activity, ClipboardCheck, Loader2, MessageCircle, XCircle, AlertTriangle } from 'lucide-react'
 import { approveCompletionAsAdminAction, cancelCallAsAdminAction } from '@/app/actions/admin-users'
 import { ADMIN_CANCELLABLE_STATUSES, canAdminCancel } from '@/lib/completion-review'
+import { whatsAppLink as waLink } from '@/lib/whatsapp-link'
 
 // Chamados que ainda não terminaram, com as saídas da equipe pros impasses
 // (plano de contingência, 24/09/2026): cancelar um chamado travado (técnico
@@ -31,12 +32,6 @@ const STATUS_LABELS: Record<string, string> = {
   on_the_way: 'Técnico a caminho',
   in_progress: 'Em atendimento',
   awaiting_approval: 'Aguardando conferência',
-}
-
-function waLink(phone: string | undefined, text: string): string | null {
-  const digits = (phone ?? '').replace(/\D/g, '')
-  if (digits.length < 10) return null
-  return `https://wa.me/55${digits}?text=${encodeURIComponent(text)}`
 }
 
 function minutesSince(iso: string, now: number): string {
