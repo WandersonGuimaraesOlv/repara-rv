@@ -11,6 +11,10 @@ export { buildNotificationEnv } from './services/notification-env';
 export { pushCallAlert, pushAutoOfflineNotice } from './services/call-alerts';
 export type { CallAlertOptions } from './services/call-alerts';
 
+// SOS: e-mail pro time + push pros admins
+export { alertTeamAboutSos, buildSosEmail } from './services/sos-alert';
+export type { SosAlertInput } from './services/sos-alert';
+
 // Alerta de fila estagnada (e-mail ao time via Resend)
 export { sendEmail } from './services/email-dispatcher';
 export {

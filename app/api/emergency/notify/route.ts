@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { getRequestUserId } from '@/lib/supabase/request-user'
 import { formatEmergencyMessage } from '@/lib/utils'
+import { runInBackground } from '@/lib/background'
+import { alertTeamAboutSos } from '@/modules/notifications'
 
 // user_role e triggered_by que o cliente mandava aqui nunca foram usados pra
 // autorização de verdade (achado de segurança, ver comentário abaixo) — o
@@ -36,11 +39,11 @@ export async function POST(request: NextRequest) {
     // sempre devolveria user=null aqui) + confirmação de que quem está
     // chamando é de fato cliente ou prestador DESTE chamado, antes de
     // qualquer leitura sensível.
-    const supabaseUser = await createClient()
-    const { data: { user } } = await supabaseUser.auth.getUser().catch(() => ({ data: { user: null } }))
-    if (!user) {
+    const userId = await getRequestUserId(request)
+    if (!userId) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
+    const user = { id: userId }
 
     const supabase = await createServiceClient()
 
@@ -105,10 +108,17 @@ export async function POST(request: NextRequest) {
 
     console.error('🚨 [ALERTA DE EMERGÊNCIA DISPARADO]\n' + message)
 
-    // Dispara webhook dos fundadores (se configurado)
+    // Aviso à equipe: e-mail (OPS_ALERT_EMAIL) + push nos admins — canal
+    // escolhido pelo dono em 24/09/2026 (item L1/M2 do plano de lançamento).
+    // Em segundo plano (waitUntil): quem acionou não espera o envio.
+    const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com'
+    const appUrl = rawAppUrl.startsWith('https://') && !rawAppUrl.includes('localhost') ? rawAppUrl : 'https://repararv.com'
+    runInBackground(alertTeamAboutSos({ callId: call_id, callerRole: user_role, message, appUrl }))
+
+    // Webhook opcional (Discord/Telegram etc.), se um dia for configurado
     if (process.env.EMERGENCY_WEBHOOK_URL) {
-      try {
-        await fetch(process.env.EMERGENCY_WEBHOOK_URL, {
+      runInBackground(
+        fetch(process.env.EMERGENCY_WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -122,9 +132,7 @@ export async function POST(request: NextRequest) {
             created_at: new Date().toISOString(),
           }),
         })
-      } catch (webhookErr) {
-        console.error('[SOS Webhook Error]', webhookErr)
-      }
+      )
     }
 
     // components/emergency-sos-button.tsx dispara essa chamada fire-and-forget
