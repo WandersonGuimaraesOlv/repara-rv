@@ -75,7 +75,7 @@ export function ProviderIdentityCard({ callId, providerName, avatarUrl, isVerifi
                 className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide mt-0.5 px-2 py-0.5 rounded-full"
                 style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary-hover)' }}
               >
-                <ShieldCheck size={11} /> Identidade Verificada
+                <ShieldCheck size={11} /> Cadastro Verificado
               </span>
             )}
           </div>
