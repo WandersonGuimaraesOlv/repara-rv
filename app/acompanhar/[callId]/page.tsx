@@ -8,7 +8,7 @@ import { CallStatusTracker } from '@/components/call-status-tracker'
 import { PixPaymentModal } from '@/components/pix-payment-modal'
 import { EmergencySosButton } from '@/components/emergency-sos-button'
 import { formatCurrency } from '@/lib/utils'
-import { XCircle, Loader2, Star, ArrowLeft, CheckCircle2, AlertTriangle, CreditCard, FileText, MapPin } from 'lucide-react'
+import { XCircle, Loader2, Star, ArrowLeft, CheckCircle2, AlertTriangle, CreditCard, FileText, MapPin, Clock, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { CallChat } from '@/components/chat/call-chat'
@@ -109,6 +109,9 @@ export default function AcompanharPage() {
           }
           if (payload.new.status === 'queued') {
             toast.info('Seu chamado está na fila prioritária. Fique nesta tela: avisamos aqui assim que um técnico aceitar!')
+          }
+          if (payload.new.status === 'expired') {
+            toast.info('Nenhum técnico pôde atender a tempo e seu chamado expirou. Nada foi cobrado.')
           }
         }
       )
@@ -474,6 +477,25 @@ export default function AcompanharPage() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Chamado venceu as 2h da fila sem técnico (app/api/cron/stale-calls-radar) */}
+      {call.status === 'expired' && (
+        <div className="pb-6 space-y-3" id="call-expired">
+          <div className="card p-4 flex items-start gap-3">
+            <Clock size={20} strokeWidth={2} className="shrink-0 mt-0.5" style={{ color: 'var(--color-text-muted)' }} aria-hidden="true" />
+            <div className="text-sm leading-relaxed" style={{ color: 'var(--color-text-muted)' }}>
+              <strong className="block mb-1" style={{ color: 'var(--color-text)' }}>Nenhum técnico pôde atender a tempo</strong>
+              Seu chamado ficou 2 horas na fila sem técnico disponível e foi encerrado. Nada foi cobrado. Peça de novo: outros técnicos podem ter ficado online.
+            </div>
+          </div>
+          <Link href={`/chamar/${call.service_id}`} id="btn-request-again" className="btn-primary">
+            <RotateCcw size={16} strokeWidth={2} aria-hidden="true" /> Pedir de novo
+          </Link>
+          <Link href="/" id="btn-go-home-expired" className="btn-secondary">
+            Voltar ao início
+          </Link>
         </div>
       )}
 

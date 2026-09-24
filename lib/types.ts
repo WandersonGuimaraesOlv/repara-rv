@@ -9,6 +9,8 @@ export type RideStatus =
   | 'completed'
   | 'cancelled'
   | 'no_providers_available'
+  // Ficou as 2h da fila sem técnico (app/api/cron/stale-calls-radar)
+  | 'expired'
 
 export type PaymentStatus = 'pending' | 'paid' | 'refunded'
 

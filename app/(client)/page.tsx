@@ -113,6 +113,8 @@ function getStatusConfig(status: string) {
       return { label: 'Concluído', colorVar: '--color-success', isActive: false }
     case 'cancelled':
       return { label: 'Cancelado', colorVar: '--color-danger', isActive: false }
+    case 'expired':
+      return { label: 'Expirado', colorVar: '--color-text-subtle', isActive: false }
     default:
       return { label: status, colorVar: '--color-text-subtle', isActive: false }
   }

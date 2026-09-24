@@ -15,6 +15,7 @@ const STATUS_ICONS: Record<RideStatus, React.ElementType> = {
   completed:              Star,
   cancelled:              XCircle,
   no_providers_available: AlertCircle,
+  expired:                Clock,
 }
 
 const STATUS_STEPS: RideStatus[] = [
@@ -37,7 +38,7 @@ export function CallStatusTracker({
   estimatedMinutes,
 }: CallStatusTrackerProps) {
   const Icon = STATUS_ICONS[status] ?? Search
-  const isFinal = status === 'completed' || status === 'cancelled' || status === 'no_providers_available'
+  const isFinal = status === 'completed' || status === 'cancelled' || status === 'no_providers_available' || status === 'expired'
   const isSearching = status === 'searching'
   const currentStepIdx = STATUS_STEPS.indexOf(status)
 
@@ -59,6 +60,8 @@ export function CallStatusTracker({
               ? 'linear-gradient(135deg, #10B981, #059669)'
               : status === 'cancelled' || status === 'no_providers_available'
               ? 'linear-gradient(135deg, #EF4444, #DC2626)'
+              : status === 'expired'
+              ? 'linear-gradient(135deg, #64748B, #475569)'
               : 'linear-gradient(135deg, var(--color-primary), var(--color-primary-hover))',
             boxShadow: isSearching ? 'var(--shadow-primary)' : '0 0 24px rgba(10,155,112,0.4)',
           }}

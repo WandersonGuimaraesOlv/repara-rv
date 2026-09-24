@@ -12,12 +12,30 @@ const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ''
 
 type PushState = 'checking' | 'unsupported' | 'needs-install' | 'denied' | 'inactive' | 'active'
 
-// Cartão "Ativar notificações" do painel do prestador. Registra o service worker
-// (/sw.js), pede a permissão (só a partir de um clique — navegadores bloqueiam
-// pedido automático), inscreve o aparelho no push e grava a assinatura no
-// servidor. Enquanto não ativar, o prestador só vê o chamado com o painel aberto
-// (radar e fila prioritária).
-export function PushNotificationsCard() {
+// O mesmo aparelho recebe o push da conta que ativou por último — no admin o
+// aviso que importa é o do SOS (modules/notifications/services/sos-alert.ts).
+const TEXTS = {
+  provider: {
+    installTitle: 'Receba avisos de chamados no celular',
+    activeBody: 'Você recebe o aviso de novos chamados mesmo com o app fechado.',
+    inactiveTitle: 'Receba avisos de novos chamados',
+    inactiveBody: 'Ative as notificações pra ser avisado na hora, mesmo com o app fechado, quando aparecer um chamado perto de você.',
+  },
+  admin: {
+    installTitle: 'Receba o aviso de SOS no celular',
+    activeBody: 'Você recebe o aviso de SOS mesmo com o app fechado.',
+    inactiveTitle: 'Receba o aviso de SOS no celular',
+    inactiveBody: 'Ative neste celular pra ser avisado na hora, mesmo com o app fechado, quando um cliente ou técnico acionar o SOS.',
+  },
+} as const
+
+// Cartão "Ativar notificações" do painel do prestador (e do admin, pro SOS).
+// Registra o service worker (/sw.js), pede a permissão (só a partir de um
+// clique — navegadores bloqueiam pedido automático), inscreve o aparelho no
+// push e grava a assinatura no servidor. Enquanto não ativar, o prestador só
+// vê o chamado com o painel aberto (radar e fila prioritária).
+export function PushNotificationsCard({ audience = 'provider' }: { audience?: keyof typeof TEXTS }) {
+  const texts = TEXTS[audience]
   const { isIos, isStandalone } = usePwaInstall()
   const [state, setState] = useState<PushState>('checking')
   const [busy, setBusy] = useState(false)
@@ -179,7 +197,7 @@ export function PushNotificationsCard() {
         <Bell size={20} className="shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} />
         <div className="text-xs leading-relaxed flex-1">
           <strong className="block font-bold text-sm mb-1" style={{ color: 'var(--color-text)' }}>
-            Receba avisos de chamados no celular
+            {texts.installTitle}
           </strong>
           <span style={{ color: 'var(--color-text-muted)' }}>
             No iPhone, as notificações só funcionam com o app instalado na tela inicial. Instale, abra pelo ícone do Repara RV e ative aqui.
@@ -200,7 +218,7 @@ export function PushNotificationsCard() {
           <strong className="block font-bold text-sm mb-1" style={{ color: 'var(--color-text)' }}>
             Notificações bloqueadas neste navegador
           </strong>
-          Pra receber avisos de chamados, libere as notificações do Repara RV nas configurações do site (toque no cadeado ao lado do endereço) e volte aqui.
+          Pra receber os avisos, libere as notificações do Repara RV nas configurações do site (toque no cadeado ao lado do endereço) e volte aqui.
         </div>
       </div>
     )
@@ -215,7 +233,7 @@ export function PushNotificationsCard() {
             Notificações ativas neste aparelho
           </strong>
           <span style={{ color: 'var(--color-text-muted)' }}>
-            Você recebe o aviso de novos chamados mesmo com o app fechado.
+            {texts.activeBody}
           </span>
           <div className="mt-3 flex flex-wrap gap-2">
             <button type="button" id="btn-push-test" onClick={sendTest} disabled={busy} className="btn-secondary py-2 text-xs disabled:opacity-50">
@@ -235,10 +253,10 @@ export function PushNotificationsCard() {
       <Bell size={20} className="shrink-0 mt-0.5" style={{ color: 'var(--color-primary)' }} />
       <div className="text-xs leading-relaxed flex-1">
         <strong className="block font-bold text-sm mb-1" style={{ color: 'var(--color-text)' }}>
-          Receba avisos de novos chamados
+          {texts.inactiveTitle}
         </strong>
         <span style={{ color: 'var(--color-text-muted)' }}>
-          Ative as notificações pra ser avisado na hora, mesmo com o app fechado, quando aparecer um chamado perto de você.
+          {texts.inactiveBody}
         </span>
         <div className="mt-3">
           <button type="button" id="btn-push-enable" onClick={enable} disabled={busy} className="btn-primary py-2 text-xs disabled:opacity-50">

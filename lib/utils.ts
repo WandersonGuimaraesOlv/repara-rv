@@ -89,6 +89,7 @@ export function getStatusLabel(status: string): string {
     cancelled_by_client: 'Cancelado pelo cliente',
     cancelled_by_provider: 'Cancelado pelo prestador',
     no_providers_available: 'Nenhum prestador disponível',
+    expired: 'Chamado expirado',
   }
   return labels[status] ?? status
 }
@@ -105,6 +106,7 @@ export function getStatusColor(status: string): string {
     cancelled_by_client: 'text-red-400',
     cancelled_by_provider: 'text-red-400',
     no_providers_available: 'text-amber-500',
+    expired: 'text-slate-400',
   }
   return colors[status] ?? 'text-slate-400'
 }

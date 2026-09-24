@@ -1,6 +1,7 @@
 // =============================================================================
 // app/api/cron/stale-calls-radar/route.ts
-// Detecta chamados em fila sem aceite há mais de 5 minutos.
+// Detecta chamados em fila sem aceite há mais de 5 minutos e encerra
+// ('expired') os que passaram das 2h da fila.
 // Chamada a cada 60s pelo handler `scheduled` de custom-worker.ts (Cron Trigger
 // do Cloudflare). Autenticada por CRON_SECRET_TOKEN.
 // Alerta o time por e-mail (OPS_ALERT_EMAIL, via Resend) e, se configurado, por
@@ -45,6 +46,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // estagnada nunca detectou nada de verdade, desde sempre. Corrigido usando
   // Service Role, que é o padrão correto pra uma rota interna de cron.
   const supabase = await createServiceClient();
+
+  // Chamado que passou das 2h da fila sem técnico vira 'expired' (item C5,
+  // 24/09/2026): até aqui nada mudava o status — ficava 'queued' pra sempre e
+  // o cliente esperava na tela sem aviso. Só o que AINDA está 'queued'; depois
+  // do prazo claim_queued_call já recusa o aceite, então não há disputa com
+  // um técnico assumindo no mesmo instante. Falha aqui não derruba o radar.
+  const nowIso = new Date().toISOString();
+  const { data: expiredCalls, error: expireError } = await supabase
+    .from('service_calls')
+    .update({ status: 'expired', updated_at: nowIso })
+    .eq('status', 'queued')
+    .lte('expires_at', nowIso)
+    .select('id');
+
+  if (expireError) {
+    console.error('[stale-calls-radar] falha ao expirar chamados vencidos:', expireError.message);
+  }
 
   // Busca chamados em queued há mais de 5 minutos e que não expiraram
   const { data: staleCalls, error } = await supabase
@@ -132,6 +150,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       stale_count: enriched.length,
       calls:       enriched,
       alert_sent:  justCrossedThreshold.length > 0,
+      expired_count: expiredCalls?.length ?? 0,
       checked_at:  new Date().toISOString(),
     },
     { status: 200 }

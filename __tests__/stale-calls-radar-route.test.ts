@@ -16,16 +16,42 @@ import { POST } from '../app/api/cron/stale-calls-radar/route'
 const NOW = Date.parse('2026-09-21T15:00:00.000Z')
 const ago = (seconds: number) => new Date(NOW - seconds * 1000).toISOString()
 
-function makeSupabase(rows: unknown[], error: { message: string } | null = null) {
-  const builder: any = {
-    select: vi.fn(() => builder),
-    eq: vi.fn(() => builder),
-    lt: vi.fn(() => builder),
-    gt: vi.fn(() => builder),
-    order: vi.fn(() => builder),
-    then: (resolve: (v: unknown) => unknown) => resolve({ data: rows, error }),
-  }
-  return { from: vi.fn(() => builder) }
+type Update = { patch: unknown; filters: [string, string, unknown][] }
+
+// Cada from() é uma consulta: a que chama .update() é a expiração da fila
+// (resolve com `expire`), a outra é a busca dos chamados parados (`rows`).
+function makeSupabase(
+  rows: unknown[],
+  error: { message: string } | null = null,
+  expire: { data?: unknown[]; error?: { message: string } | null } = {}
+) {
+  const updates: Update[] = []
+  const from = vi.fn(() => {
+    let update: Update | null = null
+    const builder: any = {
+      update: vi.fn((patch: unknown) => {
+        update = { patch, filters: [] }
+        updates.push(update)
+        return builder
+      }),
+      select: vi.fn(() => builder),
+      eq: vi.fn((column: string, value: unknown) => {
+        update?.filters.push(['eq', column, value])
+        return builder
+      }),
+      lte: vi.fn((column: string, value: unknown) => {
+        update?.filters.push(['lte', column, value])
+        return builder
+      }),
+      lt: vi.fn(() => builder),
+      gt: vi.fn(() => builder),
+      order: vi.fn(() => builder),
+      then: (resolve: (v: unknown) => unknown) =>
+        resolve(update ? { data: expire.data ?? [], error: expire.error ?? null } : { data: rows, error }),
+    }
+    return builder
+  })
+  return { from, updates }
 }
 
 const row = (id: string, secondsAgo: number) => ({
@@ -104,6 +130,32 @@ describe('POST /api/cron/stale-calls-radar — alerta por e-mail', () => {
 
     expect(res.status).toBe(200)
     expect((await res.json()).alert_sent).toBe(true)
+  })
+
+  it('encerra (expired) só os chamados que ainda estão na fila e passaram do prazo de 2h', async () => {
+    const supabase = makeSupabase([], null, { data: [{ id: 'x' }, { id: 'y' }] })
+    vi.mocked(createServiceClient).mockResolvedValue(supabase as never)
+    const body = await (await POST(req('segredo'))).json()
+
+    expect(supabase.updates).toHaveLength(1)
+    expect(supabase.updates[0].patch).toMatchObject({ status: 'expired' })
+    expect(supabase.updates[0].filters).toEqual([
+      ['eq', 'status', 'queued'],
+      ['lte', 'expires_at', new Date(NOW).toISOString()],
+    ])
+    expect(body.expired_count).toBe(2)
+  })
+
+  it('falha ao expirar não derruba o radar nem o alerta', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const supabase = makeSupabase([row('a', 330)], null, { error: { message: 'db down' } })
+    vi.mocked(createServiceClient).mockResolvedValue(supabase as never)
+    const res = await POST(req('segredo'))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.alert_sent).toBe(true)
+    expect(body.expired_count).toBe(0)
   })
 
   it('erro de consulta devolve 500 sem vazar a mensagem do banco', async () => {

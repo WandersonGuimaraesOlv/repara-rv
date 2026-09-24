@@ -54,9 +54,12 @@ self.addEventListener('notificationclick', (event) => {
     clients
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then((windowClients) => {
-        // Foca aba existente do painel se já aberta
+        // Foca a aba que já está na tela do aviso (/painel pros chamados,
+        // /admin/dashboard pro SOS). Antes procurava sempre /painel — o SOS
+        // abria o painel do técnico em vez do da equipe.
+        const targetPath = new URL(targetUrl, self.location.origin).pathname;
         for (const client of windowClients) {
-          if (client.url.includes('/painel') && 'focus' in client) {
+          if (new URL(client.url).pathname === targetPath && 'focus' in client) {
             return client.focus();
           }
         }

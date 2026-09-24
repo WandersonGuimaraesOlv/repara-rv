@@ -31,6 +31,7 @@ import {
   Clock
 } from 'lucide-react'
 import { updateCallPaymentStatusAction } from '@/app/actions/admin-users'
+import { PushNotificationsCard } from '@/components/push-notifications-card'
 import { toast } from 'sonner'
 
 interface ServiceCallRecord {
@@ -278,7 +279,7 @@ export default function AdminDashboardPage() {
     const completed = calls.filter(c => c.status === 'completed')
     const paidCompleted = completed.filter(c => c.payment_status === 'paid')
     const pendingCompleted = completed.filter(c => c.payment_status !== 'paid')
-    const cancelled = calls.filter(c => c.status === 'cancelled' || c.status === 'no_providers_available')
+    const cancelled = calls.filter(c => c.status === 'cancelled' || c.status === 'no_providers_available' || c.status === 'expired')
     const inProgress = calls.filter(c => ['accepted', 'on_the_way', 'in_progress'].includes(c.status))
     const queuedCount = allQueuedCalls.length
 
@@ -331,7 +332,7 @@ export default function AdminDashboardPage() {
 
   // Diagnóstico Analítico dos Motivos de Cancelamento
   const cancellationReasonAnalysis = useMemo(() => {
-    const cancelled = calls.filter(c => c.status === 'cancelled' || c.status === 'no_providers_available')
+    const cancelled = calls.filter(c => c.status === 'cancelled' || c.status === 'no_providers_available' || c.status === 'expired')
     const total = cancelled.length
 
     let demoraCount = 0
@@ -343,7 +344,7 @@ export default function AdminDashboardPage() {
     cancelled.forEach(c => {
       const reason = `${c.cancellation_reason || ''} ${c.cancel_reason || ''} ${c.cancel_note || ''}`.toLowerCase()
       if (
-        c.status === 'no_providers_available' || 
+        c.status === 'no_providers_available' || c.status === 'expired' || 
         reason.includes('demor') || 
         reason.includes('tempo') || 
         reason.includes('prestador') ||
@@ -491,7 +492,7 @@ export default function AdminDashboardPage() {
 
   // Chamados Cancelados com Filtros
   const cancelledCalls = useMemo(() => {
-    const base = calls.filter(c => c.status === 'cancelled' || c.status === 'no_providers_available')
+    const base = calls.filter(c => c.status === 'cancelled' || c.status === 'no_providers_available' || c.status === 'expired')
     if (cancelFilter === 'arrived') {
       return base.filter(c => c.arrived_at !== null || c.cancellation_stage === 'arrived')
     }
@@ -534,6 +535,9 @@ export default function AdminDashboardPage() {
           Atualizar Dados
         </button>
       </div>
+
+      {/* Push do SOS (sos-alert.ts) só chega no aparelho que ativou por esta conta */}
+      <PushNotificationsCard audience="admin" />
 
       {/* ============================================================ */}
       {/* ALERTA CRÍTICO: CHAMADOS ESTAGNADOS NA FILA DE ESPERA (> 5 MIN) */}
