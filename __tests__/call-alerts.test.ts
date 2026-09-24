@@ -74,6 +74,15 @@ describe('pushCallAlert (modules/notifications/services/call-alerts)', () => {
     expect(vi.mocked(notifyProviderBatch).mock.calls[0][0]).toEqual(['a', 'b'])
   })
 
+  it('nunca avisa a conta que abriu o chamado — ela não pode atendê-lo (chk_client_ne_provider)', async () => {
+    const { supabase } = makeSupabase({ call: { ...call, client_id: 'b' }, eligible: [{ id: 'a' }, { id: 'b' }] })
+    vi.mocked(createServiceClient).mockResolvedValue(supabase as any)
+
+    await pushCallAlert({ callId: CALL_ID })
+
+    expect(vi.mocked(notifyProviderBatch).mock.calls[0][0]).toEqual(['a'])
+  })
+
   it('o texto do push mostra serviço, bairro e ganho líquido — e nunca o endereço nem o cliente (LGPD)', async () => {
     const { supabase } = makeSupabase({
       call: { ...call, client_address: 'Rua das Flores, 123', client: { full_name: 'Maria', phone: '64999990000' } },

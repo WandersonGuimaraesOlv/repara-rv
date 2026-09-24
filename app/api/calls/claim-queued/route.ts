@@ -93,6 +93,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 1.2 Quem abriu o chamado não pode atendê-lo — o banco já recusa
+    // (chk_client_ne_provider), mas o erro cru do Postgres chegava na tela do
+    // painel (achado de 24/09/2026, conta do dono testando dos dois lados).
+    const { data: target } = await supabaseAdmin
+      .from('service_calls')
+      .select('client_id')
+      .eq('id', callId)
+      .maybeSingle();
+
+    if (target?.client_id === providerId) {
+      return NextResponse.json(
+        { success: false, code: 'OWN_CALL', error: 'Este chamado foi aberto pela sua própria conta — outro técnico precisa atendê-lo.' },
+        { status: 403 }
+      );
+    }
+
     // 2. Executar atribuição atômica no PostgreSQL (Quem gravar primeiro, ganha)
     // Só atualiza se o status AINDA FOR 'queued'
     let updatedCall: any[] | null = null;
@@ -121,8 +137,9 @@ export async function POST(req: NextRequest) {
         .select();
 
       if (directError) {
+        // Sem a mensagem do banco na resposta (AGENTS.md §6) — só no log.
         console.error('[claim-queued] Erro ao atualizar atomicamente chamado:', directError);
-        return NextResponse.json({ error: directError.message }, { status: 500 });
+        return NextResponse.json({ error: 'Não foi possível assumir este chamado agora. Tente de novo.' }, { status: 500 });
       }
       updatedCall = directData;
     }
@@ -168,8 +185,8 @@ export async function POST(req: NextRequest) {
     delete acceptedCall.arrival_pin;
 
     return NextResponse.json({ success: true, call: acceptedCall }, { status: 200 });
-  } catch (err: any) {
+  } catch (err) {
     console.error('[API /api/calls/claim-queued] Erro interno:', err);
-    return NextResponse.json({ error: err.message || 'Erro ao processar aceite da fila' }, { status: 500 });
+    return NextResponse.json({ error: 'Erro ao processar aceite da fila' }, { status: 500 });
   }
 }

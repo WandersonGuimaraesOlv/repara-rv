@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
 
     if (callError || !call) {
       console.error('[API] Erro ao criar service_calls:', callError)
-      return NextResponse.json({ error: callError?.message || 'Erro ao criar chamado no sistema.' }, { status: 500 })
+      return NextResponse.json({ error: 'Erro ao criar chamado no sistema.' }, { status: 500 })
     }
 
     // Avisa os prestadores em segundo plano, sem atrasar a resposta ao cliente.

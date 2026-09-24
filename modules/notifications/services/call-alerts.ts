@@ -30,7 +30,7 @@ export async function pushCallAlert({ callId, providerIds }: CallAlertOptions): 
 
     const { data: call, error: callError } = await supabase
       .from('service_calls')
-      .select('neighborhood, provider_cut, service:quick_services(name)')
+      .select('client_id, neighborhood, provider_cut, service:quick_services(name)')
       .eq('id', callId)
       .single();
 
@@ -54,6 +54,10 @@ export async function pushCallAlert({ callId, providerIds }: CallAlertOptions): 
       }
       targets = (eligible ?? []).map((p) => p.id);
     }
+
+    // Quem abriu o chamado não pode atendê-lo (chk_client_ne_provider) — não
+    // adianta avisar a própria conta.
+    targets = targets.filter((id) => id !== call.client_id);
 
     if (targets.length === 0) return { sent: 0, failed: 0, removed: 0 };
 

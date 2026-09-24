@@ -110,7 +110,8 @@ export async function POST(req: Request) {
       if (raceWinner) {
         return NextResponse.json({ isNew: false, email, password })
       }
-      return NextResponse.json({ error: createError.message }, { status: 500 })
+      console.error('[API /api/auth/pin] Erro ao criar usuário:', createError)
+      return NextResponse.json({ error: 'Não foi possível criar sua conta agora. Tente de novo.' }, { status: 500 })
     }
 
     return NextResponse.json({

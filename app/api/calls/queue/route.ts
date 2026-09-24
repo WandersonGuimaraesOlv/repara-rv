@@ -34,11 +34,15 @@ export async function GET(request: NextRequest) {
     // (expires_at nulo ou no futuro). Achado de 23/09/2026: chamados de fila
     // vencidos continuavam na lista, o "Atender" era recusado e o polling
     // trazia o card de volta a cada 4s.
+    // Nem o chamado que a própria conta abriu como cliente (achado de
+    // 24/09/2026): o banco recusa o aceite (chk_client_ne_provider), então
+    // ele só aparecia pra dar erro no "Atender".
     const nowIso = new Date().toISOString()
     const { data: queuedCalls, error } = await adminDb
       .from('service_calls')
       .select('id, neighborhood, total_price, provider_cut, platform_fee, created_at, service:quick_services(id, name, category, icon, color)')
       .eq('status', 'queued')
+      .neq('client_id', userId)
       .or(`expires_at.is.null,expires_at.gt."${nowIso}"`)
       .order('created_at', { ascending: false })
       .limit(20)
