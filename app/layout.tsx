@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     template: '%s | Repara RV',
   },
   description:
-    'Deu problema em casa? O Repara RV resolve. Eletricistas, encanadores e montadores com preço fixo e atendimento imediato em Rio Verde (GO).',
+    'Deu problema em casa? O Repara RV resolve. Eletricistas, encanadores e montadores com preço fixo e atendimento rápido em Rio Verde (GO).',
   keywords: ['serviços residenciais', 'Rio Verde', 'eletricista', 'encanador', 'reparo', 'manutenção'],
   authors: [{ name: 'Repara RV' }],
   creator: 'Repara RV',

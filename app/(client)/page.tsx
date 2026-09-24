@@ -54,6 +54,10 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { performLogout } from '@/lib/auth-logout'
 import { usePendingPayment } from '@/hooks/usePendingPayment'
 import { PendingPaymentReminder } from '@/components/pending-payment-reminder'
+import { supportWhatsAppLink } from '@/lib/support'
+
+// Suporte humano por WhatsApp (lib/support.ts); null esconde o botão
+const supportLink = supportWhatsAppLink()
 
 const CATEGORIES = [
   { id: 'all', name: 'Todos', icon: Sparkles },
@@ -91,7 +95,7 @@ const SERVICE_ICONS: Record<string, React.ComponentType<{ size?: number; classNa
 
 const TRUST_BADGES = [
   { icon: ShieldCheck, title: 'Cadastro Verificado', color: 'var(--color-success)' },
-  { icon: Zap, title: 'Chegada em 30-45 min', color: 'var(--color-accent)' },
+  { icon: Zap, title: 'Atendimento Rápido', color: 'var(--color-accent)' },
   { icon: Lock, title: 'Pagamento Seguro', color: 'var(--color-info)' },
   { icon: Sparkles, title: 'Garantia de 7 Dias', color: 'var(--color-primary)' },
   { icon: CheckCircle2, title: 'Profissionais de Rio Verde', color: 'var(--color-success)' },
@@ -640,7 +644,7 @@ export default function TriiderClientHomePage() {
                 O que você precisa consertar hoje?
               </h1>
               <p className="text-white/80 text-xs sm:text-sm mt-1.5 leading-relaxed">
-                Encanador, eletricista ou montador na sua porta em 30 a 45 min. Preço fixo, sem surpresas.
+                Encanador, eletricista ou montador em Rio Verde, com atendimento rápido conforme a disponibilidade na sua região. Preço fixo, sem surpresas.
               </p>
             </div>
           </div>
@@ -1157,18 +1161,20 @@ export default function TriiderClientHomePage() {
             <span className="text-[10px] font-bold">Pedidos</span>
           </button>
 
-          <a
-            href="https://wa.me/5564999999999?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20no%20Repara%20RV"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setActiveTab('support')}
-            className="flex flex-col items-center gap-0.5 transition-colors"
-            style={{ color: activeTab === 'support' ? 'var(--color-primary)' : 'var(--color-text-subtle)' }}
-            aria-label="Suporte WhatsApp"
-          >
-            <MessageSquare size={20} />
-            <span className="text-[10px] font-bold">Suporte</span>
-          </a>
+          {supportLink && (
+            <a
+              href={supportLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setActiveTab('support')}
+              className="flex flex-col items-center gap-0.5 transition-colors"
+              style={{ color: activeTab === 'support' ? 'var(--color-primary)' : 'var(--color-text-subtle)' }}
+              aria-label="Suporte WhatsApp"
+            >
+              <MessageSquare size={20} />
+              <span className="text-[10px] font-bold">Suporte</span>
+            </a>
+          )}
 
           {currentUser ? (
             <button

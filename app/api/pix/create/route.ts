@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
 import { getRequestUserId } from '@/lib/supabase/request-user'
+import { livePaymentBlockedReason } from '@/lib/payment-environment'
 
 // `amount` propositalmente NÃO faz parte do schema: o valor cobrado é SEMPRE
 // call.total_price, lido do banco (achado real de 14/09/2026 — antes disso o
@@ -65,8 +66,7 @@ export async function POST(request: NextRequest) {
     // Cobrança da taxa de no-show (R$25, campos e fluxo próprios — ver
     // migration 20260917_no_show_fee.sql) — bloco inteiramente separado do
     // fluxo normal de cobrança de serviço abaixo: valor fixo, sem split de
-    // prestador (vai 100% pra plataforma, nunca lê provider_gateway_accounts
-    // nem manda application_fee), sem checkout de cartão (só Pix).
+    // prestador (vai 100% pra plataforma), sem checkout de cartão (só Pix).
     if (call.no_show_fee_status === 'pending') {
       if (call.no_show_fee_pix_copy_paste && call.no_show_fee_pix_qr_code) {
         return NextResponse.json({
@@ -83,6 +83,11 @@ export async function POST(request: NextRequest) {
       if (!accessToken) {
         console.error('[API /api/pix/create] MERCADOPAGO_ACCESS_TOKEN não encontrado no ambiente')
         return NextResponse.json({ error: 'Gateway de pagamento em manutenção temporária.' }, { status: 500 })
+      }
+      const noShowBlocked = livePaymentBlockedReason(accessToken, process.env.NEXT_PUBLIC_SUPABASE_URL)
+      if (noShowBlocked) {
+        console.warn(`[API /api/pix/create] Cobrança real bloqueada: ${noShowBlocked}`)
+        return NextResponse.json({ error: 'Pagamento desligado no ambiente de testes.' }, { status: 503 })
       }
 
       const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://repararv.com'
@@ -190,29 +195,17 @@ export async function POST(request: NextRequest) {
       console.error('[API /api/pix/create] MERCADOPAGO_ACCESS_TOKEN não encontrado no ambiente')
       return NextResponse.json({ error: 'Gateway de pagamento em manutenção temporária.' }, { status: 500 })
     }
-
-    // 2. Verifica se o prestador possui subconta conectada via OAuth para Split Automático
-    let activeAccessToken = accessToken
-    let isSplitActive = false
-    const platformFee = Number(call.platform_fee || 12)
-
-    if (call.provider_id) {
-      const { data: gatewayAcc } = await supabase
-        .from('provider_gateway_accounts')
-        .select('mp_access_token, mp_user_id')
-        .eq('provider_id', call.provider_id)
-        .maybeSingle()
-
-      if (gatewayAcc?.mp_access_token) {
-        activeAccessToken = gatewayAcc.mp_access_token
-        isSplitActive = true
-        console.log(`[Split Mercado Pago] Ativado para prestador ${call.provider_id} (MP User: ${gatewayAcc.mp_user_id}). Fee retida: R$ ${platformFee}`)
-      } else {
-        // Fallback resiliente: se o prestador ainda não concluiu o OAuth, NÃO barra o morador/cliente no local!
-        // O Pix é gerado via conta master da Repara RV e o repasse fica garantido para a chave Pix do prestador.
-        console.log(`[Split Mercado Pago] Prestador ${call.provider_id} sem OAuth ativo. Processando cobrança Pix via conta master para liberar o morador.`)
-      }
+    const serviceBlocked = livePaymentBlockedReason(accessToken, process.env.NEXT_PUBLIC_SUPABASE_URL)
+    if (serviceBlocked) {
+      console.warn(`[API /api/pix/create] Cobrança real bloqueada: ${serviceBlocked}`)
+      return NextResponse.json({ error: 'Pagamento desligado no ambiente de testes.' }, { status: 503 })
     }
+
+    // 2. Cobrança sempre na conta da plataforma: o repasse ao técnico é
+    // manual, por Pix, até existir CNPJ e split de verdade (decisão do dono,
+    // 24/09/2026). O split pelo Mercado Pago do técnico (OAuth) foi removido —
+    // se voltasse a valer, o dinheiro iria direto pro técnico e o repasse
+    // manual pagaria em dobro.
 
     const clientName = (call.client as { full_name?: string })?.full_name || 'Cliente Repara RV'
     const nameParts = clientName.trim().split(' ')
@@ -220,7 +213,7 @@ export async function POST(request: NextRequest) {
     const lastName = nameParts.slice(1).join(' ') || 'ReparaRV'
     const payerEmail = payer_email || 'financeiro@repararv.com'
 
-    // 3. Gera Cobrança Pix Direta no Mercado Pago (com application_fee obrigatório se split ativo)
+    // 3. Gera Cobrança Pix Direta no Mercado Pago
     let qrCode = call.pix_copy_paste || null
     let qrCodeBase64 = call.pix_qr_code || null
     let paymentId = call.pix_payment_id || null
@@ -239,15 +232,11 @@ export async function POST(request: NextRequest) {
           notification_url: `${appUrl}/api/pix/webhook`,
         }
 
-        if (isSplitActive && platformFee > 0 && platformFee < amount) {
-          pixPayload.application_fee = platformFee
-        }
-
         const mpPixRes = await fetch('https://api.mercadopago.com/v1/payments', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${activeAccessToken}`,
+            Authorization: `Bearer ${accessToken}`,
             'X-Idempotency-Key': `repararv-pix-${call_id}-${Date.now()}`,
           },
           body: JSON.stringify(pixPayload),
@@ -260,7 +249,7 @@ export async function POST(request: NextRequest) {
           paymentId = pixData?.id ? String(pixData.id) : null
         } else {
           const pixErr = await mpPixRes.json().catch(() => ({}))
-          console.error('[API /api/pix/create] Erro MP Pix com split:', pixErr)
+          console.error('[API /api/pix/create] Erro MP Pix:', pixErr)
         }
       } catch (err) {
         console.error('[API /api/pix/create] Falha ao chamar MP Pix:', err)
@@ -291,15 +280,11 @@ export async function POST(request: NextRequest) {
           statement_descriptor: 'REPARARV',
         }
 
-        if (isSplitActive && platformFee > 0 && platformFee < amount) {
-          prefPayload.marketplace_fee = platformFee
-        }
-
         const mpPrefRes = await fetch('https://api.mercadopago.com/checkout/preferences', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${activeAccessToken}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify(prefPayload),
         })
@@ -309,7 +294,7 @@ export async function POST(request: NextRequest) {
           checkoutUrl = prefData.init_point || null
         } else {
           const prefErr = await mpPrefRes.json().catch(() => ({}))
-          console.error('[API /api/pix/create] Erro MP Preference com split:', prefErr)
+          console.error('[API /api/pix/create] Erro MP Preference:', prefErr)
         }
       } catch (err) {
         console.error('[API /api/pix/create] Falha ao criar MP Preference:', err)

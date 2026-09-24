@@ -205,7 +205,7 @@ export function ComprovanteManutencaoModal({ isOpen, onClose, call }: Comprovant
               Garantia do Serviço (7 dias corridos)
             </p>
             <p>
-              Este comprovante assegura que o reparo acima foi executado por profissional parceiro verificado do Repara RV. Caso o reparo apresente qualquer defeito decorrente da mão de obra durante o período de garantia, o cliente ou a imobiliária pode reabrir o atendimento pelo site <strong>repararv.com</strong> informando o protocolo <strong>#{call.id.slice(0, 8).toUpperCase()}</strong>.
+              Este comprovante assegura que o reparo acima foi executado por profissional parceiro verificado do Repara RV. Caso o reparo apresente qualquer defeito decorrente da mão de obra durante o período de garantia, o cliente ou a imobiliária aciona a garantia pelo suporte do Repara RV (<strong>contato@repararv.com</strong>) informando o protocolo <strong>#{call.id.slice(0, 8).toUpperCase()}</strong>.
             </p>
           </div>
 

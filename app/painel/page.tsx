@@ -182,24 +182,6 @@ export default function PainelPage() {
     load()
   }, [router, supabase])
 
-  // Monitora retorno da autorização do Mercado Pago
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search)
-      if (params.get('mp_connected') === 'true') {
-        toast.success('Conta Mercado Pago conectada com sucesso! Split automático ativado')
-        const url = new URL(window.location.href)
-        url.searchParams.delete('mp_connected')
-        window.history.replaceState({}, '', url.toString())
-      } else if (params.get('mp_error')) {
-        toast.error(`Falha na autorização Mercado Pago: ${params.get('mp_error')}`)
-        const url = new URL(window.location.href)
-        url.searchParams.delete('mp_error')
-        window.history.replaceState({}, '', url.toString())
-      }
-    }
-  }, [])
-
   // Atualiza localização quando muda (GPS watch)
   useEffect(() => {
     if (!isOnline || !lat || !lng || !profile) return

@@ -1,6 +1,10 @@
 import Link from 'next/link'
 import { MessageSquare, MapPin } from 'lucide-react'
 import { Logo } from '@/components/logo'
+import { SUPPORT_HOURS, supportWhatsAppLink } from '@/lib/support'
+
+// Suporte humano por WhatsApp (lib/support.ts); null esconde o botão
+const supportLink = supportWhatsAppLink()
 
 interface SiteFooterProps {
   /** Called when user clicks a category link inside the footer */
@@ -130,20 +134,28 @@ export function SiteFooter({ onCategorySelect }: SiteFooterProps) {
             <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>
               Dúvidas ou precisa de suporte para o seu chamado?
             </p>
-            <a
-              href="https://wa.me/5564999999999?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20no%20Repara%20RV"
-              target="_blank"
-              rel="noopener noreferrer"
-              id="btn-footer-whatsapp"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
-              style={{ background: 'var(--color-primary)', boxShadow: 'var(--shadow-primary)' }}
-            >
-              <MessageSquare size={16} />
-              <span>WhatsApp de Suporte</span>
-            </a>
-            <p className="mt-4 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
-              Atendimento humano de segunda a sábado, das 7h às 20h.
-            </p>
+            {supportLink ? (
+              <a
+                href={supportLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                id="btn-footer-whatsapp"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90"
+                style={{ background: 'var(--color-primary)', boxShadow: 'var(--shadow-primary)' }}
+              >
+                <MessageSquare size={16} />
+                <span>WhatsApp de Suporte</span>
+              </a>
+            ) : (
+              <p id="footer-support-email" className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+                contato@repararv.com
+              </p>
+            )}
+            {SUPPORT_HOURS && (
+              <p className="mt-4 text-xs" style={{ color: 'var(--color-text-subtle)' }}>
+                Atendimento humano: {SUPPORT_HOURS}.
+              </p>
+            )}
           </div>
 
         </div>

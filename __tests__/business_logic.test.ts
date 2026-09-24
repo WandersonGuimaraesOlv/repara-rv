@@ -187,14 +187,6 @@ describe('SQA Business Logic & Financial Integrity', () => {
       return `https://wa.me/${phone}?text=${msg}`
     }
 
-    const formatMpDemandWaUrl = (rawPhone: string, name: string) => {
-      const phone = sanitizePhone(rawPhone)
-      const msg = encodeURIComponent(
-        `Olá ${name}, aqui é da equipe de gestão do Repara RV! Identificamos que sua conta Mercado Pago ainda não está conectada para o split automático de pagamentos Pix. Sem ela, nosso sistema não pode despachar chamados para você em Rio Verde.\n\nConecte sua conta em menos de 1 minuto pelo link seguro:\nhttps://repararv.com/painel/configuracoes/mercado-pago`
-      )
-      return `https://wa.me/${phone}?text=${msg}`
-    }
-
     // DDD 64 local
     const url1 = formatAdminWaUrl('(64) 99345-6789', 'Carlos Eletricista')
     expect(url1).toContain('https://wa.me/5564993456789?text=')
@@ -204,10 +196,6 @@ describe('SQA Business Logic & Financial Integrity', () => {
     const url2 = formatAdminWaUrl('+55 64 99999-8888', 'Maria Encanadora')
     expect(url2).toContain('https://wa.me/5564999998888?text=')
 
-    // Cobrança Mercado Pago
-    const mpUrl = formatMpDemandWaUrl('64988887777', 'Roberto Chaveiro')
-    expect(mpUrl).toContain('https://wa.me/5564988887777?text=')
-    expect(mpUrl).toContain(encodeURIComponent('https://repararv.com/painel/configuracoes/mercado-pago'))
   })
 })
 

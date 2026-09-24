@@ -19,6 +19,10 @@ import {
 } from 'lucide-react'
 import { Logo } from '@/components/logo'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { supportWhatsAppLink } from '@/lib/support'
+
+// Suporte humano por WhatsApp (lib/support.ts); null esconde o botão
+const supportLink = supportWhatsAppLink()
 import { createClient } from '@/lib/supabase/client'
 import { performLogout } from '@/lib/auth-logout'
 
@@ -188,15 +192,17 @@ export function SiteHeader({
                     {label}
                   </Link>
                 ))}
-                <a
-                  href="https://wa.me/5564999999999?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20no%20Repara%20RV"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                  style={{ color: 'var(--color-text-muted)' }}
-                >
-                  Suporte
-                </a>
+                {supportLink && (
+                  <a
+                    href={supportLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 rounded-xl text-sm font-medium transition-colors"
+                    style={{ color: 'var(--color-text-muted)' }}
+                  >
+                    Suporte
+                  </a>
+                )}
               </nav>
             )}
 
@@ -497,17 +503,19 @@ export function SiteHeader({
                   Meus Pedidos
                 </button>
               )}
-              <a
-                href="https://wa.me/5564999999999?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20no%20Repara%20RV"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
-                <MessageSquare size={18} />
-                Suporte WhatsApp
-              </a>
+              {supportLink && (
+                <a
+                  href={supportLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors"
+                  style={{ color: 'var(--color-text-muted)' }}
+                >
+                  <MessageSquare size={18} />
+                  Suporte WhatsApp
+                </a>
+              )}
               <div className="flex items-center gap-3 px-4 py-2 text-sm font-semibold" style={{ color: 'var(--color-text-muted)' }}>
                 <ThemeToggle />
                 <span>Alternar Tema</span>
