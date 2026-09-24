@@ -264,6 +264,17 @@ export default function ChamadoProviderPage() {
         </div>
       </header>
 
+      {/* Ir até o cliente: no topo durante o trajeto (Waze/Maps instalado,
+          já navegando — components/navigation-buttons.tsx) */}
+      {isTrip && lat !== undefined && lng !== undefined && lat !== null && lng !== null && (
+        <div id="navigate-to-client" className="card p-4 mb-4 animate-slide-up" style={{ borderColor: 'var(--color-border-strong)' }}>
+          <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text)' }}>
+            <MapIcon size={15} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1.5" aria-hidden="true" />Ir até o cliente
+          </p>
+          <NavigationButtons lat={lat} lng={lng} address={call.client_address} />
+        </div>
+      )}
+
       {/* Card do serviço */}
       <div className="card p-4 mb-4 animate-slide-up" style={{ borderColor: 'var(--color-border-strong)' }}>
         <div className="flex items-center gap-3 mb-3">
@@ -313,16 +324,6 @@ export default function ChamadoProviderPage() {
         </div>
       )}
       {isTrip && <ProviderTrackingMap callId={callId} viewer="provider" />}
-
-      {/* Botões de navegação */}
-      {lat !== undefined && lng !== undefined && lat !== null && lng !== null && (
-        <div className="card p-4 mb-4 animate-slide-up" style={{ animationDelay: '120ms' }}>
-          <p className="text-sm font-semibold mb-3" style={{ color: 'var(--color-text)' }}>
-            <MapIcon size={15} strokeWidth={2} className="inline-block shrink-0 -mt-0.5 mr-1.5" aria-hidden="true" />Navegar até o local
-          </p>
-          <NavigationButtons lat={lat} lng={lng} address={call.client_address} />
-        </div>
-      )}
 
       {/* Chat em Tempo Real com Alinhamento de Materiais e Peças */}
       {(call.status === 'accepted' || call.status === 'on_the_way' || call.status === 'in_progress' || call.status === 'completed') && (

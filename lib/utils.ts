@@ -59,12 +59,14 @@ export function formatPhone(phone: string): string {
   return phone
 }
 
+// travelmode + dir_action=navigate: o Google Maps já abre na navegação por
+// voz de carro, em vez de parar na tela de rota (Maps URLs oficiais).
 export function buildGoogleMapsUrl(lat?: number | null, lng?: number | null, address?: string): string {
   if (lat && lng) {
-    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
+    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving&dir_action=navigate`
   }
   const query = address ? `${address}, Rio Verde - GO` : 'Rio Verde, GO'
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}`
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}&travelmode=driving&dir_action=navigate`
 }
 
 export function buildWazeUrl(lat?: number | null, lng?: number | null, address?: string): string {
